@@ -1,0 +1,243 @@
+// ============================================================================
+// MÓDULO 1 — MENÚ DIGITAL: nuevas acciones de Apps Script
+// ============================================================================
+// Instrucciones:
+// 1. Abre el proyecto de Apps Script que ya sirve SCRIPT_URL (el mismo que
+//    usa bienvenida.html para buscar_cliente / actualizar_cliente / registrar_cliente).
+// 2. Pega las 5 funciones de abajo (listarProductos, crearPedido, estadoMesa,
+//    verificarAdmin, actualizarPrecio) en el editor, en cualquier archivo .gs del proyecto.
+// 3. Busca tu función doGet(e) existente. Debe tener una cadena de
+//    if/else if (o switch) sobre e.parameter.accion, algo como:
+//
+//      function doGet(e) {
+//        const accion = e.parameter.accion;
+//        if (accion === 'buscar_cliente') { return buscarCliente(e); }
+//        else if (accion === 'actualizar_cliente') { return actualizarCliente(e); }
+//        else if (accion === 'registrar_cliente') { return registrarCliente(e); }
+//        ...
+//      }
+//
+//    Agrega estas 5 ramas nuevas ahí (con el mismo patrón que ya tengas):
+//        else if (accion === 'listar_productos') { return listarProductos(); }
+//        else if (accion === 'crear_pedido') { return crearPedido(e); }
+//        else if (accion === 'estado_mesa') { return estadoMesa(e); }
+//        else if (accion === 'verificar_admin') { return verificarAdmin(e); }
+//        else if (accion === 'actualizar_precio') { return actualizarPrecio(e); }
+//
+// 4. Cambia ADMIN_PASSWORD abajo por una contraseña real antes de publicar.
+// 5. En la hoja "Ventas" (archivo INVENTARIO DONDE EL GORDO.xlsx / Google Sheet),
+//    agrega 7 columnas nuevas después de "Registrado_Por": Estado, Tipo_Pedido,
+//    ID_Pedido, Observacion, Mesa, Mesero, Estado_Cocina. Las columnas actuales son:
+//    Fecha, Hora, Código_Producto, Producto, Cantidad, Precio_Unitario, Total, Registrado_Por
+//    Mesa y Mesero quedan vacías en pedidos a Domicilio (ese camino no pasa por aquí)
+//    y Mesero queda vacío en autoservicio por QR (Módulo 2: mesa identificada por QR,
+//    sin mesero asignado a ese pedido).
+//    Estado_Cocina es del Módulo 3 (comanda de cocina, ver modulo-3-apps-script-comanda-cocina.gs.txt)
+//    — es un estado DISTINTO de "Estado": "Estado" es el estado de PAGO (Pendiente
+//    de pago / Pagado, para Caja/Módulo 9); "Estado_Cocina" es el estado de
+//    PREPARACIÓN por ítem (Pendiente / En preparación / Listo / Entregado, para
+//    la pantalla de cocina). No confundir ni fusionar las dos columnas.
+// 6. Publica de nuevo la implementación web (Implementar > Administrar implementaciones
+//    > Editar > Nueva versión) para que los cambios queden activos en SCRIPT_URL.
+// 7. Avísame cuando esté publicado y probamos menu.html contra el backend real.
+// ============================================================================
+
+const ADMIN_PASSWORD = 'CAMBIAR_ESTA_CLAVE'; // TODO: define una contraseña real
+
+/**
+ * accion=listar_productos
+ * Devuelve todas las filas de la hoja "Productos" como JSON.
+ * Lee columnas opcionales "Recomendado" e "Imagen" si ya existen en la hoja
+ * (si no existen todavía, simplemente las omite sin fallar).
+ */
+function listarProductos() {
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Productos');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idxCategoria = encabezados.indexOf('Categoría');
+  const idxProducto = encabezados.indexOf('Producto');
+  const idxDescripcion = encabezados.indexOf('Descripción');
+  const idxPrecio = encabezados.indexOf('Precio (COP)');
+  const idxRecomendado = encabezados.indexOf('Recomendado');
+  const idxImagen = encabezados.indexOf('Imagen');
+
+  const productos = [];
+  for (let i = 1; i < datos.length; i++) {
+    const fila = datos[i];
+    if (!fila[idxProducto]) continue;
+    productos.push({
+      categoria: fila[idxCategoria],
+      producto: fila[idxProducto],
+      descripcion: fila[idxDescripcion] || '',
+      precio: Number(fila[idxPrecio]) || 0,
+      recomendado: idxRecomendado >= 0 ? fila[idxRecomendado] : false,
+      imagen: idxImagen >= 0 ? fila[idxImagen] : ''
+    });
+  }
+  return ContentService.createTextOutput(JSON.stringify({ok: true, productos}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Busca si la mesa ya tiene un pedido abierto (no pagado) registrado HOY, y devuelve
+ * el mesero de ese pedido: '' si sigue en autoservicio sin reclamar, o el nombre si
+ * ya lo tomó un mesero. Devuelve null si no hay ningún pedido abierto para esa mesa
+ * hoy (mesa nueva / la anterior ya se pagó en Caja).
+ *
+ * Se limita a "hoy" porque el Módulo 9 (Caja) todavía no existe para marcar Estado
+ * como "Pagado" — sin este límite, una mesa reutilizada al día siguiente heredaría
+ * por error el mesero de un cliente de ayer.
+ */
+function buscarMeseroMesaAbierta(hoja, mesa) {
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idxFecha = encabezados.indexOf('Fecha');
+  const idxEstado = encabezados.indexOf('Estado');
+  const idxMesa = encabezados.indexOf('Mesa');
+  const idxMesero = encabezados.indexOf('Mesero');
+  const tz = Session.getScriptTimeZone();
+  const hoy = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+
+  for (let i = datos.length - 1; i >= 1; i--) {
+    const fila = datos[i];
+    if (String(fila[idxMesa]) !== String(mesa)) continue;
+    if (fila[idxEstado] === 'Pagado') continue; // esa mesa ya se cerró, no cuenta
+    const fecha = Utilities.formatDate(new Date(fila[idxFecha]), tz, 'yyyy-MM-dd');
+    if (fecha !== hoy) continue;
+    return fila[idxMesero] || '';
+  }
+  return null;
+}
+
+/**
+ * accion=estado_mesa&mesa=<num>
+ * Le dice al menú si esa mesa ya tiene un pedido abierto hoy y quién la atiende,
+ * para no pedirle de nuevo el nombre a otro mesero ni dejar que se lo cambien
+ * por error a una mesa que ya tiene dueño.
+ */
+function estadoMesa(e) {
+  const mesa = e.parameter.mesa || '';
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Ventas');
+  const meseroExistente = mesa ? buscarMeseroMesaAbierta(hoja, mesa) : null;
+  return ContentService.createTextOutput(JSON.stringify({
+    ok: true,
+    abierta: meseroExistente !== null,
+    mesero: meseroExistente || ''
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * accion=crear_pedido&items=<JSON>&total=<num>&tipo=local|domicilio&mesa=<num>&mesero=<texto>
+ * Escribe una fila en "Ventas" por cada ítem del carrito, todas con el mismo
+ * ID_Pedido para poder agruparlas después, y estado "Pendiente de pago".
+ * Requiere las columnas nuevas Estado/Tipo_Pedido/ID_Pedido/Observacion/Mesa/Mesero (ver paso 5 arriba).
+ * mesa y mesero llegan vacíos en pedidos a Domicilio (no aplica mesa); mesero llega
+ * vacío también en autoservicio por QR de mesa (Módulo 2) mientras nadie la reclame.
+ *
+ * Domicilio SÍ registra venta aquí desde 2026-07-16 (antes solo mandaba WhatsApp y
+ * no tocaba el sistema): menu.html llama esta misma acción con tipo='domicilio'
+ * justo después de abrir WhatsApp, para que el inventario descuente insumos sin
+ * depender de que alguien vuelva a digitar la tirilla. El envío por WhatsApp sigue
+ * siendo la confirmación real con el cliente — esta llamada es silenciosa (no
+ * bloquea ni le muestra error al cliente si el backend no responde).
+ *
+ * Regla de negocio (Módulo 2, 2026-07-16): si la mesa ya tiene un pedido abierto hoy
+ * con un mesero asignado, ese mesero se respeta sin importar lo que venga en esta
+ * llamada — así un mesero distinto agregue productos después, la venta sigue
+ * acreditada a quien la abrió. Si la mesa sigue en autoservicio sin reclamar (mesero
+ * existente = ''), sí se usa el mesero que venga en este envío (así es como un
+ * mesero "reclama" una mesa de autoservicio).
+ */
+function crearPedido(e) {
+  const items = JSON.parse(e.parameter.items || '[]');
+  const tipo = e.parameter.tipo || 'local';
+  const mesa = e.parameter.mesa || '';
+  let mesero = e.parameter.mesero || '';
+
+  if (!items.length) {
+    return ContentService.createTextOutput(JSON.stringify({ok: false, error: 'Sin items'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Ventas');
+
+  if (tipo === 'local' && mesa) {
+    const meseroExistente = buscarMeseroMesaAbierta(hoja, mesa);
+    if (meseroExistente) {
+      mesero = meseroExistente;
+    }
+  }
+
+  const idPedido = Utilities.getUuid();
+  const ahora = new Date();
+
+  items.forEach(function (item) {
+    hoja.appendRow([
+      ahora,                    // Fecha
+      ahora,                    // Hora
+      '',                       // Código_Producto (no lo tenemos desde el menú todavía)
+      item.producto,            // Producto
+      item.cantidad,            // Cantidad
+      item.precio,              // Precio_Unitario
+      item.precio * item.cantidad, // Total
+      'Menú Digital',           // Registrado_Por
+      'Pendiente de pago',      // Estado (columna nueva)
+      tipo,                     // Tipo_Pedido (columna nueva)
+      idPedido,                 // ID_Pedido (columna nueva)
+      item.observacion || '',   // Observacion (columna nueva)
+      mesa,                     // Mesa (columna nueva)
+      mesero,                   // Mesero (columna nueva)
+      tipo === 'local' ? 'Pendiente' : ''  // Estado_Cocina (columna nueva, Módulo 3): solo aplica a "en el local"
+    ]);
+  });
+
+  return ContentService.createTextOutput(JSON.stringify({ok: true, id_pedido: idPedido}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * accion=verificar_admin&clave=...
+ * Solo confirma si la clave es correcta (para mostrar/ocultar los controles de edición).
+ * La escritura real (actualizarPrecio) vuelve a validar la clave por su cuenta —
+ * no basta con haber pasado verificar_admin una vez.
+ */
+function verificarAdmin(e) {
+  const clave = e.parameter.clave || '';
+  const valido = clave === ADMIN_PASSWORD;
+  return ContentService.createTextOutput(JSON.stringify({ok: true, valido: valido}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * accion=actualizar_precio&producto=...&categoria=...&precio=...&clave=...
+ * Actualiza el precio de un producto en la hoja "Productos".
+ * Vuelve a validar la clave de administrador en cada llamada (no confía en el cliente).
+ */
+function actualizarPrecio(e) {
+  const clave = e.parameter.clave || '';
+  if (clave !== ADMIN_PASSWORD) {
+    return ContentService.createTextOutput(JSON.stringify({ok: false, error: 'Clave inválida'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const producto = e.parameter.producto;
+  const categoria = e.parameter.categoria;
+  const nuevoPrecio = Number(e.parameter.precio);
+
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Productos');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idxCategoria = encabezados.indexOf('Categoría');
+  const idxProducto = encabezados.indexOf('Producto');
+  const idxPrecio = encabezados.indexOf('Precio (COP)');
+
+  for (let i = 1; i < datos.length; i++) {
+    if (datos[i][idxProducto] === producto && datos[i][idxCategoria] === categoria) {
+      hoja.getRange(i + 1, idxPrecio + 1).setValue(nuevoPrecio);
+      return ContentService.createTextOutput(JSON.stringify({ok: true}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({ok: false, error: 'Producto no encontrado'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}

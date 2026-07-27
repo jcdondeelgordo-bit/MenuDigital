@@ -1,0 +1,81 @@
+Especificaciones recomendadas
+Aspecto Recomendación Por qué Formato de salida a pedirle a Gemini Cuadrado 1:1 Coincide con las tarjetas cuadradas/circulares del menúResolución a generar1024×1024 (lo que Gemini da por defecto)Después se reduce, mejor sobrar que faltarResolución final (tras comprimir)700×700 pxSe ve nítido en móvil, no pesa de másFormato final de archivoWebP~30% más liviano que JPG con misma calidadPeso final por foto80–120 KB máxClientes en Colombia con datos móviles, catálogo de 80 productos = no puede pesar como una app pesadaFondoFondo desenfocado, liso, tono cálido claro (mesa de madera clara o gris cálido, luz de estudio) — no transparenteGemini no genera PNG transparente de forma confiable; un fondo liso y centrado se recorta fácil y contrasta bien contra el fondo oscuro de tu appEncuadrePlato centrado, cámara a 45°, con margen alrededorDeja espacio para recortar a círculo o cuadrado sin cortar el productoConsistenciaMismo estilo de luz/fondo en las 80 fotosPara que el menú se vea como un catálogo profesional, no fotos sueltas
+Herramienta para comprimir después (gratis, sin instalar nada): squoosh.app — subes la imagen, eliges WebP, mueves el slider de calidad hasta que quede bajo 120 KB.
+
+Prompt "maestro" de estilo (pégalo una sola vez al inicio de cada sesión con Gemini)
+
+Actúa como fotógrafo profesional de comida para una app de delivery.
+Todas las fotos que generes en esta conversación deben mantener EXACTAMENTE
+el mismo estilo visual entre sí, porque son parte de un mismo catálogo de menú:
+
+- Formato cuadrado 1:1.
+- Ángulo de cámara: 45 grados (three-quarter view), como foto de menú de delivery.
+- Fondo: desenfocado, liso, tono cálido neutro (madera clara o gris cálido),
+  con iluminación de estudio suave, sin sombras duras.
+- El plato/producto centrado, con margen alrededor (no pegado a los bordes),
+  para poder recortarlo en círculo después.
+- Luz cálida que resalte textura y brillo del producto (grasa, queso derretido,
+  salsa), estilo "foto que da hambre", muy apetitosa y llamativa.
+- Sin texto, sin logos, sin manos, sin cubiertos en la foto.
+- Fotorrealista, alta definición, como foto de food photography profesional,
+  no ilustración ni render 3D. usa este mismo formato para todas las creaciones de comida
+
+CHURRASCO: 380 gm de CHURRASCO asado a la plancha termino medio CON 150 GM DE papas a la francesa doraditas crujientes a grandes 
+ENSALADA DE LECHUGA TOMATE Y CEBOLLA EN RODAJAS FRESCAS servido en plato 
+presentado con potes de salsa al gusto
+
+
+   HAMBURGUESA POLLO:  1 carne de pollo apanado redondo frito, 1 capas de queso
+   amarillo derretido cubriendo la carne ,1 tocineta crocante encima, lechuga fresca crujiente, tomate en rodajas jugosas,
+   salsa especial color blaco verdusco salsa tartara chorreando ligeramente por un costado
+   (estilo salsa de la casa, no ketchup común), pan brioche tostado y brillante
+   arriba, todo apilado de forma apetitosa dejando ver las capas desde el lado,ajonjilo en el pan muy apetitosa y jugosa
+
+
+
+   HAMBURGUESA MIXTA: 1 carne de res Y 1 de pollo apanado redondo frito, dos capas de queso
+   amarillo derretido cubriendo la carnes ,doble tocineta crocante encima, lechuga fresca crujiente, tomate en rodajas jugosas,
+   salsa especial color blaco verdusco salsa tartara chorreando ligeramente por un costado
+   (estilo salsa de la casa, no ketchup común), pan brioche tostado y brillante
+   arriba, todo apilado de forma apetitosa dejando ver las capas desde el lado,ajonjilo en el pan muy apetitosa y jugosa
+
+
+
+   HAMBURGUESA DOBLE: dos carnes de res a la parrilla con marcas de
+   parrilla visibles, dos capas de queso amarillo derretido cubriendo la carne,
+   doble tocineta crocante encima, lechuga fresca crujiente, tomate en rodajas jugosas,
+   salsa especial color rojiza/anaranjada chorreando ligeramente por un costado
+   (estilo salsa de la casa, no ketchup común), pan brioche tostado y brillante
+   arriba, todo apilado de forma apetitosa dejando ver las capas desde el lado,ajonjilo en el pan muy apetitosa y jugosa
+
+   HAMBURGUESA SENCILLA: una sola carne de res a la parrilla con marcas de
+   parrilla visibles, una capa de queso amarillo derretido cubriendo la carne,
+   tocineta crocante encima, lechuga fresca crujiente, tomate en rodajas jugosas,
+   salsa especial color rojiza/anaranjada chorreando ligeramente por un costado
+   (estilo salsa de la casa, no ketchup común), pan brioche tostado y brillante
+   arriba, todo apilado de forma apetitosa dejando ver las capas desde el lado.
+
+Vas a generar las fotos en tandas de 5. Espera a que te dé la lista de cada
+tanda antes de generar.
+Prompt de tanda (ejemplo con 5 productos — edítalo cada vez con los próximos 5 de tu carta)
+
+Genera estas 5 fotos de producto, una por una, manteniendo el estilo maestro
+definido arriba (mismo fondo, mismo ángulo, mismo tipo de luz):
+
+1. HAMBURGUESA SENCILLA: una sola carne de res a la parrilla con marcas de
+   parrilla visibles, una capa de queso amarillo derretido cubriendo la carne,
+   tocineta crocante encima, lechuga fresca crujiente, tomate en rodajas jugosas,
+   salsa especial color rojiza/anaranjada chorreando ligeramente por un costado
+   (estilo salsa de la casa, no ketchup común), pan brioche tostado y brillante
+   arriba, todo apilado de forma apetitosa dejando ver las capas desde el lado.
+
+2. [PRODUCTO 2 — Misma hamburguesa anterior con doble carne, doble queso doble tocineta, se deben seguir los mismos requerimientos, doble carne
+
+3. [PRODUCTO 3] Igual que la anterior, solo que lleva 1 carne de res y una de pollo, esta se llama mixta, pollo y res en hamburguesas 
+
+4. [PRODUCTO 4] hamburguesa de pollo, una sola carne de pollo apanado redonda esta se frie y toma una textura crujiente y dorado, una capa de queso amarillo derretido cubriendo el pollo, tocineta crocante encima, lechuga fresca crujiente, tomate en rodajas jugosas,
+   salsa tartara y salsa de tomate chorreando ligeramente por un costado
+   (estilo salsa de la casa, no ketchup común), pan brioche tostado y brillante
+   arriba, todo apilado de forma apetitosa dejando ver las capas desde el lado. 
+
+5. [PRODUCTO 5] doble Pollo, al igual que el producto 4 lleva todo doble, doble Pollo apanado redondo, en medio del pollo va una lamina de queso derretido y tocineta con sus respectivas salsas y encima de la otra rodaja de pollo va otro queso y mas tocineta con todos los ingredientes anteriore

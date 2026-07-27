@@ -1,0 +1,2257 @@
+<!-- This file is a mirror of inventario_donde_el_gordo.html to serve as the entry point for GitHub Pages. -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Inventario · Donde el Gordo</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans for premium typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #090a0f;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --card-border: rgba(255, 255, 255, 0.06);
+      --card-border-focus: rgba(255, 255, 255, 0.15);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --primary: #ff4b5c;
+      --primary-glow: rgba(255, 75, 92, 0.15);
+      
+      /* Colors per Area */
+      --pizza: #ff4b5c;
+      --cocina: #ffa000;
+      --parrilla: #ff7600;
+      --nevera: #00d2ff;
+      --ingresos: #10b981;
+      --ventas: #a855f7;
+      --reporte: #f59e0b;
+      
+      --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding-bottom: 90px; /* space for bottom nav */
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+
+    /* Screen Layouts */
+    .screen {
+      display: none;
+      min-height: 100vh;
+      padding: 20px 16px;
+      animation: fadeIn 0.30s ease-in-out;
+    }
+    .screen.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Premium Glassmorphism Utility */
+    .glass {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    /* --- HOME SCREEN --- */
+    .brand-header {
+      text-align: center;
+      padding: 24px 0 16px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .brand-header h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 30%, #ff4b5c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-header p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .meta-card {
+      padding: 16px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 12px;
+    }
+    .meta-input-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .meta-input-group label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .meta-card select, .meta-card input {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: var(--transition);
+    }
+    .meta-card select:focus, .meta-card input:focus {
+      border-color: var(--primary);
+    }
+
+    .area-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .area-card {
+      padding: 20px 12px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    .area-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+      background: var(--area-color);
+      opacity: 0.8;
+    }
+    .area-card:active {
+      transform: scale(0.96);
+    }
+    .area-card .icon {
+      font-size: 2.2rem;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .area-card .title {
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .area-card .status {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+    .area-card.has-data {
+      border-color: var(--area-color);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .dashboard-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #fff;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #ff4b5c, #d32f2f);
+      box-shadow: 0 4px 14px rgba(255, 75, 92, 0.3);
+    }
+    .btn-primary:active {
+      transform: translateY(1px);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+    }
+    .btn-secondary:active {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Header Nav (Internal Screens) */
+    .screen-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 0 20px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--bg);
+    }
+    .btn-back {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+      outline: none;
+    }
+    .btn-back:active {
+      transform: scale(0.9);
+    }
+    .screen-header h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex: 1;
+    }
+    .screen-header .badge {
+      font-size: 1.3rem;
+    }
+
+    /* Search and Filter Inputs */
+    .search-container {
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .search-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: var(--transition);
+    }
+    .search-input:focus {
+      border-color: var(--card-border-focus);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Product Cards */
+    .product-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .product-card {
+      padding: 16px;
+      position: relative;
+      border-left: 3px solid rgba(255, 255, 255, 0.1);
+      transition: var(--transition);
+    }
+    .product-card.filled {
+      border-left-color: var(--area-color);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .product-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .product-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .product-meta-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .product-total-indicator {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--area-color);
+    }
+
+    /* Input Rows and Steppers */
+    .input-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .input-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      flex: 1;
+    }
+    .stepper-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stepper-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: var(--transition);
+      outline: none;
+    }
+    .stepper-btn:active {
+      background: var(--area-color);
+      transform: scale(0.9);
+      color: #fff;
+    }
+    .stepper-input {
+      width: 70px;
+      height: 36px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      text-align: center;
+      color: var(--text);
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.95rem;
+      outline: none;
+      transition: var(--transition);
+    }
+    .stepper-input:focus {
+      border-color: var(--card-border-focus);
+    }
+    .unit-tag {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      width: 28px;
+      text-align: right;
+    }
+
+    /* Progress Indicators */
+    .progress-bar-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+    .progress-bar-container span strong {
+      color: var(--primary);
+    }
+
+    /* --- REVISION & SUMMARY --- */
+    .revision-card {
+      margin-bottom: 16px;
+      padding: 16px;
+    }
+    .revision-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .revision-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .revision-table th {
+      text-align: left;
+      padding: 8px 10px;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .revision-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      vertical-align: middle;
+    }
+    .revision-table tr:active td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .rev-name {
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .rev-detail {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .rev-total {
+      font-weight: 800;
+      text-align: right;
+      color: var(--cocina);
+      white-space: nowrap;
+    }
+    .rev-total.overridden {
+      color: var(--ingresos);
+    }
+    .rev-areas {
+      font-size: 0.65rem;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-top: 4px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .empty-state .icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    /* Fixed bottom submit bar */
+    .action-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 16px;
+      background: rgba(9, 10, 15, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--card-border);
+      z-index: 100;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+    }
+
+    /* --- LOADING SCREEN --- */
+    .loading-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(9, 10, 15, 0.95);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loading-overlay p {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Modal for overrides */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-content {
+      width: 100%;
+      max-width: 320px;
+      padding: 20px;
+    }
+    .modal-title {
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .modal-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.4;
+    }
+    .modal-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px;
+      color: var(--text);
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 1.1rem;
+      text-align: center;
+      outline: none;
+      margin-bottom: 16px;
+    }
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* System messages / Notification alerts */
+    .toast {
+      position: fixed;
+      top: 24px; left: 16px; right: 16px;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow);
+      z-index: 2000;
+      transform: translateY(-100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .toast.active {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .toast-success {
+      background: rgba(16, 185, 129, 0.95);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: #fff;
+    }
+    .toast-error {
+      background: rgba(239, 68, 68, 0.95);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #fff;
+    }
+
+    /* --- REPORTE DE INSUMOS --- */
+    .reporte-section-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 20px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .reporte-row {
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 3px solid transparent;
+    }
+    .reporte-row.falto { border-left-color: #ef4444; }
+    .reporte-row.sobro { border-left-color: #10b981; }
+    .reporte-row.bien { border-left-color: rgba(255,255,255,0.15); }
+    .reporte-row.sinconteo { border-left-color: rgba(255,255,255,0.15); opacity: 0.6; }
+    .reporte-nombre {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.88rem;
+    }
+    .reporte-detalle {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .reporte-diferencia {
+      font-weight: 800;
+      font-size: 1rem;
+      white-space: nowrap;
+    }
+    .reporte-diferencia.falto { color: #ef4444; }
+    .reporte-diferencia.sobro { color: #10b981; }
+    .reporte-diferencia.bien { color: var(--text-muted); }
+    .toggle-detalle {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-decoration: underline;
+      padding: 10px;
+      cursor: pointer;
+    }
+    .detalle-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.72rem;
+      margin-top: 4px;
+    }
+    .detalle-table td {
+      padding: 4px 6px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    /* Fixed top connectivity banner */
+    .offline-banner {
+      background: var(--parrilla);
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px;
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Connectivity Banner -->
+  <div id="offlineBanner" class="offline-banner">Trabajando sin conexión (Datos guardados localmente)</div>
+
+  <!-- Loading State -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <p id="loadingText">Cargando catálogo...</p>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toastNotification" class="toast">
+    <span id="toastIcon"></span>
+    <span id="toastMsg"></span>
+  </div>
+
+  <!-- Modal for overrides -->
+  <div id="overrideModal" class="modal-overlay">
+    <div class="modal-content glass">
+      <div class="modal-title" id="modalProdName">Producto</div>
+      <div class="modal-desc">Modifica el total consolidado directamente. Si deseas volver al cálculo automático por áreas, deja el campo vacío o escribe 0.</div>
+      <input type="number" id="modalProdValue" class="modal-input" placeholder="Total" min="0">
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" style="flex:1" onclick="closeOverrideModal()">Cancelar</button>
+        <button class="btn btn-primary" style="flex:1" id="btnSaveOverride">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== HOME SCREEN ==================== -->
+  <div id="screen-home" class="screen active">
+    <div class="brand-header">
+      <h1>Donde el Gordo</h1>
+      <p>Inventario Operativo</p>
+    </div>
+
+    <div class="meta-card glass">
+      <div class="meta-input-group">
+        <label for="inputFecha">Fecha Operativa</label>
+        <input type="date" id="inputFecha" onchange="updateMetaDraft()">
+      </div>
+      <div class="meta-input-group">
+        <label for="selectTurno">Turno</label>
+        <select id="selectTurno" onchange="updateMetaDraft()">
+          <option value="APERTURA">🌅 Apertura</option>
+          <option value="CIERRE">🌙 Cierre</option>
+          <option value="MEDIODIA">☀️ Mediodía</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="area-grid">
+      <div class="area-card glass" style="--area-color: var(--pizza)" onclick="openArea('pizza')">
+        <span class="icon">🍕</span>
+        <span class="title">Pizzero</span>
+        <div class="status" id="status-pizza">0 / 0 productos</div>
+      </div>
+      <div class="area-card glass" style="--area-color: var(--cocina)" onclick="openArea('cocina')">
+        <span class="icon">🍳</span>
+        <span class="title">Cocina</span>
+        <div class="status" id="status-cocina">0 / 0 productos</div>
+      </div>
+      <div class="area-card glass" style="--area-color: var(--parrilla)" onclick="openArea('parrilla')">
+        <span class="icon">🔥</span>
+        <span class="title">Parrilla</span>
+        <div class="status" id="status-parrilla">0 / 0 productos</div>
+      </div>
+      <div class="area-card glass" style="--area-color: var(--nevera)" onclick="openArea('nevera')">
+        <span class="icon">🧊</span>
+        <span class="title">Neveras</span>
+        <div class="status" id="status-nevera">0 / 0 productos</div>
+      </div>
+    </div>
+
+    <div class="dashboard-actions">
+      <button class="btn btn-primary" onclick="openScreen('screen-revision')">
+        📋 Revisar y Enviar Inventario
+      </button>
+      <button class="btn btn-secondary" onclick="openScreen('screen-ingresos')">
+        📥 Registrar Ingresos del Día
+      </button>
+      <button class="btn btn-secondary" onclick="openScreen('screen-ventas')">
+        🧾 Registrar Tirilla de Ventas
+      </button>
+      <button class="btn btn-secondary" onclick="openScreen('screen-reporte')">
+        📊 Reporte de Faltantes / Sobrantes
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== AREA FORM SCREEN ==================== -->
+  <div id="screen-form" class="screen">
+    <div class="screen-header">
+      <button class="btn-back" onclick="closeArea()">←</button>
+      <h2 id="areaTitle">ÁREA</h2>
+      <span class="badge" id="areaIcon"></span>
+    </div>
+
+    <div class="search-container">
+      <input type="text" id="formSearchInput" class="search-input" placeholder="Buscar producto..." oninput="filterFormProducts()">
+    </div>
+
+    <div class="progress-bar-container">
+      <span id="formProgressText">Conteo: <strong>0 / 0</strong> productos</span>
+      <span id="formProgressPercent">0%</span>
+    </div>
+
+    <div class="product-list" id="formProductList">
+      <!-- Generated dynamically -->
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="closeArea()">
+        💾 Guardar Área y Volver
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== REVISION SCREEN ==================== -->
+  <div id="screen-revision" class="screen">
+    <div class="screen-header">
+      <button class="btn-back" onclick="openScreen('screen-home')">←</button>
+      <h2>Revisión de Inventario</h2>
+      <span class="badge">📋</span>
+    </div>
+
+    <div class="search-container">
+      <input type="text" id="revisionSearchInput" class="search-input" placeholder="Filtrar resultados..." oninput="renderRevisionList()">
+    </div>
+
+    <div id="revisionListContainer">
+      <!-- Generated dynamically -->
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="submitInventory()">
+        🚀 Enviar Inventario Consolidado
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== INGRESOS SCREEN ==================== -->
+  <div id="screen-ingresos" class="screen">
+    <div class="screen-header">
+      <button class="btn-back" onclick="openScreen('screen-home')">←</button>
+      <h2>Ingresos de Mercancía</h2>
+      <span class="badge">📥</span>
+    </div>
+
+    <div class="search-container">
+      <input type="text" id="ingresosSearchInput" class="search-input" placeholder="Buscar en Ingresos..." oninput="filterIngresosProducts()">
+    </div>
+
+    <div class="progress-bar-container">
+      <span id="ingresosProgressText">Registrado: <strong>0</strong> productos</span>
+    </div>
+
+    <div class="product-list" id="ingresosProductList">
+      <!-- Displayed in exact spreadsheet order -->
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="submitIngresos()">
+        🚀 Guardar Ingresos a Sheets
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== VENTAS (TIRILLA) SCREEN ==================== -->
+  <div id="screen-ventas" class="screen">
+    <div class="screen-header">
+      <button class="btn-back" onclick="openScreen('screen-home')">←</button>
+      <h2>Tirilla de Ventas</h2>
+      <span class="badge">🧾</span>
+    </div>
+
+    <div class="meta-card glass">
+      <div class="meta-input-group">
+        <label for="inputFechaVentas">Fecha de la Tirilla</label>
+        <input type="date" id="inputFechaVentas" onchange="updateVentasFecha()">
+      </div>
+    </div>
+
+    <div class="search-container">
+      <input type="text" id="ventasSearchInput" class="search-input" placeholder="Buscar producto..." oninput="filterVentasProducts()">
+    </div>
+
+    <div class="progress-bar-container">
+      <span id="ventasProgressText">Registrados: <strong>0</strong> productos</span>
+    </div>
+
+    <div class="product-list" id="ventasProductList">
+      <!-- Generated dynamically -->
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="submitVentas()">
+        🚀 Guardar Tirilla a Sheets
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== REPORTE DE INSUMOS SCREEN ==================== -->
+  <div id="screen-reporte" class="screen">
+    <div class="screen-header">
+      <button class="btn-back" onclick="openScreen('screen-home')">←</button>
+      <h2>Faltantes / Sobrantes</h2>
+      <span class="badge">📊</span>
+    </div>
+
+    <div class="meta-card glass">
+      <div class="meta-input-group">
+        <label for="inputFechaReporte">Fecha a Revisar</label>
+        <input type="date" id="inputFechaReporte">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="margin-bottom:16px" onclick="generarReporte()">
+      🔍 Generar Reporte
+    </button>
+
+    <div id="reporteContainer">
+      <div class="empty-state glass">
+        <span class="icon">📊</span>
+        <p>Selecciona una fecha y presiona "Generar Reporte".<br>Necesita la tirilla y los dos cierres de inventario (hoy y ayer) ya cargados.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    // --- SCRIPT CONFIGURATION ---
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzo45isSgsJoCJxyvBl81Eb9fMAMwsB3GS5IRwV9QxTgk7NLfj8BiE8j5CgeP6dWgb6/exec';
+    
+    // --- LOCAL STORAGE KEYS ---
+    const CATALOG_KEY = 'gordoInvCatalog_v2';
+    const DRAFT_KEY = 'gordoInvDraft_v2';
+    const INGRESOS_KEY = 'gordoIngresosDraft_v2';
+
+    // --- GLOBAL VARIABLES ---
+    let CATALOG = [];
+    let currentArea = null;
+    let activeScreen = 'screen-home';
+    let activeOverrideProductId = null;
+
+    // --- DEFAULT CATALOG FALLBACK ---
+    // Employs overrides like Bacon (Tocineta) package sizes
+    const DEFAULT_CATALOG = [
+      { producto: "DESMECHADA", areas: ["pizza", "cocina", "parrilla"], presentacion: "GRAMAJE", gramaje: 0, unidades: 0 },
+      { producto: "JAMON", areas: ["pizza", "cocina"], presentacion: "PAQUETE", gramaje: 500, unidades: 0 },
+      { producto: "QUESO PIZZA", areas: ["pizza", "cocina"], presentacion: "BLOQUE", gramaje: 2500, unidades: 0 },
+      { producto: "CHAMPIÑONES", areas: ["pizza", "cocina"], presentacion: "PAQUETE", gramaje: 250, unidades: 0 },
+      { producto: "SALCHICHA IDEAL", areas: ["pizza", "cocina"], presentacion: "PAQUETE", gramaje: 610, unidades: 10 },
+      { producto: "POLLO PIZZA", areas: ["pizza", "cocina"], presentacion: "GRAMAJE", gramaje: 0, unidades: 0 },
+      { producto: "CARNE PIZZA", areas: ["pizza", "cocina"], presentacion: "GRAMAJE", gramaje: 0, unidades: 0 },
+      { producto: "CHISS TREES", areas: ["cocina"], presentacion: "PAQUETE", gramaje: 0, unidades: 24 },
+      { producto: "MAZORCA", areas: ["pizza", "cocina", "parrilla"], presentacion: "KILO", gramaje: 1000, unidades: 0 },
+      { producto: "SALCHICHA RANCHERA", areas: ["pizza", "cocina"], presentacion: "PAQUETE", gramaje: 460, unidades: 0 },
+      { producto: "SALCHICHON", areas: ["pizza", "cocina"], presentacion: "BARRA", gramaje: 1200, unidades: 0 },
+      { producto: "PAN HAMBURGUESA", areas: ["cocina", "parrilla"], presentacion: "PAQUETE", gramaje: 0, unidades: 10 },
+      { producto: "CARNE HAMBURGUESA", areas: ["cocina", "parrilla"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "POLLO HAMBURGUESA", areas: ["cocina", "parrilla"], presentacion: "CAJA", gramaje: 0, unidades: 24 },
+      { producto: "PAN PERRO", areas: ["cocina", "parrilla"], presentacion: "PAQUETE", gramaje: 0, unidades: 6 },
+      { producto: "SALCHICHA AMERICANA", areas: ["cocina", "parrilla"], presentacion: "PAQUETE", gramaje: 0, unidades: 18 },
+      { producto: "SALCHICHA SUIZA", areas: ["cocina", "parrilla"], presentacion: "PAQUETE", gramaje: 0, unidades: 8 },
+      { producto: "PAPA FRANCESA", areas: ["cocina", "parrilla"], presentacion: "PAQUETE", gramaje: 2500, unidades: 0 },
+      { producto: "CHORIZOS", areas: ["cocina", "parrilla"], presentacion: "PAQUETE", gramaje: 0, unidades: 10 },
+      { producto: "COSTILLITAS", areas: ["cocina"], presentacion: "PAQUETE", gramaje: 0, unidades: 1 },
+      { producto: "CHURRASCOS", areas: ["cocina"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "PECHUGA", areas: ["cocina"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "GASEOSA 350", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "JUGO HIT 500", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "GASEOSA 400", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "GASEOSA 500", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "GASEOSA 1.5", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "MAZORCADA", areas: ["cocina"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "GATORADE", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "GASEOSA 3.0", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "TEE", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "CERVEZA POKER", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "AGUA CON GAS", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "AGUA SIN GAS", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "PICADAS", areas: ["cocina"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "SAVILOE 420", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "CHORIZO CUNCIA", areas: ["cocina", "parrilla"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "CORONA", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "SPEED", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "MALTA 1.5", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "CORONITA", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "BRETAÑA", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "JUGO HIT 1.5", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "TOCINETA", areas: ["pizza", "cocina", "parrilla"], presentacion: "PAQUETE", gramaje: 1000, unidades: 0 }, // Bacon package is 1000g in Cocina
+      { producto: "COLA Y POLA LATA", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "H2O", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "PULPA FRUTA", areas: ["cocina"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "YUCA", areas: ["cocina"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "LOMO DE CERDO", areas: ["cocina"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "PAPA RIPIO", areas: ["cocina"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "QUESO TAJADO", areas: ["cocina", "parrilla"], presentacion: "PAQUETE", gramaje: 2400, unidades: 0 },
+      { producto: "PEPEREONY", areas: ["pizza", "cocina"], presentacion: "PAQUETE", gramaje: 500, unidades: 0 },
+      { producto: "LECHE", areas: ["cocina"], presentacion: "BOLSA", gramaje: 900, unidades: 0 },
+      { producto: "ELECTROLIT", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "COLA Y POLA 1,5", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "MINI CHURRASCO", areas: ["cocina"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "COLA Y POLA 330", areas: ["nevera"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "MASAS HECHAS", areas: ["pizza"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "MASAS QUEDARON", areas: ["pizza"], presentacion: "", gramaje: 0, unidades: 1 }
+    ];
+
+    // Override map for fetched data to fix inconsistencies (like Tocineta's 1000g packaging)
+    const CATALOG_OVERRIDES = {
+      "TOCINETA": { gramaje: 1000, unidades: 0, presentacion: "PAQUETE", areas: ["pizza", "cocina", "parrilla"] }
+    };
+
+    // --- INITIALIZATION ---
+    window.onload = function() {
+      initMetaDate();
+      loadSavedCatalog();
+      loadSavedProductosCatalog();
+      fetchOnlineCatalog();
+      updateDashboardCounters();
+    };
+
+    // Set Date & Turn based on operational closure window (e.g. 2:00am)
+    function initMetaDate() {
+      const now = new Date();
+      // If we are before 2:00 am, treat it as the previous day's shift
+      if (now.getHours() < 2) {
+        now.setDate(now.getDate() - 1);
+      }
+      
+      const draft = loadDraft();
+      
+      // Sync date field
+      const formattedDate = now.toISOString().split('T')[0];
+      document.getElementById('inputFecha').value = draft.fecha || formattedDate;
+      
+      // Sync shift/turn select
+      document.getElementById('selectTurno').value = draft.turno || 'APERTURA';
+      
+      updateMetaDraft();
+    }
+
+    // --- NOTIFICATION HELPERS ---
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('toastNotification');
+      const icon = document.getElementById('toastIcon');
+      const text = document.getElementById('toastMsg');
+      
+      toast.className = `toast toast-${type} active`;
+      icon.innerHTML = type === 'success' ? '✓' : '⚠️';
+      text.innerText = msg;
+      
+      setTimeout(() => {
+        toast.classList.remove('active');
+      }, 3500);
+    }
+
+    // --- CATALOG LOADER (DYNAMIC/FALLBACK) ---
+    function loadSavedCatalog() {
+      try {
+        const stored = localStorage.getItem(CATALOG_KEY);
+        if (stored) {
+          CATALOG = JSON.parse(stored);
+        } else {
+          CATALOG = [...DEFAULT_CATALOG];
+        }
+      } catch (e) {
+        CATALOG = [...DEFAULT_CATALOG];
+      }
+    }
+
+    function saveCatalogToCache(data) {
+      try {
+        localStorage.setItem(CATALOG_KEY, JSON.stringify(data));
+      } catch (e) {}
+    }
+
+    function fetchOnlineCatalog() {
+      // Dynamic fetch using script JSONP to avoid CORS limitations
+      const script = document.createElement('script');
+      script.src = `${SCRIPT_URL}?action=get_data&callback=onOnlineCatalogLoaded`;
+      script.onerror = () => {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        document.getElementById('offlineBanner').style.display = 'block';
+        showToast("Conexión lenta. Usando catálogo local.", "error");
+        renderCurrentView();
+      };
+      document.body.appendChild(script);
+    }
+
+    // Callback called from Apps Script JSONP
+    window.onOnlineCatalogLoaded = function(response) {
+      document.getElementById('loadingOverlay').style.display = 'none';
+      
+      if (response && response.ok) {
+        // Parse & apply overrides
+        CATALOG = response.data.map(p => {
+          let name = p.producto.toUpperCase().trim();
+          if (CATALOG_OVERRIDES[name]) {
+            return {
+              producto: name,
+              areas: CATALOG_OVERRIDES[name].areas || p.areas,
+              presentacion: CATALOG_OVERRIDES[name].presentacion || p.presentacion,
+              gramaje: CATALOG_OVERRIDES[name].gramaje !== undefined ? CATALOG_OVERRIDES[name].gramaje : p.gramaje,
+              unidades: CATALOG_OVERRIDES[name].unidades !== undefined ? CATALOG_OVERRIDES[name].unidades : p.unidades
+            };
+          }
+          return {
+            producto: name,
+            areas: p.areas,
+            presentacion: p.presentacion,
+            gramaje: p.gramaje,
+            unidades: p.unidades
+          };
+        });
+
+        // Ensure missing products from DEFAULT_CATALOG are appended
+        DEFAULT_CATALOG.forEach(defProd => {
+          if (!CATALOG.some(c => c.producto === defProd.producto)) {
+            CATALOG.push(defProd);
+          }
+        });
+
+        saveCatalogToCache(CATALOG);
+        document.getElementById('offlineBanner').style.display = 'none';
+        showToast("Catálogo de productos sincronizado.");
+      } else {
+        document.getElementById('offlineBanner').style.display = 'block';
+        showToast("Error al sincronizar. Usando catálogo local.", "error");
+      }
+      
+      renderCurrentView();
+      updateDashboardCounters();
+    };
+
+    function renderCurrentView() {
+      if (activeScreen === 'screen-form' && currentArea) {
+        renderAreaProducts();
+      } else if (activeScreen === 'screen-ingresos') {
+        renderIngresosProducts();
+      } else if (activeScreen === 'screen-revision') {
+        renderRevisionList();
+      } else if (activeScreen === 'screen-ventas') {
+        initVentasScreen();
+      } else if (activeScreen === 'screen-reporte') {
+        initReporteScreen();
+      }
+    }
+
+    // --- MATHEMATICAL FORMULAS ENGINE ---
+    // Classifies product type dynamically for layout and math conversions
+    function getProductType(p, area) {
+      // In Pizza and Parrilla, toppings/ingredients are measured directly in grams sueltos (gm_libre)
+      const isGramsArea = (area === 'pizza' || area === 'parrilla');
+      
+      if (isGramsArea) {
+        // If it's a meat or ingredient with a package weight, simplify it to grams sueltos
+        if (p.gramaje > 0 || p.presentacion === 'GRAMAJE' || p.producto === 'DESMECHADA' || p.producto === 'POLLO PIZZA' || p.producto === 'CARNE PIZZA') {
+          return 'gm_libre';
+        }
+        // Dough or unit items stay as units
+        if (p.unidades > 0 || p.producto.includes("PAN") || p.producto.includes("MASAS") || p.producto.includes("GASEOSA") || p.producto.includes("HIT")) {
+          return 'und_libre';
+        }
+      }
+
+      // Default type mapping based on sheet configuration
+      if (p.gramaje > 0 && p.unidades > 0) {
+        return 'mix'; // e.g. SALCHICHA IDEAL (Package closure + sueltas units converting to grams)
+      }
+      if (p.gramaje > 0 && p.unidades === 0) {
+        return 'gm_emp'; // e.g. JAMON (Closed Package + loose grams)
+      }
+      if (p.gramaje === 0 && p.unidades > 1) {
+        return 'und_emp'; // e.g. CHISS TREES (Closed Package + loose units)
+      }
+      if (p.presentacion === 'GRAMAJE') {
+        return 'gm_libre'; // e.g. DESMECHADA (grams directly)
+      }
+      
+      // Default to loose units
+      return 'und_libre';
+    }
+
+    // Calculate sum for a single product within an area
+    function calcProductAreaTotal(p, area, getValFn) {
+      const type = getProductType(p, area);
+      const id = `${p.producto}_${area}`;
+      
+      switch (type) {
+        case 'gm_libre': {
+          const gm = getValFn(`${id}_gm`);
+          return { total: gm, unit: 'gm', text: `${gm} gm` };
+        }
+        case 'gm_emp': {
+          const emp = getValFn(`${id}_emp`);
+          const gm = getValFn(`${id}_gm`);
+          const total = (emp * p.gramaje) + gm;
+          const parts = [];
+          if (emp) parts.push(`${emp} pq (${p.gramaje}g)`);
+          if (gm) parts.push(`${gm}g sueltos`);
+          return { total, unit: 'gm', text: parts.join(' + ') || '0 gm' };
+        }
+        case 'mix': {
+          const emp = getValFn(`${id}_emp`);
+          const und = getValFn(`${id}_und`);
+          // Calculate unit weight: e.g. 610g / 10 units = 61g per unit
+          const unitWeight = p.gramaje / p.unidades;
+          const total = Math.round((emp * p.gramaje) + (und * unitWeight));
+          const parts = [];
+          if (emp) parts.push(`${emp} pq (${p.gramaje}g)`);
+          if (und) parts.push(`${und} und (${Math.round(unitWeight)}g)`);
+          return { total, unit: 'gm', text: parts.join(' + ') || '0 gm' };
+        }
+        case 'und_emp': {
+          const emp = getValFn(`${id}_emp`);
+          const und = getValFn(`${id}_und`);
+          const total = (emp * p.unidades) + und;
+          const parts = [];
+          if (emp) parts.push(`${emp} pq (${p.unidades}u)`);
+          if (und) parts.push(`${und} sueltas`);
+          return { total, unit: 'und', text: parts.join(' + ') || '0 und' };
+        }
+        case 'und_libre': {
+          const und = getValFn(`${id}_und`);
+          return { total: und, unit: 'und', text: `${und} und` };
+        }
+        default:
+          return { total: 0, unit: 'und', text: '0 und' };
+      }
+    }
+
+    // Helper functions to get values
+    function getDOMValue(id) {
+      const input = document.getElementById(id);
+      return input ? parseInt(input.value) || 0 : 0;
+    }
+
+    // Helper function to get values
+    function getRawValue(rawObj, id) {
+      return parseInt(rawObj[id]) || 0;
+    }
+
+    // --- LOCAL STORAGE PERSISTENCE (DRAFTS) ---
+    function loadDraft() {
+      try {
+        const stored = localStorage.getItem(DRAFT_KEY);
+        if (stored) {
+          const draft = JSON.parse(stored);
+          if (!draft.raw) draft.raw = {};
+          if (!draft.overrides) draft.overrides = {};
+          return draft;
+        }
+      } catch(e) {}
+      return {
+        fecha: new Date().toISOString().split('T')[0],
+        turno: 'APERTURA',
+        raw: { pizza: {}, cocina: {}, parrilla: {}, nevera: {} },
+        overrides: {}
+      };
+    }
+
+    function saveDraft(draft) {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      } catch (e) {}
+    }
+
+    function updateMetaDraft() {
+      const draft = loadDraft();
+      draft.fecha = document.getElementById('inputFecha').value;
+      draft.turno = document.getElementById('selectTurno').value;
+      saveDraft(draft);
+    }
+
+    function updateDashboardCounters() {
+      const draft = loadDraft();
+      const areas = ['pizza', 'cocina', 'parrilla', 'nevera'];
+      
+      areas.forEach(a => {
+        const prods = CATALOG.filter(p => p.areas.includes(a));
+        const raw = draft.raw[a] || {};
+        let filledCount = 0;
+        
+        prods.forEach(p => {
+          const calc = calcProductAreaTotal(p, a, (id) => getRawValue(raw, id));
+          if (calc.total > 0) filledCount++;
+        });
+
+        const statusEl = document.getElementById(`status-${a}`);
+        if (statusEl) {
+          statusEl.innerText = `${filledCount} / ${prods.length} productos`;
+          const card = statusEl.closest('.area-card');
+          if (filledCount > 0) {
+            card.classList.add('has-data');
+          } else {
+            card.classList.remove('has-data');
+          }
+        }
+      });
+    }
+
+    // --- NAVIGATION ---
+    function openScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      const activeEl = document.getElementById(screenId);
+      if (activeEl) activeEl.classList.add('active');
+      activeScreen = screenId;
+      window.scrollTo(0, 0);
+      renderCurrentView();
+    }
+
+    // --- AREA FORM LOGIC ---
+    const AREA_META = {
+      pizza: { name: 'Pizzero', icon: '🍕' },
+      cocina: { name: 'Cocina', icon: '🍳' },
+      parrilla: { name: 'Parrilla', icon: '🔥' },
+      nevera: { name: 'Neveras', icon: '🧊' }
+    };
+
+    function openArea(areaId) {
+      currentArea = areaId;
+      const meta = AREA_META[areaId];
+      document.getElementById('areaTitle').innerText = meta.name;
+      document.getElementById('areaIcon').innerText = meta.icon;
+      document.getElementById('screen-form').style.setProperty('--area-color', `var(--${areaId})`);
+      document.getElementById('formSearchInput').value = '';
+      
+      openScreen('screen-form');
+    }
+
+    function closeArea() {
+      // Save DOM state of the form to draft
+      const draft = loadDraft();
+      const raw = draft.raw[currentArea] || {};
+      
+      document.querySelectorAll('#formProductList input').forEach(input => {
+        raw[input.id] = parseInt(input.value) || 0;
+      });
+      
+      draft.raw[currentArea] = raw;
+      saveDraft(draft);
+      updateDashboardCounters();
+      openScreen('screen-home');
+    }
+
+    function stepVal(inputId, diff) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        const val = Math.max(0, (parseInt(input.value) || 0) + diff);
+        input.value = val;
+        
+        // Trigger live UI update
+        const card = input.closest('.product-card');
+        if (card) {
+          const prodName = card.dataset.product;
+          const p = CATALOG.find(x => x.producto === prodName);
+          if (p) {
+            const calculation = calcProductAreaTotal(p, currentArea, getDOMValue);
+            const ind = document.getElementById(`ind-${p.producto}`);
+            
+            if (calculation.total > 0) {
+              card.classList.add('filled');
+              ind.innerText = `▸ Total: ${calculation.text}`;
+            } else {
+              card.classList.remove('filled');
+              ind.innerText = '';
+            }
+          }
+        }
+        updateFormProgress();
+      }
+    }
+
+    function onFormInputChanged(input) {
+      const card = input.closest('.product-card');
+      if (card) {
+        const prodName = card.dataset.product;
+        const p = CATALOG.find(x => x.producto === prodName);
+        if (p) {
+          const calculation = calcProductAreaTotal(p, currentArea, getDOMValue);
+          const ind = document.getElementById(`ind-${p.producto}`);
+          
+          if (calculation.total > 0) {
+            card.classList.add('filled');
+            ind.innerText = `▸ Total: ${calculation.text}`;
+          } else {
+            card.classList.remove('filled');
+            ind.innerText = '';
+          }
+        }
+      }
+      updateFormProgress();
+    }
+
+    function updateFormProgress() {
+      const prods = CATALOG.filter(p => p.areas.includes(currentArea));
+      let filledCount = 0;
+      
+      prods.forEach(p => {
+        const calculation = calcProductAreaTotal(p, currentArea, getDOMValue);
+        if (calculation.total > 0) filledCount++;
+      });
+      
+      const pct = prods.length ? Math.round((filledCount / prods.length) * 100) : 0;
+      document.getElementById('formProgressText').innerHTML = `Conteo: <strong>${filledCount} / ${prods.length}</strong> productos`;
+      document.getElementById('formProgressPercent').innerText = `${pct}%`;
+    }
+
+    function renderAreaProducts() {
+      const container = document.getElementById('formProductList');
+      container.innerHTML = '';
+      
+      const prods = CATALOG.filter(p => p.areas.includes(currentArea));
+      const draft = loadDraft();
+      const raw = draft.raw[currentArea] || {};
+
+      prods.forEach(p => {
+        const type = getProductType(p, currentArea);
+        const id = `${p.producto}_${currentArea}`;
+        const calc = calcProductAreaTotal(p, currentArea, (inputId) => getRawValue(raw, inputId));
+        
+        let inputsHtml = '';
+        
+        if (type === 'gm_libre') {
+          const val = raw[`${id}_gm`] || 0;
+          inputsHtml = `
+            <div class="input-row">
+              <span class="input-label">Gramos sueltos (gm):</span>
+              <div class="stepper-container">
+                <button class="stepper-btn" onclick="stepVal('${id}_gm', -50)">-</button>
+                <input type="number" id="${id}_gm" class="stepper-input" value="${val}" min="0" inputmode="numeric" oninput="onFormInputChanged(this)">
+                <button class="stepper-btn" onclick="stepVal('${id}_gm', 50)">+</button>
+              </div>
+              <span class="unit-tag">g</span>
+            </div>
+          `;
+        } else if (type === 'gm_emp') {
+          const empVal = raw[`${id}_emp`] || 0;
+          const gmVal = raw[`${id}_gm`] || 0;
+          const labelEmp = p.presentacion ? p.presentacion.toLowerCase() + 's' : 'paquetes';
+          inputsHtml = `
+            <div class="input-row">
+              <span class="input-label">${labelEmp.toUpperCase()} (${p.gramaje}g):</span>
+              <div class="stepper-container">
+                <button class="stepper-btn" onclick="stepVal('${id}_emp', -1)">-</button>
+                <input type="number" id="${id}_emp" class="stepper-input" value="${empVal}" min="0" inputmode="numeric" oninput="onFormInputChanged(this)">
+                <button class="stepper-btn" onclick="stepVal('${id}_emp', 1)">+</button>
+              </div>
+              <span class="unit-tag">pq</span>
+            </div>
+            <div class="input-row">
+              <span class="input-label">Gramos sueltos:</span>
+              <div class="stepper-container">
+                <button class="stepper-btn" onclick="stepVal('${id}_gm', -50)">-</button>
+                <input type="number" id="${id}_gm" class="stepper-input" value="${gmVal}" min="0" inputmode="numeric" oninput="onFormInputChanged(this)">
+                <button class="stepper-btn" onclick="stepVal('${id}_gm', 50)">+</button>
+              </div>
+              <span class="unit-tag">g</span>
+            </div>
+          `;
+        } else if (type === 'mix') {
+          const empVal = raw[`${id}_emp`] || 0;
+          const undVal = raw[`${id}_und`] || 0;
+          const unitWeight = Math.round(p.gramaje / p.unidades);
+          inputsHtml = `
+            <div class="input-row">
+              <span class="input-label">PAQUETES (${p.gramaje}g):</span>
+              <div class="stepper-container">
+                <button class="stepper-btn" onclick="stepVal('${id}_emp', -1)">-</button>
+                <input type="number" id="${id}_emp" class="stepper-input" value="${empVal}" min="0" inputmode="numeric" oninput="onFormInputChanged(this)">
+                <button class="stepper-btn" onclick="stepVal('${id}_emp', 1)">+</button>
+              </div>
+              <span class="unit-tag">pq</span>
+            </div>
+            <div class="input-row">
+              <span class="input-label">Unidades sueltas (~${unitWeight}g):</span>
+              <div class="stepper-container">
+                <button class="stepper-btn" onclick="stepVal('${id}_und', -1)">-</button>
+                <input type="number" id="${id}_und" class="stepper-input" value="${undVal}" min="0" inputmode="numeric" oninput="onFormInputChanged(this)">
+                <button class="stepper-btn" onclick="stepVal('${id}_und', 1)">+</button>
+              </div>
+              <span class="unit-tag">ud</span>
+            </div>
+          `;
+        } else if (type === 'und_emp') {
+          const empVal = raw[`${id}_emp`] || 0;
+          const undVal = raw[`${id}_und`] || 0;
+          const labelEmp = p.presentacion ? p.presentacion.toLowerCase() + 's' : 'paquetes';
+          inputsHtml = `
+            <div class="input-row">
+              <span class="input-label">${labelEmp.toUpperCase()} (${p.unidades}u):</span>
+              <div class="stepper-container">
+                <button class="stepper-btn" onclick="stepVal('${id}_emp', -1)">-</button>
+                <input type="number" id="${id}_emp" class="stepper-input" value="${empVal}" min="0" inputmode="numeric" oninput="onFormInputChanged(this)">
+                <button class="stepper-btn" onclick="stepVal('${id}_emp', 1)">+</button>
+              </div>
+              <span class="unit-tag">pq</span>
+            </div>
+            <div class="input-row">
+              <span class="input-label">Unidades sueltas:</span>
+              <div class="stepper-container">
+                <button class="stepper-btn" onclick="stepVal('${id}_und', -1)">-</button>
+                <input type="number" id="${id}_und" class="stepper-input" value="${undVal}" min="0" inputmode="numeric" oninput="onFormInputChanged(this)">
+                <button class="stepper-btn" onclick="stepVal('${id}_und', 1)">+</button>
+              </div>
+              <span class="unit-tag">ud</span>
+            </div>
+          `;
+        } else if (type === 'und_libre') {
+          const val = raw[`${id}_und`] || 0;
+          inputsHtml = `
+            <div class="input-row">
+              <span class="input-label">Unidades sueltas (und):</span>
+              <div class="stepper-container">
+                <button class="stepper-btn" onclick="stepVal('${id}_und', -1)">-</button>
+                <input type="number" id="${id}_und" class="stepper-input" value="${val}" min="0" inputmode="numeric" oninput="onFormInputChanged(this)">
+                <button class="stepper-btn" onclick="stepVal('${id}_und', 1)">+</button>
+              </div>
+              <span class="unit-tag">ud</span>
+            </div>
+          `;
+        }
+
+        const card = document.createElement('div');
+        card.className = `product-card glass ${calc.total > 0 ? 'filled' : ''}`;
+        card.dataset.product = p.producto;
+        card.innerHTML = `
+          <div class="product-info">
+            <div>
+              <div class="product-title">${p.producto}</div>
+              <div class="product-meta-desc">${p.presentacion || 'BASE'} ${p.gramaje > 0 ? `· ${p.gramaje}g` : ''} ${p.unidades > 0 ? `· ${p.unidades}u` : ''}</div>
+            </div>
+            <div class="product-total-indicator" id="ind-${p.producto}">${calc.total > 0 ? `▸ Total: ${calc.text}` : ''}</div>
+          </div>
+          <div class="product-inputs">
+            ${inputsHtml}
+          </div>
+        `;
+        
+        container.appendChild(card);
+      });
+
+      updateFormProgress();
+    }
+
+    function filterFormProducts() {
+      const q = document.getElementById('formSearchInput').value.toLowerCase().trim();
+      document.querySelectorAll('#formProductList .product-card').forEach(card => {
+        const name = card.dataset.product.toLowerCase();
+        if (name.includes(q)) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    // --- REVISION SCREEN LOGIC (CONSOLIDATION ENGINE) ---
+    function getConsolidatedInventory() {
+      const draft = loadDraft();
+      const items = [];
+
+      CATALOG.forEach(p => {
+        let totalVal = 0;
+        let unit = 'und';
+        const details = [];
+        const areasCounted = [];
+
+        p.areas.forEach(a => {
+          const raw = draft.raw[a] || {};
+          const calc = calcProductAreaTotal(p, a, (id) => getRawValue(raw, id));
+          
+          if (calc.total > 0) {
+            totalVal += calc.total;
+            unit = calc.unit;
+            details.push(`${AREA_META[a].name}: ${calc.text}`);
+            areasCounted.push(a.toUpperCase());
+          }
+        });
+
+        // Check if override exists
+        let overridden = false;
+        let originalVal = totalVal;
+        if (draft.overrides[p.producto] !== undefined && draft.overrides[p.producto] !== null) {
+          totalVal = draft.overrides[p.producto];
+          overridden = true;
+        }
+
+        if (originalVal > 0 || overridden) {
+          items.push({
+            producto: p.producto,
+            total: totalVal,
+            originalTotal: originalVal,
+            unit: unit,
+            details: details.join(' + ') || 'Editado manualmente',
+            areas: areasCounted.join(', ') || 'REVISIÓN',
+            overridden: overridden
+          });
+        }
+      });
+
+      return items;
+    }
+
+    function renderRevisionList() {
+      const container = document.getElementById('revisionListContainer');
+      container.innerHTML = '';
+      
+      const q = document.getElementById('revisionSearchInput').value.toLowerCase().trim();
+      const items = getConsolidatedInventory();
+      
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state glass">
+            <span class="icon">🔍</span>
+            <p>No hay registros de inventario ingresados aún.<br>Ve a las áreas y coloca valores.</p>
+          </div>
+        `;
+        return;
+      }
+
+      let filteredItems = items.filter(it => it.producto.toLowerCase().includes(q));
+
+      const tableCard = document.createElement('div');
+      tableCard.className = 'revision-card glass';
+      
+      let rowsHtml = filteredItems.map(it => {
+        return `
+          <tr onclick="openOverrideModal('${it.producto}', ${it.total})">
+            <td>
+              <div class="rev-name">${it.producto}</div>
+              <div class="rev-detail">${it.details}</div>
+              <span class="rev-areas">${it.areas}</span>
+            </td>
+            <td class="rev-total ${it.overridden ? 'overridden' : ''}">
+              ${it.total} ${it.unit}
+              ${it.overridden ? '<div style="font-size:0.6rem; color:var(--ingresos); font-weight:600">MODIFICADO</div>' : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      tableCard.innerHTML = `
+        <div class="revision-title">Resumen Consolidado (Toca un producto para corregir)</div>
+        <table class="revision-table">
+          <thead>
+            <tr>
+              <th>Producto / Desglose</th>
+              <th style="text-align:right">Total Final</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml || '<tr><td colspan="2" style="text-align:center;color:var(--text-muted)">Ninguno coincide con la búsqueda</td></tr>'}
+          </tbody>
+        </table>
+      `;
+
+      container.appendChild(tableCard);
+    }
+
+    // --- OVERRIDE MODAL ACTIONS ---
+    function openOverrideModal(prodName, currentTotal) {
+      activeOverrideProductId = prodName;
+      document.getElementById('modalProdName').innerText = prodName;
+      document.getElementById('modalProdValue').value = currentTotal;
+      document.getElementById('overrideModal').classList.add('active');
+      
+      // Focus and select the input
+      setTimeout(() => {
+        document.getElementById('modalProdValue').focus();
+        document.getElementById('modalProdValue').select();
+      }, 100);
+    }
+
+    function closeOverrideModal() {
+      document.getElementById('overrideModal').classList.remove('active');
+      activeOverrideProductId = null;
+    }
+
+    document.getElementById('btnSaveOverride').onclick = function() {
+      if (activeOverrideProductId) {
+        const val = parseInt(document.getElementById('modalProdValue').value);
+        const draft = loadDraft();
+        
+        if (isNaN(val) || val <= 0) {
+          delete draft.overrides[activeOverrideProductId];
+        } else {
+          draft.overrides[activeOverrideProductId] = val;
+        }
+        
+        saveDraft(draft);
+        closeOverrideModal();
+        renderRevisionList();
+        showToast(`Valor consolidado actualizado.`);
+      }
+    };
+
+    // --- SUBMIT INVENTORY TO GOOGLE SHEETS ---
+    function submitInventory() {
+      const items = getConsolidatedInventory();
+      if (items.length === 0) {
+        showToast("No hay registros para enviar.", "error");
+        return;
+      }
+
+      const draft = loadDraft();
+      const idEnvio = 'env_' + Date.now();
+      
+      // Structure consolidated list to post
+      const payload = {
+        action: 'guardar_inventario_completo', // matches doPost in Code.gs
+        idEnvio: idEnvio,
+        fecha: draft.fecha,
+        turno: draft.turno,
+        items: items.map(it => ({
+          nombre: it.producto,
+          total: it.total,
+          areas: it.areas,
+          unit: it.unit
+        }))
+      };
+
+      document.getElementById('loadingText').innerText = "Guardando inventario...";
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      postToGoogleSheets(payload, () => {
+        // Success: Clear raw inventory inputs & overrides
+        draft.raw = { pizza: {}, cocina: {}, parrilla: {}, nevera: {} };
+        draft.overrides = {};
+        saveDraft(draft);
+        updateDashboardCounters();
+        
+        document.getElementById('loadingOverlay').style.display = 'none';
+        showToast("¡Inventario enviado con éxito!");
+        openScreen('screen-home');
+      });
+    }
+
+    // --- INGRESOS SCREEN LOGIC (EXACT SPREADSHEET ORDER) ---
+    function getIngresosDraft() {
+      try {
+        const stored = localStorage.getItem(INGRESOS_KEY);
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+      return {};
+    }
+
+    function saveIngresosDraft(data) {
+      try {
+        localStorage.setItem(INGRESOS_KEY, JSON.stringify(data));
+      } catch (e) {}
+    }
+
+    function stepIngreso(inputId, diff) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        const val = Math.max(0, (parseInt(input.value) || 0) + diff);
+        input.value = val;
+        
+        const card = input.closest('.product-card');
+        if (card) {
+          if (val > 0) {
+            card.classList.add('filled');
+          } else {
+            card.classList.remove('filled');
+          }
+        }
+        updateIngresosProgress();
+        
+        // Auto-save draft
+        const draft = getIngresosDraft();
+        draft[inputId] = val;
+        saveIngresosDraft(draft);
+      }
+    }
+
+    function onIngresosInputChanged(input) {
+      const card = input.closest('.product-card');
+      if (card) {
+        const val = parseInt(input.value) || 0;
+        if (val > 0) {
+          card.classList.add('filled');
+        } else {
+          card.classList.remove('filled');
+        }
+      }
+      updateIngresosProgress();
+      
+      const draft = getIngresosDraft();
+      draft[input.id] = parseInt(input.value) || 0;
+      saveIngresosDraft(draft);
+    }
+
+    function updateIngresosProgress() {
+      let count = 0;
+      document.querySelectorAll('#ingresosProductList input').forEach(input => {
+        if ((parseInt(input.value) || 0) > 0) count++;
+      });
+      document.getElementById('ingresosProgressText').innerHTML = `Registrado: <strong>${count}</strong> productos con ingreso`;
+    }
+
+    function renderIngresosProducts() {
+      const container = document.getElementById('ingresosProductList');
+      container.innerHTML = '';
+      
+      const draft = getIngresosDraft();
+
+      // Display in the EXACT order fetched from the sheet (no sorting!)
+      CATALOG.forEach(p => {
+        const id = `ing_${p.producto}`;
+        const val = draft[id] || 0;
+        
+        // Presentation units/labels
+        let labelUnit = 'unidades';
+        if (p.gramaje > 0) {
+          labelUnit = p.presentacion ? p.presentacion.toLowerCase() + 's' : 'paquetes';
+        } else if (p.unidades > 1) {
+          labelUnit = p.presentacion ? p.presentacion.toLowerCase() + 's' : 'paquetes';
+        } else {
+          labelUnit = 'unidades';
+        }
+
+        const card = document.createElement('div');
+        card.className = `product-card glass ${val > 0 ? 'filled' : ''}`;
+        card.dataset.product = p.producto;
+        card.style.setProperty('--area-color', 'var(--ingresos)');
+        card.innerHTML = `
+          <div class="product-info">
+            <div>
+              <div class="product-title">${p.producto}</div>
+              <div class="product-meta-desc">${p.presentacion || 'BASE'} ${p.gramaje > 0 ? `· ${p.gramaje}g` : ''} ${p.unidades > 1 ? `· ${p.unidades}u` : ''}</div>
+            </div>
+          </div>
+          <div class="product-inputs">
+            <div class="input-row">
+              <span class="input-label">Cantidad (${labelUnit}):</span>
+              <div class="stepper-container">
+                <button class="stepper-btn" onclick="stepIngreso('${id}', -1)">-</button>
+                <input type="number" id="${id}" class="stepper-input" value="${val}" min="0" inputmode="numeric" oninput="onIngresosInputChanged(this)">
+                <button class="stepper-btn" onclick="stepIngreso('${id}', 1)">+</button>
+              </div>
+              <span class="unit-tag">ud</span>
+            </div>
+          </div>
+        `;
+        
+        container.appendChild(card);
+      });
+
+      updateIngresosProgress();
+    }
+
+    function filterIngresosProducts() {
+      const q = document.getElementById('ingresosSearchInput').value.toLowerCase().trim();
+      document.querySelectorAll('#ingresosProductList .product-card').forEach(card => {
+        const name = card.dataset.product.toLowerCase();
+        if (name.includes(q)) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    // --- SUBMIT INGRESOS TO GOOGLE SHEETS ---
+    function submitIngresos() {
+      const draft = getIngresosDraft();
+      const items = [];
+      const parentDraft = loadDraft();
+
+      CATALOG.forEach(p => {
+        const id = `ing_${p.producto}`;
+        const val = draft[id] || 0;
+        
+        if (val > 0) {
+          let convertedTotal = val;
+          let baseUnit = 'und';
+          
+          if (p.gramaje > 0) {
+            convertedTotal = val * p.gramaje;
+            baseUnit = 'gm';
+          } else if (p.unidades > 1) {
+            convertedTotal = val * p.unidades;
+            baseUnit = 'und';
+          }
+          
+          items.push({
+            nombre: p.producto,
+            total: convertedTotal,
+            unit: baseUnit
+          });
+        }
+      });
+
+      if (items.length === 0) {
+        showToast("No hay ingresos para guardar.", "error");
+        return;
+      }
+
+      const idEnvio = 'env_' + Date.now();
+      const payload = {
+        action: 'guardar_ingreso',
+        idEnvio: idEnvio,
+        fecha: parentDraft.fecha,
+        items: items
+      };
+
+      document.getElementById('loadingText').innerText = "Guardando ingresos...";
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      postToGoogleSheets(payload, () => {
+        // Success: Clear ingresos drafts
+        localStorage.removeItem(INGRESOS_KEY);
+        
+        document.getElementById('loadingOverlay').style.display = 'none';
+        showToast("¡Ingresos registrados con éxito!");
+        openScreen('screen-home');
+      });
+    }
+
+    // --- VENTAS (TIRILLA) SCREEN LOGIC ---
+    const VENTAS_KEY = 'gordoVentasDraft_v1';
+    const PRODUCTOS_CATALOG_KEY = 'gordoProductosCatalog_v1';
+    let PRODUCTOS_CATALOG = [];
+
+    function loadSavedProductosCatalog() {
+      try {
+        const stored = localStorage.getItem(PRODUCTOS_CATALOG_KEY);
+        if (stored) PRODUCTOS_CATALOG = JSON.parse(stored);
+      } catch (e) {}
+    }
+
+    function fetchProductosCatalog() {
+      const script = document.createElement('script');
+      script.src = `${SCRIPT_URL}?action=get_productos&callback=onProductosCatalogLoaded`;
+      script.onerror = () => showToast('No se pudo sincronizar el catálogo de productos.', 'error');
+      document.body.appendChild(script);
+    }
+
+    window.onProductosCatalogLoaded = function (response) {
+      if (response && response.ok) {
+        PRODUCTOS_CATALOG = response.data;
+        try { localStorage.setItem(PRODUCTOS_CATALOG_KEY, JSON.stringify(PRODUCTOS_CATALOG)); } catch (e) {}
+        if (activeScreen === 'screen-ventas') renderVentasProducts();
+      } else {
+        showToast('Error al sincronizar productos. Usando catálogo local.', 'error');
+      }
+    };
+
+    function getVentasDraft() {
+      try {
+        const stored = localStorage.getItem(VENTAS_KEY);
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+      return { fecha: new Date().toISOString().split('T')[0], cantidades: {} };
+    }
+
+    function saveVentasDraft(draft) {
+      try { localStorage.setItem(VENTAS_KEY, JSON.stringify(draft)); } catch (e) {}
+    }
+
+    function updateVentasFecha() {
+      const draft = getVentasDraft();
+      draft.fecha = document.getElementById('inputFechaVentas').value;
+      saveVentasDraft(draft);
+    }
+
+    function initVentasScreen() {
+      const draft = getVentasDraft();
+      document.getElementById('inputFechaVentas').value = draft.fecha;
+      if (PRODUCTOS_CATALOG.length === 0) fetchProductosCatalog();
+      renderVentasProducts();
+    }
+
+    function stepVenta(codigo, diff) {
+      const input = document.getElementById(`venta_${codigo}`);
+      if (input) {
+        const val = Math.max(0, (parseInt(input.value) || 0) + diff);
+        input.value = val;
+        onVentaInputChanged(input, codigo);
+      }
+    }
+
+    function onVentaInputChanged(input, codigo) {
+      const val = parseInt(input.value) || 0;
+      const card = input.closest('.product-card');
+      if (card) card.classList.toggle('filled', val > 0);
+
+      const draft = getVentasDraft();
+      if (val > 0) draft.cantidades[codigo] = val;
+      else delete draft.cantidades[codigo];
+      saveVentasDraft(draft);
+
+      updateVentasProgress();
+    }
+
+    function updateVentasProgress() {
+      const draft = getVentasDraft();
+      const count = Object.keys(draft.cantidades).length;
+      document.getElementById('ventasProgressText').innerHTML = `Registrados: <strong>${count}</strong> productos`;
+    }
+
+    function renderVentasProducts() {
+      const container = document.getElementById('ventasProductList');
+      container.innerHTML = '';
+      const draft = getVentasDraft();
+
+      if (PRODUCTOS_CATALOG.length === 0) {
+        container.innerHTML = `<div class="empty-state glass"><span class="icon">⏳</span><p>Cargando catálogo de productos...</p></div>`;
+        return;
+      }
+
+      PRODUCTOS_CATALOG.forEach(p => {
+        const val = draft.cantidades[p.codigo] || 0;
+        const card = document.createElement('div');
+        card.className = `product-card glass ${val > 0 ? 'filled' : ''}`;
+        card.dataset.product = p.nombre;
+        card.style.setProperty('--area-color', 'var(--ventas)');
+        card.innerHTML = `
+          <div class="product-info">
+            <div>
+              <div class="product-title">${p.nombre}</div>
+              <div class="product-meta-desc">${p.categoria || ''} · $${p.precio.toLocaleString('es-CO')}</div>
+            </div>
+          </div>
+          <div class="product-inputs">
+            <div class="input-row">
+              <span class="input-label">Cantidad vendida:</span>
+              <div class="stepper-container">
+                <button class="stepper-btn" onclick="stepVenta('${p.codigo}', -1)">-</button>
+                <input type="number" id="venta_${p.codigo}" class="stepper-input" value="${val}" min="0" inputmode="numeric" oninput="onVentaInputChanged(this, '${p.codigo}')">
+                <button class="stepper-btn" onclick="stepVenta('${p.codigo}', 1)">+</button>
+              </div>
+              <span class="unit-tag">ud</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      updateVentasProgress();
+    }
+
+    function filterVentasProducts() {
+      const q = document.getElementById('ventasSearchInput').value.toLowerCase().trim();
+      document.querySelectorAll('#ventasProductList .product-card').forEach(card => {
+        card.style.display = card.dataset.product.toLowerCase().includes(q) ? 'block' : 'none';
+      });
+    }
+
+    function submitVentas() {
+      const draft = getVentasDraft();
+      const items = PRODUCTOS_CATALOG
+        .filter(p => (draft.cantidades[p.codigo] || 0) > 0)
+        .map(p => ({
+          codigo: p.codigo,
+          nombre: p.nombre,
+          cantidad: draft.cantidades[p.codigo],
+          precioUnitario: p.precio
+        }));
+
+      if (items.length === 0) {
+        showToast('No hay ventas para guardar.', 'error');
+        return;
+      }
+
+      const payload = {
+        action: 'guardar_ventas',
+        idEnvio: 'env_' + Date.now(),
+        fecha: draft.fecha,
+        items: items
+      };
+
+      document.getElementById('loadingText').innerText = 'Guardando tirilla...';
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      postToGoogleSheets(payload, () => {
+        localStorage.removeItem(VENTAS_KEY);
+        document.getElementById('loadingOverlay').style.display = 'none';
+        showToast('¡Tirilla guardada con éxito!');
+        openScreen('screen-home');
+      });
+    }
+
+    // --- REPORTE DE FALTANTES / SOBRANTES ---
+    function initReporteScreen() {
+      if (!document.getElementById('inputFechaReporte').value) {
+        document.getElementById('inputFechaReporte').value = new Date().toISOString().split('T')[0];
+      }
+    }
+
+    function generarReporte() {
+      const fecha = document.getElementById('inputFechaReporte').value;
+      if (!fecha) { showToast('Selecciona una fecha.', 'error'); return; }
+
+      document.getElementById('reporteContainer').innerHTML = `<div class="empty-state glass"><span class="icon">⏳</span><p>Calculando...</p></div>`;
+
+      const callbackName = `onReporteLoaded_${Date.now()}`;
+      window[callbackName] = function (response) {
+        delete window[callbackName];
+        const scriptNode = document.getElementById(callbackName);
+        if (scriptNode) scriptNode.remove();
+
+        if (response && response.ok) {
+          renderReporte(response.data);
+        } else {
+          document.getElementById('reporteContainer').innerHTML = `<div class="empty-state glass"><span class="icon">⚠️</span><p>Error al generar el reporte.<br>${(response && response.error) || ''}</p></div>`;
+        }
+      };
+
+      const script = document.createElement('script');
+      script.id = callbackName;
+      script.src = `${SCRIPT_URL}?action=reporte_insumos&fecha=${encodeURIComponent(fecha)}&callback=${callbackName}`;
+      script.onerror = () => {
+        document.getElementById('reporteContainer').innerHTML = `<div class="empty-state glass"><span class="icon">⚠️</span><p>No se pudo conectar. Intenta de nuevo.</p></div>`;
+      };
+      document.body.appendChild(script);
+    }
+
+    function renderReporte(data) {
+      const container = document.getElementById('reporteContainer');
+      container.innerHTML = '';
+
+      const faltantes = data.filter(r => r.estado === 'FALTO');
+      const sobrantes = data.filter(r => r.estado === 'SOBRO');
+      const sinConteo = data.filter(r => r.estado === 'SIN CONTEO');
+
+      if (faltantes.length === 0 && sobrantes.length === 0) {
+        container.innerHTML += `<div class="empty-state glass"><span class="icon">✅</span><p>Todo cuadrado. No hay faltantes ni sobrantes.</p></div>`;
+      }
+
+      function renderGroup(title, icon, items, cssClass) {
+        if (items.length === 0) return '';
+        let rows = items.map(r => `
+          <div class="reporte-row glass ${cssClass}">
+            <div>
+              <div class="reporte-nombre">${r.insumo}</div>
+              <div class="reporte-detalle">Debía haber: ${r.debeHaber} · Real: ${r.existeReal} ${r.unidad || ''}</div>
+            </div>
+            <div class="reporte-diferencia ${cssClass}">${r.diferencia > 0 ? '+' : ''}${r.diferencia}</div>
+          </div>
+        `).join('');
+        return `<div class="reporte-section-title">${icon} ${title} (${items.length})</div>${rows}`;
+      }
+
+      container.innerHTML += renderGroup('Faltó', '🔴', faltantes, 'falto');
+      container.innerHTML += renderGroup('Sobró', '🟢', sobrantes, 'sobro');
+
+      if (sinConteo.length > 0) {
+        container.innerHTML += `<div class="reporte-section-title">⚪ Sin conteo físico (${sinConteo.length})</div>
+          <div class="reporte-detalle" style="margin-bottom:8px">Estos insumos no están en la app de conteo, así que no se pueden comparar.</div>`;
+      }
+
+      container.innerHTML += `<div class="toggle-detalle" onclick="toggleDetalleCompleto()">Ver detalle completo ▾</div>
+        <div id="detalleCompletoContainer" style="display:none"></div>`;
+
+      window._reporteDataActual = data;
+    }
+
+    function toggleDetalleCompleto() {
+      const el = document.getElementById('detalleCompletoContainer');
+      const showing = el.style.display !== 'none';
+      if (showing) {
+        el.style.display = 'none';
+        return;
+      }
+      const data = window._reporteDataActual || [];
+      el.innerHTML = `
+        <table class="detalle-table glass" style="padding:8px">
+          <tr><td><strong>Insumo</strong></td><td><strong>Había ayer</strong></td><td><strong>Ingreso</strong></td><td><strong>Gasto</strong></td><td><strong>Gasto J/C</strong></td><td><strong>Debe haber</strong></td><td><strong>Existe real</strong></td><td><strong>Estado</strong></td></tr>
+          ${data.map(r => `<tr><td>${r.insumo}</td><td>${r.habiaAyer}</td><td>${r.ingreso}</td><td>${r.gasto}</td><td>${r.gastoJC}</td><td>${r.debeHaber}</td><td>${r.existeReal}</td><td>${r.estado}</td></tr>`).join('')}
+        </table>
+      `;
+      el.style.display = 'block';
+    }
+
+    // --- CORS VERIFICATION & iframe POST FLOW ---
+    function postToGoogleSheets(payload, onSuccess) {
+      const idEnvio = payload.idEnvio;
+      
+      // Create hidden iframe post request
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = SCRIPT_URL;
+      // Target a dynamically generated temporary iframe to prevent navigation hijack
+      const iframeName = `iframe_${Date.now()}`;
+      const iframe = document.createElement('iframe');
+      iframe.name = iframeName;
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+
+      form.target = iframeName;
+      form.style.display = 'none';
+
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'payload';
+      input.value = JSON.stringify(payload);
+
+      form.appendChild(input);
+      document.body.appendChild(form);
+      
+      // Submit form
+      form.submit();
+      
+      // Clean up form immediately
+      document.body.removeChild(form);
+
+      // Verify transaction status via JSONP polling (gives doPost time to write)
+      setTimeout(() => {
+        verifyTransactionReceipt(idEnvio, 0, () => {
+          document.body.removeChild(iframe);
+          onSuccess();
+        }, () => {
+          document.body.removeChild(iframe);
+          document.getElementById('loadingOverlay').style.display = 'none';
+          showToast("Error de conexión. Inténtalo de nuevo.", "error");
+        });
+      }, 1500);
+    }
+
+    // JSONP verification loops
+    function verifyTransactionReceipt(idEnvio, attempt, onOk, onFail) {
+      const callbackName = `jsonpVerify_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      
+      window[callbackName] = function(response) {
+        delete window[callbackName];
+        const scriptNode = document.getElementById(callbackName);
+        if (scriptNode) scriptNode.remove();
+        
+        if (response && response.ok && response.confirmado) {
+          onOk();
+        } else {
+          // Retry logic (up to 6 times, waiting 1.5s between retries)
+          if (attempt >= 6) {
+            onFail();
+          } else {
+            setTimeout(() => {
+              verifyTransactionReceipt(idEnvio, attempt + 1, onOk, onFail);
+            }, 1500);
+          }
+        }
+      };
+
+      const script = document.createElement('script');
+      script.id = callbackName;
+      script.src = `${SCRIPT_URL}?action=verificar_envio&id=${encodeURIComponent(idEnvio)}&callback=${callbackName}`;
+      script.onerror = () => {
+        delete window[callbackName];
+        script.remove();
+        if (attempt >= 6) {
+          onFail();
+        } else {
+          setTimeout(() => {
+            verifyTransactionReceipt(idEnvio, attempt + 1, onOk, onFail);
+          }, 2000);
+        }
+      };
+      
+      document.body.appendChild(script);
+    }
+  </script>
+</body>
+</html>

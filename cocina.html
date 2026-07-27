@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Donde el Gordo - Cocina</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+body{font-family:'Segoe UI',sans-serif;background:#1a0a00;color:#fff;min-height:100vh;}
+
+header{position:sticky;top:0;z-index:20;background:#1a0a00;border-bottom:1px solid rgba(200,132,26,0.3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.header-titulo{font-size:1.2rem;font-weight:800;color:#c8841a;letter-spacing:1px;}
+.header-sub{font-size:0.72rem;color:#e8c87a;letter-spacing:2px;}
+.header-derecha{display:flex;align-items:center;gap:12px;}
+.contador-activos{background:rgba(200,132,26,0.15);border:1px solid rgba(200,132,26,0.4);color:#e8a832;padding:6px 14px;border-radius:20px;font-weight:700;font-size:0.9rem;}
+.btn-vista{padding:10px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:0.9rem;font-weight:600;cursor:pointer;}
+.btn-vista.activa{background:linear-gradient(135deg,#c8841a,#e8a832);color:#1a0a00;border-color:transparent;}
+
+main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+
+.vacio-msg{grid-column:1/-1;text-align:center;color:rgba(240,224,176,0.5);padding:60px 0;font-size:1rem;}
+
+.pedido-card{background:rgba(255,255,255,0.05);border:1px solid rgba(200,132,26,0.25);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:border-color 0.3s, box-shadow 0.3s;}
+.pedido-card.urgente{border-color:#e05050;box-shadow:0 0 0 1px rgba(224,80,80,0.4);}
+.pedido-card.nuevo{animation:flash 1.2s ease-in-out 2;}
+@keyframes flash{0%,100%{background:rgba(255,255,255,0.05);}50%{background:rgba(200,132,26,0.25);}}
+.pedido-card.completo{opacity:0.55;}
+
+.pedido-header{display:flex;justify-content:space-between;align-items:flex-start;}
+.pedido-mesa{font-weight:800;font-size:1.05rem;color:#c8841a;}
+.pedido-mesero{font-size:0.8rem;color:rgba(240,224,176,0.75);margin-top:2px;}
+.pedido-tiempo{text-align:right;}
+.pedido-hora{font-size:0.78rem;color:rgba(240,224,176,0.6);}
+.pedido-transcurrido{font-weight:800;font-size:1.05rem;}
+.pedido-transcurrido.ok{color:#e8a832;}
+.pedido-transcurrido.urgente{color:#e05050;}
+
+.item-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,0.06);}
+.item-info{flex:1;min-width:0;}
+.item-nombre{font-weight:700;font-size:0.93rem;}
+.item-obs{font-size:0.78rem;color:rgba(240,224,176,0.65);margin-top:2px;}
+.item-estado-btn{flex:none;padding:8px 12px;border-radius:10px;border:none;font-size:0.8rem;font-weight:700;cursor:pointer;min-width:110px;text-align:center;}
+.item-estado-btn.est-pendiente{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);}
+.item-estado-btn.est-en_preparacion{background:rgba(200,132,26,0.3);color:#e8a832;}
+.item-estado-btn.est-listo{background:rgba(90,140,220,0.3);color:#7db2f0;}
+.item-estado-btn.est-entregado{background:rgba(70,180,100,0.25);color:#5fd489;}
+
+.pedido-footer{display:flex;justify-content:flex-end;}
+.btn-completo{padding:10px 16px;border-radius:10px;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;color:#1a0a00;font-weight:700;font-size:0.85rem;cursor:pointer;}
+.pedido-completo-msg{font-size:0.85rem;color:#5fd489;font-weight:700;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-titulo">DONDE EL GORDO</div>
+    <div class="header-sub">COCINA</div>
+  </div>
+  <div class="header-derecha">
+    <div class="contador-activos" id="contador-activos">0 activos</div>
+    <button class="btn-vista activa" id="btn-vista-activos" onclick="cambiarVista('activos')">Activos</button>
+    <button class="btn-vista" id="btn-vista-historial" onclick="cambiarVista('historial')">Historial</button>
+  </div>
+</header>
+
+<main id="lista-pedidos"></main>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlYXsASFJpzw9arECb79_CLb3l5w-4cithWANH57ydFHbC2-788aFJddvWIxOjOyEr/exec';
+const ESTADOS_COCINA = ['Pendiente', 'En preparación', 'Listo', 'Entregado'];
+const INTERVALO_POLLING_MS = 12000;
+const MINUTOS_URGENTE = 15;
+
+// Datos de muestra para poder ver y probar la pantalla mientras el backend
+// (modulo-3-apps-script-comanda-cocina.gs.txt) no esté desplegado todavía.
+function pedidosMock() {
+  const ahora = new Date();
+  const haceMin = m => {
+    const d = new Date(ahora.getTime() - m * 60000);
+    return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+  };
+  return [
+    { id_pedido: 'mock-1', hora: haceMin(22), mesa: '4', mesero: 'Carlos', items: [
+      { fila: 2, producto: 'Churrasco', cantidad: 1, observacion: 'Término medio', estado: 'En preparación' },
+      { fila: 3, producto: 'Gaseosa 350 ml', cantidad: 2, observacion: '', estado: 'Entregado' }
+    ], completo: false },
+    { id_pedido: 'mock-2', hora: haceMin(5), mesa: '7', mesero: '', items: [
+      { fila: 4, producto: 'Sencilla', cantidad: 1, observacion: 'Sin cebolla', estado: 'Pendiente' },
+      { fila: 5, producto: 'Porción Papa Francesa', cantidad: 1, observacion: '', estado: 'Pendiente' }
+    ], completo: false },
+    { id_pedido: 'mock-3', hora: haceMin(40), mesa: '2', mesero: 'Ana', items: [
+      { fila: 6, producto: 'Pizza Hawaiana', cantidad: 2, observacion: '', estado: 'Entregado' }
+    ], completo: true }
+  ];
+}
+
+let pedidos = [];
+let vista = 'activos';
+let idsConocidos = new Set();
+let primerCargue = true;
+let audioCtx = null;
+
+// Cambios optimistas todavía no confirmados por el servidor. El polling automático
+// (cada INTERVALO_POLLING_MS) puede traer una foto vieja de Ventas si llega justo
+// antes de que el fetch de actualizar_estado_item/marcar_pedido_completo termine de
+// guardarse — sin esto, esa foto vieja pisaba el clic recién hecho y el botón
+// parpadeaba de vuelta a un estado anterior (hallazgo de pruebas 2026-07-22).
+const estadoItemPendiente = {}; // fila -> estado optimista en vuelo
+const pedidosCompletoPendiente = new Set(); // id_pedido marcado completo, en vuelo
+
+function aplicarPendientes(listaPedidos) {
+  listaPedidos.forEach(p => {
+    p.items.forEach(it => {
+      if (estadoItemPendiente[it.fila] !== undefined) it.estado = estadoItemPendiente[it.fila];
+    });
+    if (pedidosCompletoPendiente.has(p.id_pedido)) {
+      p.items.forEach(it => { it.estado = 'Entregado'; });
+    }
+    p.completo = p.items.every(it => it.estado === 'Entregado');
+  });
+}
+
+function beep() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.4);
+  } catch (e) { /* navegador sin soporte de audio - se ignora */ }
+}
+
+function claseEstado(estado) {
+  return 'est-' + estado.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '_');
+}
+
+function minutosTranscurridos(horaStr) {
+  const [h, m] = horaStr.split(':').map(Number);
+  const ahora = new Date();
+  const inicio = new Date(ahora);
+  inicio.setHours(h, m, 0, 0);
+  let diffMin = Math.round((ahora - inicio) / 60000);
+  if (diffMin < 0) diffMin += 24 * 60; // por si cruza medianoche
+  return diffMin;
+}
+
+async function cargarPedidos(esPolling) {
+  try {
+    const res = await fetch(SCRIPT_URL + '?accion=listar_pedidos_cocina');
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.pedidos)) {
+      pedidos = data.pedidos;
+    } else {
+      pedidos = pedidosMock();
+    }
+  } catch (e) {
+    pedidos = pedidosMock();
+  }
+  aplicarPendientes(pedidos);
+  detectarNuevos();
+  render();
+}
+
+function detectarNuevos() {
+  const idsActivosAhora = pedidos.filter(p => !p.completo).map(p => p.id_pedido);
+  if (!primerCargue) {
+    const nuevos = idsActivosAhora.filter(id => !idsConocidos.has(id));
+    if (nuevos.length > 0) beep();
+  }
+  idsConocidos = new Set(idsActivosAhora);
+  primerCargue = false;
+}
+
+function cambiarVista(v) {
+  vista = v;
+  document.getElementById('btn-vista-activos').classList.toggle('activa', v === 'activos');
+  document.getElementById('btn-vista-historial').classList.toggle('activa', v === 'historial');
+  render();
+}
+
+function render() {
+  const activos = pedidos.filter(p => !p.completo);
+  document.getElementById('contador-activos').textContent = activos.length + (activos.length === 1 ? ' activo' : ' activos');
+
+  const lista = vista === 'activos' ? activos : pedidos.filter(p => p.completo);
+  const cont = document.getElementById('lista-pedidos');
+
+  if (lista.length === 0) {
+    cont.innerHTML = `<div class="vacio-msg">${vista === 'activos' ? 'No hay pedidos activos ahora mismo.' : 'Todavía no hay pedidos completos hoy.'}</div>`;
+    return;
+  }
+
+  cont.innerHTML = lista.map(p => {
+    const min = minutosTranscurridos(p.hora);
+    const urgente = !p.completo && min >= MINUTOS_URGENTE;
+    return `
+    <div class="pedido-card${urgente ? ' urgente' : ''}${p.completo ? ' completo' : ''}">
+      <div class="pedido-header">
+        <div>
+          <div class="pedido-mesa">🍽️ Mesa ${p.mesa || '—'}</div>
+          <div class="pedido-mesero">${p.mesero ? '👤 ' + p.mesero : '📱 Autoservicio'}</div>
+        </div>
+        <div class="pedido-tiempo">
+          <div class="pedido-hora">${p.hora}</div>
+          <div class="pedido-transcurrido ${urgente ? 'urgente' : 'ok'}">${min} min</div>
+        </div>
+      </div>
+      ${p.items.map(it => `
+        <div class="item-row">
+          <div class="item-info">
+            <div class="item-nombre">${it.cantidad}x ${it.producto}</div>
+            ${it.observacion ? `<div class="item-obs">${it.observacion}</div>` : ''}
+          </div>
+          <button class="item-estado-btn ${claseEstado(it.estado)}" onclick="avanzarEstado(${it.fila}, '${it.estado}')">${it.estado}</button>
+        </div>
+      `).join('')}
+      <div class="pedido-footer">
+        ${p.completo
+          ? '<span class="pedido-completo-msg">✅ Pedido completo</span>'
+          : `<button class="btn-completo" onclick="marcarCompleto('${p.id_pedido}')">Marcar pedido completo</button>`}
+      </div>
+    </div>
+  `;
+  }).join('');
+}
+
+async function avanzarEstado(fila, estadoActual) {
+  const idx = ESTADOS_COCINA.indexOf(estadoActual);
+  const siguiente = ESTADOS_COCINA[(idx + 1) % ESTADOS_COCINA.length];
+
+  // Optimista: actualiza en pantalla de inmediato, sin esperar la respuesta del servidor.
+  estadoItemPendiente[fila] = siguiente;
+  pedidos.forEach(p => p.items.forEach(it => { if (it.fila === fila) it.estado = siguiente; }));
+  pedidos.forEach(p => { p.completo = p.items.every(it => it.estado === 'Entregado'); });
+  render();
+
+  try {
+    const params = new URLSearchParams({ accion: 'actualizar_estado_item', fila: String(fila), estado: siguiente });
+    await fetch(SCRIPT_URL + '?' + params.toString());
+  } catch (e) {
+    // Backend no disponible todavía (modo mock) - el cambio queda solo en pantalla.
+  } finally {
+    delete estadoItemPendiente[fila];
+  }
+}
+
+async function marcarCompleto(idPedido) {
+  pedidosCompletoPendiente.add(idPedido);
+  pedidos.forEach(p => {
+    if (p.id_pedido === idPedido) {
+      p.items.forEach(it => it.estado = 'Entregado');
+      p.completo = true;
+    }
+  });
+  render();
+
+  try {
+    const params = new URLSearchParams({ accion: 'marcar_pedido_completo', id_pedido: idPedido });
+    await fetch(SCRIPT_URL + '?' + params.toString());
+  } catch (e) {
+    // Backend no disponible todavía (modo mock).
+  } finally {
+    pedidosCompletoPendiente.delete(idPedido);
+  }
+}
+
+setInterval(() => { if (vista === 'activos') render(); }, 30000); // refresca el tiempo transcurrido
+setInterval(() => cargarPedidos(true), INTERVALO_POLLING_MS);
+cargarPedidos(false);
+</script>
+</body>
+</html>

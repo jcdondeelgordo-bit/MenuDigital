@@ -1,0 +1,206 @@
+// ============================================================================
+// MÓDULO 8 — MESEROS Y COMISIONES: nuevas acciones de Apps Script
+// ============================================================================
+// Instrucciones:
+// 1. Pega las 3 funciones de abajo (guardarConfiguracionBono, listarConfiguracionesBono,
+//    calcularComisiones) en el MISMO proyecto de Apps Script que ya tiene las
+//    acciones de los Módulos 1, 2 y 3 — reutilizan ADMIN_PASSWORD y la hoja "Ventas".
+// 2. Agrega estas 3 ramas nuevas a tu doGet(e):
+//        else if (accion === 'guardar_configuracion_bono') { return guardarConfiguracionBono(e); }
+//        else if (accion === 'listar_configuraciones_bono') { return listarConfiguracionesBono(); }
+//        else if (accion === 'calcular_comisiones') { return calcularComisiones(e); }
+// 3. Crea una hoja NUEVA llamada "Configuracion_Bonificacion" con estas 4 columnas:
+//    Fecha_Inicio, Fecha_Fin, Monto_Total, Porcentajes_JSON
+//    (Fecha_Inicio/Fecha_Fin en formato "yyyy-MM-dd". Porcentajes_JSON es un
+//    texto tipo "[30,20,15]": un % por cada posición premiada del ranking —
+//    top 1 = 30% del monto total, top 2 = 20%, top 3 = 15%. El resto del bono
+//    se reparte proporcional a ventas entre los meseros que no quedaron en
+//    esas posiciones. No hay valores fijos — el administrador los define cada
+//    quincena desde comisiones.html.)
+// 4. Publica de nuevo la implementación web.
+//
+// No se creó una hoja "Meseros" con catálogo fijo: el Módulo 2 dejó el nombre
+// del mesero en texto libre (decisión 2026-07-16, ver ESTADO.md) y este cálculo
+// agrupa por el texto exacto del nombre tal como quedó escrito en Ventas. Si en
+// la práctica dos filas del mismo mesero quedan con nombres distintos (ej.
+// "Juan" vs "Juan P."), el reparto los contará como personas distintas — ese es
+// el riesgo ya aceptado en el Módulo 2; si se vuelve un problema real, se
+// resuelve creando la hoja Meseros con lista fija.
+//
+// Supuesto de cálculo sobre empates (el módulo lo deja explícito porque el plan
+// original no precisaba este detalle — revisar si no calza con lo esperado):
+// en un empate de ventas para una posición del ranking, el % de ESA posición se
+// reparte en partes iguales entre los empatados, y el siguiente mesero en
+// ventas ocupa la posición inmediata siguiente (ranking denso: 1,1,2,3 — no
+// salta posiciones a 1,1,3,4).
+//
+// Filtro de ventas: hoy no existe todavía el Módulo 9 (Caja), así que "Estado"
+// (pago) nunca llega a "Pagado" — por eso el cálculo cuenta TODAS las ventas
+// "en el local" con mesero asignado dentro del rango de fechas, sin filtrar por
+// estado de pago. Cuando se construya el Módulo 9, revisar si el cálculo debe
+// limitarse a ventas ya cobradas (Estado = 'Pagado').
+// ============================================================================
+
+// Google Sheets convierte automáticamente un texto "yyyy-MM-dd" guardado en una
+// celda a un objeto Date real. Esta función normaliza de vuelta a texto plano
+// para poder comparar fechas de forma confiable sin importar si la celda quedó
+// como Date o como string (mismo patrón que ya se usa para las fechas de Ventas).
+function normalizarFecha_(valor) {
+  const fecha = valor instanceof Date ? valor : new Date(valor);
+  if (isNaN(fecha.getTime())) {
+    return String(valor);
+  }
+  return Utilities.formatDate(fecha, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+}
+
+function guardarConfiguracionBono(e) {
+  const clave = e.parameter.clave || '';
+  if (clave !== ADMIN_PASSWORD) {
+    return ContentService.createTextOutput(JSON.stringify({ok: false, error: 'Clave inválida'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const fechaInicio = e.parameter.fecha_inicio || '';
+  const fechaFin = e.parameter.fecha_fin || '';
+  const montoTotal = Number(e.parameter.monto_total);
+  const porcentajesJson = e.parameter.porcentajes || '[]';
+
+  if (!fechaInicio || !fechaFin || !montoTotal || montoTotal < 500000) {
+    return ContentService.createTextOutput(JSON.stringify({ok: false, error: 'Datos inválidos (el monto total no puede ser menor a $500.000)'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Configuracion_Bonificacion');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idxInicio = encabezados.indexOf('Fecha_Inicio');
+  const idxFin = encabezados.indexOf('Fecha_Fin');
+
+  // Si ya existe una configuración para esa misma quincena exacta, se reemplaza.
+  for (let i = 1; i < datos.length; i++) {
+    if (normalizarFecha_(datos[i][idxInicio]) === fechaInicio && normalizarFecha_(datos[i][idxFin]) === fechaFin) {
+      hoja.getRange(i + 1, 1, 1, 4).setValues([[fechaInicio, fechaFin, montoTotal, porcentajesJson]]);
+      return ContentService.createTextOutput(JSON.stringify({ok: true, actualizado: true}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  hoja.appendRow([fechaInicio, fechaFin, montoTotal, porcentajesJson]);
+  return ContentService.createTextOutput(JSON.stringify({ok: true, actualizado: false}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function listarConfiguracionesBono() {
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Configuracion_Bonificacion');
+  const datos = hoja.getDataRange().getValues();
+  const configuraciones = [];
+  for (let i = 1; i < datos.length; i++) {
+    if (!datos[i][0]) continue;
+    configuraciones.push({
+      fecha_inicio: normalizarFecha_(datos[i][0]),
+      fecha_fin: normalizarFecha_(datos[i][1]),
+      monto_total: datos[i][2],
+      porcentajes: JSON.parse(datos[i][3] || '[]')
+    });
+  }
+  return ContentService.createTextOutput(JSON.stringify({ok: true, configuraciones: configuraciones}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function calcularComisiones(e) {
+  const fechaInicio = e.parameter.fecha_inicio || '';
+  const fechaFin = e.parameter.fecha_fin || '';
+  if (!fechaInicio || !fechaFin) {
+    return ContentService.createTextOutput(JSON.stringify({ok: false, error: 'Falta fecha_inicio o fecha_fin'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const hojaConfig = SpreadsheetApp.getActive().getSheetByName('Configuracion_Bonificacion');
+  const datosConfig = hojaConfig.getDataRange().getValues();
+  const encConfig = datosConfig[0];
+  const idxInicio = encConfig.indexOf('Fecha_Inicio');
+  const idxFin = encConfig.indexOf('Fecha_Fin');
+  const idxMonto = encConfig.indexOf('Monto_Total');
+  const idxPorcentajes = encConfig.indexOf('Porcentajes_JSON');
+
+  let montoTotal = null;
+  let porcentajes = [];
+  for (let i = 1; i < datosConfig.length; i++) {
+    if (normalizarFecha_(datosConfig[i][idxInicio]) === fechaInicio && normalizarFecha_(datosConfig[i][idxFin]) === fechaFin) {
+      montoTotal = Number(datosConfig[i][idxMonto]);
+      porcentajes = JSON.parse(datosConfig[i][idxPorcentajes] || '[]');
+      break;
+    }
+  }
+  if (montoTotal === null) {
+    return ContentService.createTextOutput(JSON.stringify({ok: false, error: 'No hay configuración de bono guardada para esa quincena'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const hojaVentas = SpreadsheetApp.getActive().getSheetByName('Ventas');
+  const datosVentas = hojaVentas.getDataRange().getValues();
+  const encVentas = datosVentas[0];
+  const idxFecha = encVentas.indexOf('Fecha');
+  const idxTipoPedido = encVentas.indexOf('Tipo_Pedido');
+  const idxMesero = encVentas.indexOf('Mesero');
+  const idxTotal = encVentas.indexOf('Total');
+
+  const tz = Session.getScriptTimeZone();
+  const ventasPorMesero = {};
+  for (let i = 1; i < datosVentas.length; i++) {
+    const fila = datosVentas[i];
+    if (fila[idxTipoPedido] !== 'local') continue;
+    const mesero = fila[idxMesero];
+    if (!mesero) continue; // autoservicio sin reclamar no cuenta para nadie
+    const fecha = Utilities.formatDate(new Date(fila[idxFecha]), tz, 'yyyy-MM-dd');
+    if (fecha < fechaInicio || fecha > fechaFin) continue;
+    ventasPorMesero[mesero] = (ventasPorMesero[mesero] || 0) + Number(fila[idxTotal]);
+  }
+
+  const ranking = Object.keys(ventasPorMesero)
+    .map(function (mesero) { return {mesero: mesero, ventas: ventasPorMesero[mesero]}; })
+    .sort(function (a, b) { return b.ventas - a.ventas; });
+
+  // Agrupa por valor de venta idéntico para resolver empates (ranking denso).
+  const grupos = [];
+  ranking.forEach(function (r) {
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && ultimo[0].ventas === r.ventas) {
+      ultimo.push(r);
+    } else {
+      grupos.push([r]);
+    }
+  });
+
+  const resultado = [];
+  let montoAsignadoTopN = 0;
+  const noPremiados = [];
+
+  grupos.forEach(function (grupo, idx) {
+    if (idx < porcentajes.length) {
+      const montoPosicion = montoTotal * (porcentajes[idx] / 100);
+      const montoPorMesero = montoPosicion / grupo.length;
+      montoAsignadoTopN += montoPosicion;
+      grupo.forEach(function (r) {
+        resultado.push({posicion: idx + 1, mesero: r.mesero, ventas: r.ventas, tipo: 'ranking', porcentaje: porcentajes[idx] / grupo.length, monto: montoPorMesero});
+      });
+    } else {
+      grupo.forEach(function (r) { noPremiados.push(r); });
+    }
+  });
+
+  const remanente = montoTotal - montoAsignadoTopN;
+  const totalVentasNoPremiados = noPremiados.reduce(function (s, r) { return s + r.ventas; }, 0);
+  noPremiados.forEach(function (r) {
+    const monto = totalVentasNoPremiados > 0 ? remanente * (r.ventas / totalVentasNoPremiados) : 0;
+    resultado.push({posicion: null, mesero: r.mesero, ventas: r.ventas, tipo: 'proporcional', porcentaje: null, monto: monto});
+  });
+
+  return ContentService.createTextOutput(JSON.stringify({
+    ok: true,
+    fecha_inicio: fechaInicio,
+    fecha_fin: fechaFin,
+    monto_total: montoTotal,
+    resultado: resultado
+  })).setMimeType(ContentService.MimeType.JSON);
+}

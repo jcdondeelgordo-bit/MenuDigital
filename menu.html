@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Donde el Gordo - Menú</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',sans-serif;background:#1a0a00;color:#fff;min-height:100vh;padding-bottom:90px;}
+
+header{position:sticky;top:0;z-index:20;background:#1a0a00;border-bottom:1px solid rgba(200,132,26,0.3);padding:14px 16px 0;}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.header-titulo{font-size:1.15rem;font-weight:800;color:#c8841a;letter-spacing:1px;}
+.header-sub{font-size:0.72rem;color:#e8c87a;letter-spacing:2px;}
+.btn-admin{background:transparent;border:none;color:rgba(255,255,255,0.25);font-size:1.1rem;cursor:pointer;padding:4px 8px;}
+.btn-admin:hover{color:rgba(255,255,255,0.5);}
+
+.categorias{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none;}
+.categorias::-webkit-scrollbar{display:none;}
+.cat-pill{flex:none;padding:8px 16px;border-radius:20px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.3);color:#f0e0b0;font-size:0.85rem;white-space:nowrap;cursor:pointer;transition:all 0.2s;}
+.cat-pill.activa{background:linear-gradient(135deg,#c8841a,#e8a832);color:#1a0a00;font-weight:700;border-color:transparent;}
+
+.mesa-badge{display:inline-block;padding:4px 12px;border-radius:20px;background:rgba(200,132,26,0.15);border:1px solid rgba(200,132,26,0.4);color:#e8a832;font-size:0.78rem;font-weight:700;margin-bottom:10px;}
+.mesa-nota{font-size:0.78rem;color:rgba(240,224,176,0.7);margin-top:6px;line-height:1.4;}
+
+main{padding:16px;max-width:640px;margin:0 auto;}
+
+.seccion-titulo{font-size:1.05rem;color:#c8841a;font-weight:700;margin:18px 0 10px;display:flex;align-items:center;gap:8px;}
+#seccion-recomendados{display:none;}
+
+.producto-card{display:flex;gap:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(200,132,26,0.2);border-radius:14px;padding:12px;margin-bottom:10px;align-items:center;}
+.producto-icono{flex:none;width:52px;height:52px;border-radius:12px;background:rgba(200,132,26,0.15);display:flex;align-items:center;justify-content:center;font-size:1.6rem;}
+.producto-info{flex:1;min-width:0;}
+.producto-nombre{font-weight:700;font-size:0.97rem;color:#fff;}
+.producto-desc{font-size:0.78rem;color:rgba(240,224,176,0.7);line-height:1.35;margin-top:2px;}
+.producto-precio-row{display:flex;align-items:center;justify-content:space-between;margin-top:6px;}
+.producto-precio{font-weight:700;color:#e8a832;font-size:0.92rem;}
+.precio-edit-btn{background:transparent;border:none;color:rgba(255,255,255,0.3);font-size:0.85rem;cursor:pointer;display:none;}
+.admin-on .precio-edit-btn{display:inline-block;}
+.btn-agregar{flex:none;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;color:#1a0a00;font-size:1.2rem;font-weight:700;cursor:pointer;}
+
+.carrito-flotante{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:608px;background:linear-gradient(135deg,#c8841a,#e8a832);border-radius:16px;padding:14px 18px;display:none;align-items:center;justify-content:space-between;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,0.4);z-index:30;}
+.carrito-flotante.visible{display:flex;}
+.carrito-flotante-info{color:#1a0a00;font-weight:700;}
+.carrito-flotante-total{color:#1a0a00;font-weight:800;font-size:1.05rem;}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:40;}
+.overlay.visible{display:block;}
+.panel{position:fixed;left:0;right:0;bottom:0;max-height:85vh;background:#241000;border-radius:20px 20px 0 0;z-index:50;display:none;flex-direction:column;box-shadow:0 -8px 30px rgba(0,0,0,0.5);}
+.panel.visible{display:flex;}
+.panel-header{padding:16px 18px;border-bottom:1px solid rgba(200,132,26,0.25);display:flex;justify-content:space-between;align-items:center;}
+.panel-header h3{color:#c8841a;font-size:1.05rem;}
+.panel-cerrar{background:transparent;border:none;color:rgba(255,255,255,0.5);font-size:1.4rem;cursor:pointer;}
+.panel-body{padding:16px 18px;overflow-y:auto;flex:1;}
+.panel-footer{padding:14px 18px 22px;border-top:1px solid rgba(200,132,26,0.25);}
+
+.item-carrito{display:flex;gap:10px;align-items:flex-start;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.item-carrito-info{flex:1;}
+.item-carrito-nombre{font-weight:700;font-size:0.93rem;}
+.item-carrito-precio{color:#e8a832;font-size:0.85rem;margin-top:2px;}
+.item-carrito-obs{width:100%;margin-top:6px;padding:7px 10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.25);border-radius:8px;color:#fff;font-size:0.8rem;outline:none;}
+.item-carrito-obs::placeholder{color:rgba(255,255,255,0.3);}
+.qty-control{display:flex;align-items:center;gap:8px;}
+.qty-btn{width:26px;height:26px;border-radius:50%;border:1px solid rgba(200,132,26,0.4);background:transparent;color:#c8841a;font-size:1rem;cursor:pointer;}
+.qty-val{min-width:18px;text-align:center;font-weight:700;}
+.btn-quitar{background:transparent;border:none;color:rgba(255,100,100,0.7);font-size:0.78rem;cursor:pointer;margin-top:6px;}
+
+.total-row{display:flex;justify-content:space-between;font-size:1.05rem;font-weight:800;color:#fff;margin-bottom:14px;}
+.btn-principal{width:100%;padding:15px;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;border-radius:12px;color:#1a0a00;font-size:1.02rem;font-weight:700;letter-spacing:1px;cursor:pointer;}
+.btn-secundario{width:100%;padding:13px;background:transparent;border:1px solid rgba(200,132,26,0.4);border-radius:12px;color:#f0e0b0;font-size:0.93rem;cursor:pointer;margin-top:10px;}
+
+.tipo-pedido-opciones{display:flex;flex-direction:column;gap:10px;}
+.tipo-pedido-btn{padding:16px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.3);color:#fff;text-align:left;cursor:pointer;}
+.tipo-pedido-btn strong{display:block;color:#c8841a;font-size:1rem;margin-bottom:3px;}
+.tipo-pedido-btn span{font-size:0.8rem;color:rgba(240,224,176,0.75);}
+
+.campo-grupo{margin-bottom:12px;}
+.campo-grupo label{display:block;font-size:0.8rem;color:#c8841a;margin-bottom:5px;}
+.campo-grupo input,.campo-grupo select{width:100%;padding:11px 13px;background:rgba(255,255,255,0.07);border:1px solid rgba(200,132,26,0.4);border-radius:10px;color:#fff;font-size:0.93rem;outline:none;}
+.campo-fila{display:flex;gap:8px;}
+.campo-fila>select,.campo-fila>input{flex:1;width:auto;}
+
+.confirmacion{text-align:center;padding:20px 10px;}
+.confirmacion-icono{font-size:2.6rem;margin-bottom:10px;}
+.confirmacion h3{color:#c8841a;margin-bottom:8px;}
+.confirmacion p{color:#f0e0b0;font-size:0.9rem;line-height:1.5;}
+
+.vacio-msg{text-align:center;color:rgba(240,224,176,0.5);padding:30px 0;font-size:0.9rem;}
+
+.puntos-aviso{font-size:0.75rem;color:rgba(240,224,176,0.7);margin-bottom:10px;line-height:1.4;}
+.tarjeta-puntos{margin-bottom:14px;padding:10px 12px;background:rgba(200,132,26,0.08);border:1px solid rgba(200,132,26,0.25);border-radius:10px;}
+.tarjeta-puntos-titulo{font-size:0.8rem;color:#c8841a;font-weight:700;margin-bottom:6px;}
+.tarjeta-puntos-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;justify-items:center;}
+.punto-celda{width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(200,132,26,0.5);background:transparent;}
+.punto-celda.lleno{background:linear-gradient(135deg,#c8841a,#e8a832);border-color:transparent;}
+.tarjeta-puntos-premio{margin-top:6px;font-size:0.75rem;color:#e8a832;font-weight:700;}
+
+.oferta-papas{text-align:center;padding:6px 4px 10px;}
+.oferta-papas-img{width:120px;height:120px;margin:0 auto 16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(232,168,50,0.35),rgba(200,132,26,0.1));display:flex;align-items:center;justify-content:center;font-size:4.2rem;box-shadow:0 6px 20px rgba(200,132,26,0.25);}
+.oferta-papas-texto{font-size:1.02rem;color:#f0e0b0;line-height:1.55;margin-bottom:10px;}
+.oferta-papas-texto strong{color:#e8a832;}
+.oferta-papas-precio{font-size:1.3rem;font-weight:800;color:#e8a832;}
+.oferta-papas-botones{display:flex;gap:10px;}
+.oferta-papas-botones .btn-principal,.oferta-papas-botones .btn-secundario{margin-top:0;}
+
+/* Carrito real: franja + panel deslizable en móvil (por defecto), sidebar fijo en escritorio */
+.layout{display:block;}
+.contenido{max-width:640px;margin:0 auto;}
+.carrito-sidebar{display:none;}
+@media (min-width:900px){
+  .layout{display:flex;align-items:flex-start;justify-content:center;gap:24px;max-width:1120px;margin:0 auto;padding:16px 16px 40px;}
+  .contenido{flex:1 1 640px;max-width:640px;margin:0;}
+  header{position:sticky;}
+  .carrito-flotante{display:none !important;}
+  .carrito-sidebar{display:flex;flex-direction:column;position:sticky;top:16px;flex:0 0 340px;max-height:calc(100vh - 32px);background:#241000;border:1px solid rgba(200,132,26,0.25);border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.35);}
+  .carrito-sidebar-header{padding:16px 18px;border-bottom:1px solid rgba(200,132,26,0.25);}
+  .carrito-sidebar-header h3{color:#c8841a;font-size:1.05rem;}
+  .carrito-sidebar-body{padding:16px 18px;overflow-y:auto;flex:1;}
+  .carrito-sidebar-footer{padding:14px 18px 18px;border-top:1px solid rgba(200,132,26,0.25);}
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <div class="contenido">
+    <header>
+      <div class="header-top">
+        <div>
+          <div class="header-titulo">DONDE EL GORDO</div>
+          <div class="header-sub">MENÚ DIGITAL</div>
+        </div>
+        <button class="btn-admin" onclick="abrirAdmin()" title="Administrador">⚙️</button>
+      </div>
+      <div class="mesa-badge" id="mesa-badge" style="display:none;"></div>
+      <div class="categorias" id="categorias"></div>
+    </header>
+
+    <main>
+      <div id="seccion-recomendados">
+        <div class="seccion-titulo">⭐ Recomendados</div>
+        <div id="lista-recomendados"></div>
+      </div>
+      <div id="lista-productos"></div>
+    </main>
+  </div>
+
+  <!-- Carrito real: visible siempre como sidebar en pantallas anchas (escritorio) -->
+  <aside class="carrito-sidebar" id="carrito-sidebar">
+    <div class="carrito-sidebar-header"><h3>🛒 Tu pedido</h3></div>
+    <div class="carrito-sidebar-body" id="carrito-sidebar-body"></div>
+    <div class="carrito-sidebar-footer">
+      <div class="puntos-aviso" id="puntos-aviso-sidebar"></div>
+      <div class="tarjeta-puntos" id="tarjeta-puntos-sidebar"></div>
+      <div class="total-row"><span>Total</span><span id="carrito-sidebar-total">$0</span></div>
+      <button class="btn-principal" onclick="irACheckout()">Hacer pedido</button>
+    </div>
+  </aside>
+</div>
+
+<div class="carrito-flotante" id="carrito-flotante" onclick="abrirCarrito()">
+  <div class="carrito-flotante-info" id="carrito-flotante-info">0 productos</div>
+  <div class="carrito-flotante-total" id="carrito-flotante-total">$0</div>
+</div>
+
+<!-- PANEL CARRITO -->
+<div class="overlay" id="overlay-carrito" onclick="cerrarCarrito()"></div>
+<div class="panel" id="panel-carrito">
+  <div class="panel-header">
+    <h3>🛒 Tu pedido</h3>
+    <button class="panel-cerrar" onclick="cerrarCarrito()">×</button>
+  </div>
+  <div class="panel-body" id="panel-carrito-body"></div>
+  <div class="panel-footer">
+    <div class="puntos-aviso" id="puntos-aviso-panel"></div>
+    <div class="tarjeta-puntos" id="tarjeta-puntos-panel"></div>
+    <div class="total-row"><span>Total</span><span id="carrito-total">$0</span></div>
+    <button class="btn-principal" onclick="irACheckout()">Hacer pedido</button>
+  </div>
+</div>
+
+<!-- PANEL OFERTA DE PAPAS -->
+<div class="overlay" id="overlay-papas" onclick="cerrarPapas()"></div>
+<div class="panel" id="panel-papas">
+  <div class="panel-header">
+    <h3>🍟 ¿Un antojito más?</h3>
+    <button class="panel-cerrar" onclick="cerrarPapas()">×</button>
+  </div>
+  <div class="panel-body" id="panel-papas-body"></div>
+  <div class="panel-footer">
+    <div class="oferta-papas-botones">
+      <button class="btn-secundario" onclick="cerrarPapas()">No, gracias</button>
+      <button class="btn-principal" onclick="confirmarPapa()">¡Sí, se me antoja! 🍟</button>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL MESA Y MESERO (solo cuando no llega mesa por QR) -->
+<div class="overlay" id="overlay-mesa" onclick="cerrarMesaMesero()"></div>
+<div class="panel" id="panel-mesa">
+  <div class="panel-header">
+    <h3>🍽️ ¿Qué mesa atiendes?</h3>
+    <button class="panel-cerrar" onclick="cerrarMesaMesero()">×</button>
+  </div>
+  <div class="panel-body">
+    <div class="campo-grupo">
+      <label>Número de mesa</label>
+      <input type="number" id="mesa-numero" placeholder="Ej: 5" min="1" onblur="verificarMesa()">
+    </div>
+    <div class="campo-grupo">
+      <label id="mesa-mesero-label">Nombre del mesero</label>
+      <input type="text" id="mesa-mesero" placeholder="Su nombre">
+      <div class="mesa-nota" id="mesa-nota" style="display:none;"></div>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <button class="btn-principal" onclick="confirmarMesaMesero()">Confirmar pedido</button>
+  </div>
+</div>
+
+<!-- PANEL TIPO DE PEDIDO -->
+<div class="overlay" id="overlay-checkout" onclick="cerrarCheckout()"></div>
+<div class="panel" id="panel-checkout">
+  <div class="panel-header">
+    <h3>¿Cómo quieres tu pedido?</h3>
+    <button class="panel-cerrar" onclick="cerrarCheckout()">×</button>
+  </div>
+  <div class="panel-body">
+    <div class="tipo-pedido-opciones">
+      <button class="tipo-pedido-btn" onclick="elegirTipo('domicilio')">
+        <strong>🛵 Domicilio</strong>
+        <span>Te escribimos por WhatsApp para confirmar el recargo según tu zona, el Nequi y el tiempo de espera.</span>
+      </button>
+      <button class="tipo-pedido-btn" onclick="elegirTipo('local')">
+        <strong>🍽️ En el local</strong>
+        <span>Tu pedido pasa directo a cocina y queda pendiente de pago en caja.</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL DATOS DOMICILIO -->
+<div class="overlay" id="overlay-domicilio" onclick="cerrarDomicilio()"></div>
+<div class="panel" id="panel-domicilio">
+  <div class="panel-header">
+    <h3>🛵 Datos de entrega</h3>
+    <button class="panel-cerrar" onclick="cerrarDomicilio()">×</button>
+  </div>
+  <div class="panel-body">
+    <div class="campo-grupo">
+      <label>Nombre</label>
+      <input type="text" id="dom-nombre" placeholder="Su nombre completo">
+    </div>
+    <div class="campo-grupo">
+      <label>Celular</label>
+      <input type="tel" id="dom-celular" placeholder="Ej: 3001234567">
+    </div>
+    <div class="campo-grupo">
+      <label>Dirección</label>
+      <input type="text" id="dom-direccion" placeholder="Barrio, calle, referencia">
+    </div>
+    <div class="campo-grupo">
+      <label>Fecha de nacimiento</label>
+      <div class="campo-fila">
+        <input type="number" id="dom-dia-nac" placeholder="Día" min="1" max="31">
+        <select id="dom-mes-nac">
+          <option value="">Mes</option>
+          <option value="1">Enero</option>
+          <option value="2">Febrero</option>
+          <option value="3">Marzo</option>
+          <option value="4">Abril</option>
+          <option value="5">Mayo</option>
+          <option value="6">Junio</option>
+          <option value="7">Julio</option>
+          <option value="8">Agosto</option>
+          <option value="9">Septiembre</option>
+          <option value="10">Octubre</option>
+          <option value="11">Noviembre</option>
+          <option value="12">Diciembre</option>
+        </select>
+        <input type="number" id="dom-anio-nac" placeholder="Año (ej: 1990)" min="1930" max="2026">
+      </div>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <button class="btn-principal" onclick="enviarDomicilio()">Enviar por WhatsApp</button>
+  </div>
+</div>
+
+<!-- PANEL CONFIRMACION LOCAL -->
+<div class="overlay" id="overlay-confirmacion" onclick="cerrarConfirmacion()"></div>
+<div class="panel" id="panel-confirmacion">
+  <div class="panel-header">
+    <h3>Pedido</h3>
+    <button class="panel-cerrar" onclick="cerrarConfirmacion()">×</button>
+  </div>
+  <div class="panel-body">
+    <div class="confirmacion" id="confirmacion-contenido"></div>
+  </div>
+</div>
+
+<!-- PANEL ADMIN -->
+<div class="overlay" id="overlay-admin" onclick="cerrarAdmin()"></div>
+<div class="panel" id="panel-admin">
+  <div class="panel-header">
+    <h3>🔒 Modo administrador</h3>
+    <button class="panel-cerrar" onclick="cerrarAdmin()">×</button>
+  </div>
+  <div class="panel-body">
+    <div class="campo-grupo">
+      <label>Contraseña</label>
+      <input type="password" id="admin-password" placeholder="••••••">
+    </div>
+  </div>
+  <div class="panel-footer">
+    <button class="btn-principal" onclick="validarAdmin()">Entrar</button>
+  </div>
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlYXsASFJpzw9arECb79_CLb3l5w-4cithWANH57ydFHbC2-788aFJddvWIxOjOyEr/exec';
+// TEMPORAL — número personal del usuario para probar el flujo de domicilio sin
+// molestar a la pizzería. Número real del negocio: 573167027833. Volver a poner
+// el real antes de publicar/lanzar a producción.
+const WHATSAPP_NEGOCIO = '573143523103';
+
+// Datos reales extraídos de la hoja Productos (BD_ZFood_GyP_DondeElGordo.xlsx) el 2026-07-14.
+// Se usan como respaldo local mientras las acciones de Apps Script (listar_productos, etc.)
+// no están desplegadas. Si SCRIPT_URL responde con datos válidos, esos tienen prioridad.
+const MOCK_PRODUCTOS = [
+{"categoria":"Hamburguesas","producto":"Sencilla","descripcion":"Pan bimbo, carne de res, vegetales, tocineta, queso y salsas.","precio":14000},
+{"categoria":"Hamburguesas","producto":"Pollo","descripcion":"Pan bimbo, pollo apanado, vegetales, tocineta, queso y salsas.","precio":16000},
+{"categoria":"Hamburguesas","producto":"Doble Carne","descripcion":"Pan bimbo, doble carne de res, doble tocineta, doble queso, vegetales y salsas.","precio":19000},
+{"categoria":"Hamburguesas","producto":"Mixta","descripcion":"Pan bimbo, carne de res, pollo apanado, doble queso, doble tocineta, vegetales y salsas.","precio":22000},
+{"categoria":"Hamburguesas","producto":"Doble Pollo","descripcion":"Pan bimbo, doble pollo apanado, doble tocineta, doble queso, vegetales y salsas.","precio":24000},
+{"categoria":"Hamburguesas","producto":"Triple Carne","descripcion":"Pan bimbo, dos carnes de res, pollo apanado, triple queso y triple tocineta.","precio":29000},
+{"categoria":"Hamburguesas","producto":"Gratinada Adicional","descripcion":"Cualquiera de las hamburguesas bañada el queso derretido por todos lados","precio":6000},
+{"categoria":"Hamburguesas","producto":"Criolla","descripcion":"Pan bimbo, carne de res, tocineta, huevo, tocineta, maíz, plátano maduro, verduras y queso.","precio":27000},
+{"categoria":"Hamburguesas","producto":"Con Patacón (+adicional)","descripcion":"Patacón adicional para acompañar cualquier hamburguesa.","precio":3000},
+{"categoria":"Perros","producto":"Perro Sencillo","descripcion":"Pan bimbo, salchicha americana, cebolla, tocineta, queso, papas ripio y salsas.","precio":13000},
+{"categoria":"Perros","producto":"Perro Especial","descripcion":"Pan bimbo, salchicha suiza, cebolla, doble tocineta, doble queso, papas ripio y salsas.","precio":19000},
+{"categoria":"Perros","producto":"Choriperro","descripcion":"Pan bimbo, chorizo cuncia, cebolla, doble tocineta, doble queso, papas ripio y salsas.","precio":18000},
+{"categoria":"Papas","producto":"Salchipapa","descripcion":"Papa a la francesa, salchicha americana, queso y huevo de codorniz.","precio":16000},
+{"categoria":"Papas","producto":"Salchipapa Mini","descripcion":"Papa a la francesa, salchicha americana, queso y huevo de codorniz.","precio":11000},
+{"categoria":"Papas","producto":"Choripapa","descripcion":"Papa a la francesa, chorizo cuncia, salchicha americana y queso.","precio":19000},
+{"categoria":"Papas","producto":"Suiza","descripcion":"Salchicha Suiza, moneditas de plátano, papa a la francesa y ensalada.","precio":21000},
+{"categoria":"Papas","producto":"Porción Papa Francesa","descripcion":"Porción de papas a la francesa.","precio":5000},
+{"categoria":"Pizzas","producto":"Pizza Hawaiana","descripcion":"Jamón, piña y queso.","precio":9000},
+{"categoria":"Pizzas","producto":"Pizza Champiñones","descripcion":"Jamón, champiñones, pollo y queso.","precio":9000},
+{"categoria":"Pizzas","producto":"Pizza Carnes","descripcion":"Jamón, pollo, salchicha ideal y queso.","precio":9000},
+{"categoria":"Pizzas","producto":"Pizza Mexicana","descripcion":"Jamón, cebolla, queso y cilantro.","precio":9000},
+{"categoria":"Pizzas","producto":"Pizza Ranchera","descripcion":"Jamón, mazorca, salchicha ranchera y queso.","precio":9000},
+{"categoria":"Pizzas","producto":"Pizza Perro","descripcion":"Jamón, salchicha ranchera, cebolla, piña, queso, papa ripio y salsa.","precio":9000},
+{"categoria":"Pizzas","producto":"Pizza Colombiana","descripcion":"Jamón, salchichón cervecero, mazorca, queso y plátano maduro.","precio":9000},
+{"categoria":"Pizzas","producto":"Pizza de la Casa","descripcion":"Jamón, carne desmechada, queso, pimentón y cebolla.","precio":9000},
+{"categoria":"Pizzas","producto":"Pizza Pepperoni","descripcion":"Queso, pepperoni y orégano.","precio":9000},
+{"categoria":"Platos","producto":"Churrasco","descripcion":"400gr de carne de res, papa a la francesa, moneditas de plátano, yuca frita y ensalada.","precio":40000},
+{"categoria":"Platos","producto":"Mini Churrasco","descripcion":"Porción de churrasco con acompañamientos.","precio":32000},
+{"categoria":"Platos","producto":"Costillitas BBQ","descripcion":"Costillas al carbón con salsa BBQ.","precio":31000},
+{"categoria":"Platos","producto":"Pechuga","descripcion":"Pechuga a la plancha.","precio":29000},
+{"categoria":"Platos","producto":"Pechuga Gratinada","descripcion":"Pechuga a la plancha con queso gratinado.","precio":33000},
+{"categoria":"Platos","producto":"Pechuga en Salsa Champiñones","descripcion":"Pechuga en salsa cremosa de champiñones.","precio":36000},
+{"categoria":"Platos","producto":"Carne Encebollada","descripcion":"Carne de res con cebolla caramelizada.","precio":43000},
+{"categoria":"Platos","producto":"Carne a la Plancha","descripcion":"Carne de res a la plancha.","precio":31000},
+{"categoria":"Platos","producto":"Lomo de Cerdo","descripcion":"Lomo de cerdo a la plancha.","precio":31000},
+{"categoria":"Platos","producto":"Mazorcada","descripcion":"Mazorca especial de la casa.","precio":24000},
+{"categoria":"Platos","producto":"Chorizo Cuncia","descripcion":"Chorizo cuncia a la plancha.","precio":7000},
+{"categoria":"Picadas","producto":"Picada Personal 38","descripcion":"Carne, pollo, chorizo, plátano, papa a la francesa y ensalada.","precio":38000},
+{"categoria":"Picadas","producto":"Picada $50.000","descripcion":"Carne, pollo, chorizo, plátano, papa a la francesa y ensalada.","precio":50000},
+{"categoria":"Picadas","producto":"Picada $65.000","descripcion":"Carne, pollo, chorizo, plátano, papa a la francesa y ensalada — familiar.","precio":65000},
+{"categoria":"Picadas","producto":"Picada $80.000","descripcion":"Carne, pollo, chorizo, plátano, papa a la francesa y ensalada — jumbo.","precio":80000},
+{"categoria":"Especiales","producto":"Salchipapa Especial","descripcion":"Salchipapa con ingredientes especiales de la casa.","precio":26000},
+{"categoria":"Especiales","producto":"Patacona Especial","descripcion":"Patacona con ingredientes especiales de la casa.","precio":28000},
+{"categoria":"Adicionales","producto":"Porción Patacón","descripcion":"Porción de patacón.","precio":5000},
+{"categoria":"Adicionales","producto":"Porción Suiza","descripcion":"Porción suiza.","precio":10000},
+{"categoria":"Adicionales","producto":"Salchicha Americana","descripcion":"Salchicha americana adicional.","precio":5000},
+{"categoria":"Adicionales","producto":"Huevos de Codorniz","descripcion":"Huevos de codorniz.","precio":5000},
+{"categoria":"Adicionales","producto":"Patacona (hamb)","descripcion":"Patacona adicional para hamburguesa.","precio":3000},
+{"categoria":"Bebidas","producto":"Michelada","descripcion":"Cerveza con limón, sal, salsas y hielo.","precio":12000},
+{"categoria":"Bebidas","producto":"Michelada Especial","descripcion":"Michelada con ingredientes premium de la casa.","precio":15000},
+{"categoria":"Bebidas","producto":"Cerezada","descripcion":"Bebida especial de cereza.","precio":12000},
+{"categoria":"Bebidas","producto":"Gaseosa 350 ml","descripcion":"","precio":3000},
+{"categoria":"Bebidas","producto":"Gaseosa 500 ml","descripcion":"","precio":4500},
+{"categoria":"Bebidas","producto":"Gaseosa 1.5L","descripcion":"","precio":9000},
+{"categoria":"Bebidas","producto":"Gaseosa 3.0L","descripcion":"","precio":12000},
+{"categoria":"Bebidas","producto":"Coca Cola 400ml","descripcion":"","precio":4000},
+{"categoria":"Bebidas","producto":"Coca Cola 3L","descripcion":"","precio":14000},
+{"categoria":"Bebidas","producto":"Jugo Hit 500ml","descripcion":"","precio":4000},
+{"categoria":"Bebidas","producto":"Jugo Hit 1.5L","descripcion":"","precio":9000},
+{"categoria":"Bebidas","producto":"Gatorade","descripcion":"","precio":5000},
+{"categoria":"Bebidas","producto":"Tee","descripcion":"","precio":3000},
+{"categoria":"Bebidas","producto":"Cola y Pola 1.5","descripcion":"","precio":9000},
+{"categoria":"Bebidas","producto":"Electrolit","descripcion":"","precio":10000},
+{"categoria":"Bebidas","producto":"Agua con Gas","descripcion":"","precio":3500},
+{"categoria":"Bebidas","producto":"Agua sin Gas","descripcion":"","precio":3000},
+{"categoria":"Bebidas","producto":"H2O","descripcion":"","precio":3500},
+{"categoria":"Bebidas","producto":"Jugo Vaso Agua","descripcion":"","precio":7000},
+{"categoria":"Bebidas","producto":"Jugo Vaso Leche","descripcion":"","precio":9000},
+{"categoria":"Bebidas","producto":"Jugo Jarra Agua","descripcion":"","precio":12000},
+{"categoria":"Bebidas","producto":"Jugo Jarra Leche","descripcion":"","precio":15000},
+{"categoria":"Bebidas","producto":"Cítrica Vaso Soda","descripcion":"","precio":9000},
+{"categoria":"Bebidas","producto":"Cítrica Jarra Soda","descripcion":"","precio":13000},
+{"categoria":"Bebidas","producto":"Cerveza Poker","descripcion":"","precio":4500},
+{"categoria":"Bebidas","producto":"Bretaña","descripcion":"","precio":3500},
+{"categoria":"Bebidas","producto":"Cola y Pola Lata","descripcion":"","precio":3500},
+{"categoria":"Bebidas","producto":"Corona","descripcion":"","precio":8000},
+{"categoria":"Bebidas","producto":"Coronita","descripcion":"","precio":5500},
+{"categoria":"Bebidas","producto":"Malta","descripcion":"","precio":9000},
+{"categoria":"Bebidas","producto":"Speed","descripcion":"","precio":3000}
+];
+
+const ICONOS_CATEGORIA = {
+  'Hamburguesas':'🍔','Perros':'🌭','Papas':'🍟','Pizzas':'🍕','Platos':'🍽️',
+  'Picadas':'🍢','Especiales':'✨','Adicionales':'➕','Bebidas':'🥤'
+};
+
+let PRODUCTOS = [];
+let carrito = JSON.parse(localStorage.getItem('zfood_carrito') || '[]');
+let categoriaActiva = null;
+let adminActivo = false;
+let adminClave = '';
+let tipoPedidoSeleccionado = null;
+let puntos = parseInt(localStorage.getItem('zfood_puntos') || '0', 10);
+let mesaQR = new URLSearchParams(window.location.search).get('mesa');
+
+function renderMesaBadge() {
+  const badge = document.getElementById('mesa-badge');
+  if (mesaQR) {
+    badge.textContent = `📍 Mesa ${mesaQR}`;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function formatoCOP(valor) {
+  return '$' + Number(valor).toLocaleString('es-CO');
+}
+
+function guardarCarrito() {
+  localStorage.setItem('zfood_carrito', JSON.stringify(carrito));
+}
+
+async function cargarProductos() {
+  try {
+    const res = await fetch(SCRIPT_URL + '?accion=listar_productos');
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.productos) && data.productos.length > 0) {
+      PRODUCTOS = data.productos;
+      return;
+    }
+  } catch (e) {
+    // Backend no disponible todavía — seguimos con los datos locales.
+  }
+  PRODUCTOS = MOCK_PRODUCTOS;
+}
+
+function renderCategorias() {
+  const categorias = [...new Set(PRODUCTOS.map(p => p.categoria))];
+  categoriaActiva = categorias[0];
+  const cont = document.getElementById('categorias');
+  cont.innerHTML = categorias.map(c =>
+    `<div class="cat-pill${c === categoriaActiva ? ' activa' : ''}" data-cat="${c}" onclick="seleccionarCategoria('${c.replace(/'/g,"\\'")}')">${ICONOS_CATEGORIA[c] || '🍴'} ${c}</div>`
+  ).join('');
+}
+
+function seleccionarCategoria(cat) {
+  categoriaActiva = cat;
+  document.querySelectorAll('.cat-pill').forEach(el => {
+    el.classList.toggle('activa', el.dataset.cat === cat);
+  });
+  renderProductos();
+}
+
+function renderRecomendados() {
+  const recomendados = PRODUCTOS.filter(p => p.recomendado === true || p.recomendado === 'Si' || p.recomendado === 'Sí');
+  const seccion = document.getElementById('seccion-recomendados');
+  if (recomendados.length === 0) { seccion.style.display = 'none'; return; }
+  seccion.style.display = 'block';
+  document.getElementById('lista-recomendados').innerHTML = recomendados.map(renderCard).join('');
+}
+
+function renderProductos() {
+  const lista = PRODUCTOS.filter(p => p.categoria === categoriaActiva);
+  document.getElementById('lista-productos').innerHTML =
+    `<div class="seccion-titulo">${ICONOS_CATEGORIA[categoriaActiva] || '🍴'} ${categoriaActiva}</div>` +
+    (lista.length ? lista.map(renderCard).join('') : '<div class="vacio-msg">Sin productos en esta categoría.</div>');
+}
+
+function renderCard(p) {
+  const idx = PRODUCTOS.indexOf(p);
+  return `<div class="producto-card${adminActivo ? ' admin-on' : ''}">
+    <div class="producto-icono">${ICONOS_CATEGORIA[p.categoria] || '🍴'}</div>
+    <div class="producto-info">
+      <div class="producto-nombre">${p.producto}</div>
+      ${p.descripcion ? `<div class="producto-desc">${p.descripcion}</div>` : ''}
+      <div class="producto-precio-row">
+        <span class="producto-precio" id="precio-${idx}">${formatoCOP(p.precio)}</span>
+        <button class="precio-edit-btn" onclick="editarPrecio(${idx})">✏️ editar</button>
+      </div>
+    </div>
+    <button class="btn-agregar" onclick="agregarAlCarrito(${idx})">+</button>
+  </div>`;
+}
+
+function agregarAlCarrito(idx) {
+  const p = PRODUCTOS[idx];
+  const existente = carrito.find(i => i.producto === p.producto && i.categoria === p.categoria);
+  if (existente) { existente.cantidad++; }
+  else { carrito.push({producto: p.producto, categoria: p.categoria, precio: p.precio, cantidad: 1, observacion: ''}); }
+  guardarCarrito();
+  actualizarCarritoFlotante();
+  renderCarrito();
+  if (p.categoria === 'Hamburguesas' || p.categoria === 'Perros') {
+    ofrecerPapas(p.categoria);
+  }
+}
+
+let papaOfrecidaIdx = null;
+
+function ofrecerPapas(categoriaOrigen) {
+  const papa = PRODUCTOS.find(p => p.categoria === 'Papas' && p.producto.toLowerCase().includes('francesa'));
+  if (!papa) return;
+  papaOfrecidaIdx = PRODUCTOS.indexOf(papa);
+
+  const esPerro = categoriaOrigen === 'Perros';
+  const adjetivo = esPerro ? 'delicioso' : 'deliciosa';
+  const sustantivo = esPerro ? 'perro caliente' : 'hamburguesa';
+
+  document.getElementById('panel-papas-body').innerHTML = `
+    <div class="oferta-papas">
+      <div class="oferta-papas-img">🍟</div>
+      <div class="oferta-papas-texto">¿Deseas acompañar tu ${adjetivo} ${sustantivo} con unas ricas <strong>papas a la francesa</strong>? 😋</div>
+      <div class="oferta-papas-precio">${formatoCOP(papa.precio)}</div>
+    </div>
+  `;
+  document.getElementById('overlay-papas').classList.add('visible');
+  document.getElementById('panel-papas').classList.add('visible');
+}
+
+function confirmarPapa() {
+  if (papaOfrecidaIdx !== null) agregarPapaYcerrar(papaOfrecidaIdx);
+}
+
+function agregarPapaYcerrar(idx) {
+  const p = PRODUCTOS[idx];
+  const existente = carrito.find(i => i.producto === p.producto && i.categoria === p.categoria);
+  if (existente) { existente.cantidad++; }
+  else { carrito.push({producto: p.producto, categoria: p.categoria, precio: p.precio, cantidad: 1, observacion: ''}); }
+  guardarCarrito();
+  actualizarCarritoFlotante();
+  renderCarrito();
+  cerrarPapas();
+}
+
+function cerrarPapas() {
+  document.getElementById('overlay-papas').classList.remove('visible');
+  document.getElementById('panel-papas').classList.remove('visible');
+  papaOfrecidaIdx = null;
+}
+
+function actualizarCarritoFlotante() {
+  const totalItems = carrito.reduce((s, i) => s + i.cantidad, 0);
+  const totalValor = carrito.reduce((s, i) => s + i.cantidad * i.precio, 0);
+  const flot = document.getElementById('carrito-flotante');
+  if (totalItems === 0) { flot.classList.remove('visible'); return; }
+  flot.classList.add('visible');
+  document.getElementById('carrito-flotante-info').textContent = totalItems + (totalItems === 1 ? ' producto' : ' productos');
+  document.getElementById('carrito-flotante-total').textContent = formatoCOP(totalValor);
+}
+
+function abrirCarrito() {
+  renderCarrito();
+  document.getElementById('overlay-carrito').classList.add('visible');
+  document.getElementById('panel-carrito').classList.add('visible');
+}
+function cerrarCarrito() {
+  document.getElementById('overlay-carrito').classList.remove('visible');
+  document.getElementById('panel-carrito').classList.remove('visible');
+}
+
+function renderCarrito() {
+  const html = carrito.length === 0
+    ? '<div class="vacio-msg">Tu carrito está vacío</div>'
+    : carrito.map((item, i) => `
+      <div class="item-carrito">
+        <div class="item-carrito-info">
+          <div class="item-carrito-nombre">${item.producto}</div>
+          <div class="item-carrito-precio">${formatoCOP(item.precio)} c/u</div>
+          <input class="item-carrito-obs" placeholder="Observación (ej: sin cebolla)" value="${item.observacion || ''}" oninput="actualizarObservacion(${i}, this.value)">
+          <button class="btn-quitar" onclick="quitarDelCarrito(${i})">Quitar</button>
+        </div>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="cambiarCantidad(${i}, -1)">−</button>
+          <span class="qty-val">${item.cantidad}</span>
+          <button class="qty-btn" onclick="cambiarCantidad(${i}, 1)">+</button>
+        </div>
+      </div>
+    `).join('');
+
+  const total = carrito.reduce((s, i) => s + i.cantidad * i.precio, 0);
+  const totalTxt = formatoCOP(total);
+
+  ['panel-carrito-body', 'carrito-sidebar-body'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  });
+  ['carrito-total', 'carrito-sidebar-total'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = totalTxt;
+  });
+
+  renderAvisoPuntos();
+}
+
+function renderAvisoPuntos() {
+  const texto = '💡 Las compras mayores a $50.000 suman 1 punto en tu tarjeta de fidelidad.';
+  ['puntos-aviso-panel', 'puntos-aviso-sidebar'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = texto;
+  });
+}
+
+function sumarPuntoSiAplica(total) {
+  if (total >= 50000) {
+    puntos = puntos >= 12 ? 1 : puntos + 1;
+    localStorage.setItem('zfood_puntos', String(puntos));
+    renderTarjetaPuntos();
+  }
+}
+
+function renderTarjetaPuntos() {
+  const celdas = Array.from({length: 12}, (_, i) => `<span class="punto-celda${i < puntos ? ' lleno' : ''}"></span>`).join('');
+  const html = `
+    <div class="tarjeta-puntos-titulo">🎖️ Tarjeta de puntos (${puntos}/12)</div>
+    <div class="tarjeta-puntos-grid">${celdas}</div>
+    ${puntos >= 12 ? '<div class="tarjeta-puntos-premio">¡Tarjeta completa! 🎉 Pronto: ruleta de premios.</div>' : ''}
+  `;
+  ['tarjeta-puntos-panel', 'tarjeta-puntos-sidebar'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  });
+}
+
+function cambiarCantidad(i, delta) {
+  carrito[i].cantidad += delta;
+  if (carrito[i].cantidad <= 0) carrito.splice(i, 1);
+  guardarCarrito();
+  renderCarrito();
+  actualizarCarritoFlotante();
+}
+function quitarDelCarrito(i) {
+  carrito.splice(i, 1);
+  guardarCarrito();
+  renderCarrito();
+  actualizarCarritoFlotante();
+}
+function actualizarObservacion(i, val) {
+  carrito[i].observacion = val;
+  guardarCarrito();
+}
+
+function irACheckout() {
+  if (carrito.length === 0) return;
+  cerrarCarrito();
+  document.getElementById('overlay-checkout').classList.add('visible');
+  document.getElementById('panel-checkout').classList.add('visible');
+}
+function cerrarCheckout() {
+  document.getElementById('overlay-checkout').classList.remove('visible');
+  document.getElementById('panel-checkout').classList.remove('visible');
+}
+
+function elegirTipo(tipo) {
+  tipoPedidoSeleccionado = tipo;
+  cerrarCheckout();
+  if (tipo === 'domicilio') {
+    document.getElementById('overlay-domicilio').classList.add('visible');
+    document.getElementById('panel-domicilio').classList.add('visible');
+  } else if (mesaQR !== null) {
+    // Mesa ya identificada por QR: autoservicio. Si un mesero ya la había
+    // reclamado en una vuelta anterior, el backend le acredita el pedido igual.
+    confirmarPedidoLocal(mesaQR, '');
+  } else {
+    mesaAbiertaInfo = null;
+    ultimaMesaVerificada = null;
+    document.getElementById('mesa-numero').value = '';
+    document.getElementById('mesa-mesero').value = '';
+    document.getElementById('mesa-mesero').disabled = false;
+    document.getElementById('mesa-mesero-label').textContent = 'Nombre del mesero';
+    document.getElementById('mesa-nota').style.display = 'none';
+    document.getElementById('overlay-mesa').classList.add('visible');
+    document.getElementById('panel-mesa').classList.add('visible');
+  }
+}
+
+function cerrarMesaMesero() {
+  document.getElementById('overlay-mesa').classList.remove('visible');
+  document.getElementById('panel-mesa').classList.remove('visible');
+}
+
+let mesaAbiertaInfo = null;
+let ultimaMesaVerificada = null;
+
+async function verificarMesa() {
+  const mesa = document.getElementById('mesa-numero').value.trim();
+  // Evita repetir la verificación cuando el blur se dispara de nuevo por el
+  // propio clic en "Confirmar pedido" (si no, esa segunda verificación resetea
+  // mesaAbiertaInfo justo antes de que confirmarMesaMesero() lo lea).
+  if (mesa === ultimaMesaVerificada) return;
+  ultimaMesaVerificada = mesa;
+
+  const meseroInput = document.getElementById('mesa-mesero');
+  const label = document.getElementById('mesa-mesero-label');
+  const nota = document.getElementById('mesa-nota');
+
+  mesaAbiertaInfo = null;
+  meseroInput.disabled = false;
+  label.textContent = 'Nombre del mesero';
+  nota.style.display = 'none';
+  if (!mesa) return;
+
+  try {
+    const res = await fetch(SCRIPT_URL + '?accion=estado_mesa&mesa=' + encodeURIComponent(mesa));
+    const data = await res.json();
+    if (!data.ok) return;
+    mesaAbiertaInfo = { abierta: data.abierta, mesero: data.mesero || '' };
+
+    if (data.abierta && data.mesero) {
+      meseroInput.value = data.mesero;
+      meseroInput.disabled = true;
+      label.textContent = 'Mesero asignado';
+      nota.textContent = `📍 Esta mesa ya la está atendiendo ${data.mesero}. Los productos nuevos quedan a su nombre.`;
+      nota.style.display = 'block';
+    } else if (data.abierta && !data.mesero) {
+      label.textContent = 'Nombre del mesero (opcional)';
+      nota.textContent = '📍 Esta mesa sigue en autoservicio. Si la vas a atender, escribe tu nombre; si no, déjalo vacío.';
+      nota.style.display = 'block';
+    }
+  } catch (e) {
+    // Backend no disponible todavía — seguimos con el comportamiento normal (ambos campos requeridos).
+  }
+}
+
+function confirmarMesaMesero() {
+  const mesa = document.getElementById('mesa-numero').value.trim();
+  const mesero = document.getElementById('mesa-mesero').value.trim();
+  const meseroOpcional = mesaAbiertaInfo && mesaAbiertaInfo.abierta;
+  if (!mesa || (!mesero && !meseroOpcional)) {
+    alert('Por favor completa el número de mesa y el nombre del mesero');
+    return;
+  }
+  cerrarMesaMesero();
+  confirmarPedidoLocal(mesa, mesero);
+}
+
+function cerrarDomicilio() {
+  document.getElementById('overlay-domicilio').classList.remove('visible');
+  document.getElementById('panel-domicilio').classList.remove('visible');
+}
+
+function resumenPedidoTexto() {
+  const lineas = carrito.map(i => `• ${i.cantidad}x ${i.producto}${i.observacion ? ' (' + i.observacion + ')' : ''} — ${formatoCOP(i.precio * i.cantidad)}`);
+  const total = carrito.reduce((s, i) => s + i.cantidad * i.precio, 0);
+  return {lineas, total};
+}
+
+const NOMBRES_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+async function enviarDomicilio() {
+  const nombre = document.getElementById('dom-nombre').value.trim();
+  const celular = document.getElementById('dom-celular').value.trim();
+  const direccion = document.getElementById('dom-direccion').value.trim();
+  const diaNac = document.getElementById('dom-dia-nac').value.trim();
+  const mesNac = document.getElementById('dom-mes-nac').value;
+  const anioNac = document.getElementById('dom-anio-nac').value.trim();
+  if (!nombre || !celular || !direccion) { alert('Por favor completa nombre, celular y dirección'); return; }
+
+  const {lineas, total} = resumenPedidoTexto();
+  const fechaNacTxt = mesNac ? `${diaNac ? diaNac + ' de ' : ''}${NOMBRES_MES[parseInt(mesNac, 10) - 1]}${anioNac ? ' de ' + anioNac : ''}` : '';
+
+  const msgLineas = [
+    `🛵 *Pedido a domicilio - Donde el Gordo*`,
+    ``,
+    `Nombre: ${nombre}`,
+    `Celular: ${celular}`,
+    `Dirección: ${direccion}`
+  ];
+  if (fechaNacTxt) msgLineas.push(`Fecha de nacimiento: ${fechaNacTxt}`);
+  msgLineas.push(``, ...lineas, ``, `Subtotal: ${formatoCOP(total)}`, `Recargo de domicilio: a confirmar según zona`);
+  if (total >= 50000) msgLineas.push(`🎁 ¡Este pedido suma 1 punto en tu tarjeta de fidelidad!`);
+  msgLineas.push(``, `Por favor confírmenme el Nequi para el pago y el tiempo de espera. ¡Gracias!`);
+  const msg = msgLineas.join('\n');
+
+  const url = `https://wa.me/${WHATSAPP_NEGOCIO}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+  cerrarDomicilio();
+  sumarPuntoSiAplica(total);
+  const cumpleISO = (diaNac && mesNac && anioNac)
+    ? `${anioNac}-${String(mesNac).padStart(2, '0')}-${String(diaNac).padStart(2, '0')}`
+    : '';
+  await registrarVentaEnSheet('domicilio', total);
+  await registrarClienteDesdeMenu(nombre, celular, cumpleISO, direccion);
+  carrito = [];
+  guardarCarrito();
+  actualizarCarritoFlotante();
+  renderCarrito();
+}
+
+/**
+ * Guarda o actualiza al cliente en la hoja Clientes, reusando las mismas acciones
+ * que ya usa bienvenida.html (buscar_cliente/registrar_cliente/actualizar_cliente).
+ * Antes, el nombre/celular/cumpleaños/dirección del checkout de Domicilio solo se
+ * enviaban por WhatsApp y se perdían — no quedaban en ningún Sheet (hallazgo de
+ * pruebas 2026-07-22). La dirección se reenvía también al actualizar un cliente ya
+ * existente porque puede cambiar de un pedido a otro (se guarda la más reciente).
+ * Igual que registrarVentaEnSheet, no bloquea ni le muestra error al cliente si
+ * falla — el pedido ya se confirmó por WhatsApp de todas formas.
+ */
+async function registrarClienteDesdeMenu(nombre, celular, cumpleISO, direccion) {
+  try {
+    const res = await fetch(SCRIPT_URL + '?accion=buscar_cliente&telefono=' + encodeURIComponent(celular));
+    const data = await res.json();
+    if (data.ok && data.existe) {
+      const params = new URLSearchParams({ accion: 'actualizar_cliente', telefono: celular, direccion: direccion });
+      await fetch(SCRIPT_URL + '?' + params.toString());
+    } else {
+      const params = new URLSearchParams({
+        accion: 'registrar_cliente',
+        telefono: celular,
+        nombre: nombre,
+        cumpleanos: cumpleISO,
+        canal: 'menu',
+        direccion: direccion
+      });
+      await fetch(SCRIPT_URL + '?' + params.toString());
+    }
+  } catch (e) {
+    // Backend no disponible, o sin conexión — no se le muestra error al cliente por esto.
+  }
+}
+
+/**
+ * Registra la venta en la hoja Ventas vía crear_pedido, sin bloquear el flujo de
+ * WhatsApp si falla (el pedido de Domicilio ya se confirma por WhatsApp de todas
+ * formas). Antes, Domicilio no tocaba el sistema — ahora sí queda como venta,
+ * igual que "en el local", para que el inventario descuente insumos automáticamente
+ * sin depender de que alguien vuelva a digitar la tirilla (decisión 2026-07-16).
+ */
+async function registrarVentaEnSheet(tipo, total) {
+  try {
+    const params = new URLSearchParams({
+      accion: 'crear_pedido',
+      items: JSON.stringify(carrito),
+      total: String(total),
+      tipo: tipo
+    });
+    await fetch(SCRIPT_URL + '?' + params.toString());
+  } catch (e) {
+    // Backend no disponible todavía, o sin conexión — el pedido ya se confirmó por
+    // WhatsApp, así que no se le muestra ningún error al cliente por esto.
+  }
+}
+
+async function confirmarPedidoLocal(mesa, mesero) {
+  const {lineas, total} = resumenPedidoTexto();
+  const cont = document.getElementById('confirmacion-contenido');
+  cont.innerHTML = `<div class="confirmacion-icono">⏳</div><h3>Enviando tu pedido...</h3>`;
+  document.getElementById('overlay-confirmacion').classList.add('visible');
+  document.getElementById('panel-confirmacion').classList.add('visible');
+
+  try {
+    const params = new URLSearchParams({
+      accion: 'crear_pedido',
+      items: JSON.stringify(carrito),
+      total: String(total),
+      tipo: 'local',
+      mesa: String(mesa || ''),
+      mesero: mesero || ''
+    });
+    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const data = await res.json();
+    if (data.ok) {
+      const mesaTxt = mesa ? ` (Mesa ${mesa})` : '';
+      cont.innerHTML = `<div class="confirmacion-icono">✅</div><h3>¡Pedido enviado!${mesaTxt}</h3><p>Tu pedido ya está en cocina y quedó pendiente de pago en caja. ¡Gracias por tu compra!</p>`;
+      sumarPuntoSiAplica(total);
+      carrito = [];
+      guardarCarrito();
+      actualizarCarritoFlotante();
+      renderCarrito();
+    } else {
+      throw new Error('respuesta no ok');
+    }
+  } catch (e) {
+    cont.innerHTML = `<div class="confirmacion-icono">⚠️</div><h3>Todavía no podemos enviar el pedido</h3><p>La conexión con cocina/caja no está lista aún (falta desplegar la acción <code>crear_pedido</code> en Apps Script). Por ahora puedes hacer tu pedido por WhatsApp.</p>`;
+  }
+}
+
+function cerrarConfirmacion() {
+  document.getElementById('overlay-confirmacion').classList.remove('visible');
+  document.getElementById('panel-confirmacion').classList.remove('visible');
+}
+
+function abrirAdmin() {
+  if (adminActivo) { adminActivo = false; adminClave = ''; renderProductos(); renderRecomendados(); return; }
+  document.getElementById('overlay-admin').classList.add('visible');
+  document.getElementById('panel-admin').classList.add('visible');
+}
+function cerrarAdmin() {
+  document.getElementById('overlay-admin').classList.remove('visible');
+  document.getElementById('panel-admin').classList.remove('visible');
+}
+
+async function validarAdmin() {
+  const pass = document.getElementById('admin-password').value;
+  try {
+    const res = await fetch(SCRIPT_URL + '?accion=verificar_admin&clave=' + encodeURIComponent(pass));
+    const data = await res.json();
+    if (data.ok && data.valido) {
+      adminActivo = true;
+      adminClave = pass; // se reenvía en cada edición de precio para que el script la valide de nuevo
+      cerrarAdmin();
+      renderProductos();
+      renderRecomendados();
+    } else {
+      alert('Contraseña incorrecta.');
+    }
+  } catch (e) {
+    alert('No se pudo verificar la contraseña — la acción "verificar_admin" todavía no está desplegada en Apps Script.');
+  }
+}
+
+async function editarPrecio(idx) {
+  const p = PRODUCTOS[idx];
+  const nuevo = prompt(`Nuevo precio para "${p.producto}" (actual: ${formatoCOP(p.precio)})`, p.precio);
+  if (nuevo === null) return;
+  const nuevoNum = parseInt(nuevo.replace(/[^0-9]/g, ''), 10);
+  if (isNaN(nuevoNum)) { alert('Precio inválido'); return; }
+
+  try {
+    const params = new URLSearchParams({
+      accion: 'actualizar_precio',
+      producto: p.producto,
+      categoria: p.categoria,
+      precio: String(nuevoNum),
+      clave: adminClave
+    });
+    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const data = await res.json();
+    if (data.ok) {
+      p.precio = nuevoNum;
+      document.getElementById('precio-' + idx).textContent = formatoCOP(nuevoNum);
+    } else {
+      throw new Error('respuesta no ok');
+    }
+  } catch (e) {
+    alert('No se pudo guardar el precio — la acción "actualizar_precio" todavía no está desplegada en Apps Script.');
+  }
+}
+
+(async function init() {
+  renderMesaBadge();
+  await cargarProductos();
+  renderCategorias();
+  renderRecomendados();
+  renderProductos();
+  actualizarCarritoFlotante();
+  renderCarrito();
+  renderTarjetaPuntos();
+})();
+</script>
+</body>
+</html>

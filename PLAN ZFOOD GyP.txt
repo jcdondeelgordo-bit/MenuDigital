@@ -1,0 +1,72 @@
+Módulo 1. Menú Digital
+Menú QR.
+Fotos optimizadas para carga rápida. buscadas y livianas
+Observaciones por producto.
+Productos recomendados.
+Carrito de compras.
+
+Módulo 2. Pedidos desde la mesa
+( Opcional Cada mesa tendrá un código QR único.
+El cliente escanea y el sistema identifica automáticamente la mesa.
+El pedido llega sin que el cliente tenga que buscar un mesero.)
+La otra Opción es que el mesero ofrezca y tome el pedido tamando la mesa o el código QR de la mesa, teniendo en cuenta que sea de una forma o de la otra se toma datos del cliente Nombre, celular y fecha de nacimiento mm/aaaa
+
+Módulo 3. Comanda de cocina
+Pantalla exclusiva para cocina. 
+Hay 2 formas de mandar está comanda, por medio de impresora de tickets o por tablets ya se optará por la mejor.
+
+SERIA BUENO TENER UN MODULO AQUI QUE PUEDA SACAR
+Pedidos ordenados por hora.
+Estado del pedido:
+Pendiente.
+En preparación.
+Listo.
+Entregado.
+Aviso visual y auditivo pitido o algo que avise cuando entra un nuevo pedido.
+
+Módulo 4. División de cuenta
+Esta función tiene mucho valor y pocos sistemas la hacen de forma sencilla.
+Ejemplo: Mesa 8
+Juan: Hamburguesa + Gaseosa.
+Ana: Pizza personal.
+Carlos: Salchipapa + Jugo.
+El sistema permitiría:
+Cobrar a cada persona por separado.
+O dividir la cuenta en partes iguales.
+O combinar algunas cuentas (por ejemplo, Juan y Ana pagan juntos, Carlos aparte).
+
+Módulo 5. Inventario
+Cada venta descuenta automáticamente los ingredientes según las recetas.
+Enlazar con el inventario y sirva para cualquier tipo de comidas rapidas 
+
+Módulo 6. Fidelización
+Historial de compras.
+Cumpleaños.
+Puntos.
+Promociones automáticas.
+tarjeta de puntos 12 puntos los cuales se debe  incrementar autimaticamente por compra mayor de 50.000 mil pesos
+
+Módulo 7. Panel administrativo
+Ventas por día.
+Productos más vendidos. diferentes de pizzas y desechables
+Horas de mayor movimiento.
+Clientes frecuentes.
+Productos agotados.
+Una idea que puede diferenciarte
+Agregar un botón "Llamar al mesero" desde el mismo menú.
+En lugar de levantar la mano, el cliente pulsa el botón y en la pantalla del administrador aparece:
+Mesa 5 solicita atención.
+También podrían existir botones rápidos como:
+🧾 Pedir la cuenta.
+🥤 Solicitar otra bebida.
+🍅 Pedir más salsa.
+🙋 Llamar al mesero.
+Son funciones sencillas de implementar y mejoran mucho la experiencia del cliente
+
+los archivos los guerde tal como estan en la carpeta E:\Proyectos ZFood GyP
+
+en el drive estan en https://docs.google.com/spreadsheets/d/1BpzdVNZtBnzbqqPq9aiPrDKtNo386b8H33v0LaJyJYA/edit?usp=sharing
+com autoridad de editor
+Cuando se cree la app se debe crear seguridad que no se pueda ingresar por otras personas, ya que se guarda datos personales de clientes, celular y fecha de cumpleaños
+
+https://menululo.com/#precio esta Web tiene algo parecido a lo que se desea busca revisa su entorno y valida con lo que se busca hacer

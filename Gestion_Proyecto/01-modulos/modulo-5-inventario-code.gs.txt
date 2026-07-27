@@ -1,0 +1,572 @@
+// ============================================================================
+// MÓDULO 5 — INVENTARIO: espejo de referencia del backend real
+// ============================================================================
+// Este archivo es una COPIA DE REFERENCIA para que el grafo/documentación del
+// proyecto ZFood GyP lo incluya. El archivo real y editable es:
+//   E:\Descargas\MENU\DONDE EL GORDO\Code.gs
+// Es el backend de `inventario.html`, un proyecto separado (automatización de
+// inventario) que ya existía antes de ZFood GyP — ver 00-PLAN-MAESTRO.md y
+// modulo-5-inventario.md para el contexto completo. Si editas el backend real,
+// actualiza también esta copia para que no queden desincronizadas.
+// Se omitieron a propósito las funciones de diagnóstico manual (debugFecha,
+// debugCruce, debugTabs, debugProductos) — no son lógica de negocio, solo
+// herramientas de depuración desde el editor de Apps Script.
+// ============================================================================
+
+const SHEET_ID = '1BpzdVNZtBnzbqqPq9aiPrDKtNo386b8H33v0LaJyJYA';
+// Sheet del menú digital (menu.html, Módulos 1/2 de ZFood GyP) — distinto de SHEET_ID.
+// Se lee desde aquí (generarReporteInsumos) para que las ventas de Domicilio y En el
+// local descuenten insumos automáticamente. Ver 00-PLAN-MAESTRO.md para el detalle.
+const MENU_SHEET_ID = '1WIltJ3wSxGu9VQDGmnj5Lx9uXqUfWjA7Q9aKcZK32ak';
+
+// Normaliza nombres para poder cruzar Inventario/Ingresos (que solo tienen texto)
+// contra la tabla de Insumos (que tiene código). Mayúsculas + trim + espacios simples.
+function normalizeName(s) {
+  return (s || '').toString().toUpperCase().trim().replace(/\s+/g, ' ');
+}
+
+// Servir la página web si se abre directamente en Apps Script
+function doGet(e) {
+  const callback = e.parameter.callback;
+  const action = e.parameter.action;
+  let result;
+
+  if (action === 'get_productos') {
+    try {
+      const ss = SpreadsheetApp.openById(SHEET_ID);
+      const sheet = ss.getSheetByName('Productos');
+      const data = sheet.getDataRange().getValues();
+      const productos = [];
+
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const nombre = row[1]; // Columna B (Nombre)
+        if (!nombre) continue;
+        productos.push({
+          codigo: row[0],
+          nombre: nombre.toString().trim(),
+          categoria: row[2] ? row[2].toString().trim() : '',
+          precio: parseFloat(row[3]) || 0
+        });
+      }
+      result = { ok: true, data: productos };
+    } catch (err) {
+      result = { ok: false, error: err.toString() };
+    }
+  } else if (action === 'reporte_insumos') {
+    try {
+      const cruce = generarReporteInsumos(e.parameter.fecha);
+      try { escribirPestanaReporte(e.parameter.fecha, cruce); } catch (errReporte) { /* no bloquea la respuesta a la app */ }
+      result = { ok: true, data: cruce };
+    } catch (err) {
+      result = { ok: false, error: err.toString() };
+    }
+  } else if (action === 'get_data') {
+    try {
+      const ss = SpreadsheetApp.openById(SHEET_ID);
+      const sheet = ss.getSheetByName('Hoja 1');
+      const data = sheet.getDataRange().getValues();
+      const products = [];
+
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const producto = row[4]; // Columna E (PRODUCTOS)
+        if (!producto) continue;
+
+        // Leemos las 4 columnas de áreas (A, B, C, D) y limpiamos
+        let areas = [row[0], row[1], row[2], row[3]]
+          .filter(a => a && a.toString().trim() !== '')
+          .map(a => a.toString().trim().toLowerCase());
+
+        // Columna F es PRESENTACIÓN (opcional, descriptiva)
+        let presentacion = row[5] ? row[5].toString().trim() : '';
+
+        // Extraemos números de GRAMAJE (Columna G, ej: "500 GM" -> 500)
+        let gramajeStr = row[6] ? row[6].toString() : '';
+        let gramaje = 0;
+        if (gramajeStr && gramajeStr.toUpperCase() !== 'GRAMAJE') {
+          gramaje = parseInt(gramajeStr.replace(/\D/g, '')) || 0;
+        }
+
+        // Extraemos números de UNIDADES (Columna H, ej: "10 UNIDADES" -> 10, "UNIDAD" -> 1)
+        let unidStr = row[7] ? row[7].toString().toUpperCase() : '';
+        let unidades = 0;
+        if (unidStr === 'UNIDAD' || unidStr === 'UNIDADES') {
+          unidades = 1;
+        } else if (unidStr) {
+          unidades = parseInt(unidStr.replace(/\D/g, '')) || 0;
+        }
+
+        products.push({
+          producto: producto,
+          areas: areas,
+          presentacion: presentacion,
+          gramaje: gramaje,
+          unidades: unidades
+        });
+      }
+      result = { ok: true, data: products };
+    } catch(err) {
+      result = { ok: false, error: err.toString() };
+    }
+  } else if (action === 'verificar_envio') {
+    const idEnvio = e.parameter.id;
+    result = { ok: true, confirmado: false };
+    try {
+      const ss = SpreadsheetApp.openById(SHEET_ID);
+      const log = ss.getSheetByName('Log_Envios');
+      if (log && log.getLastRow() > 1) {
+        const ids = log.getRange(2, 1, log.getLastRow() - 1, 1).getValues().flat();
+        result.confirmado = ids.indexOf(idEnvio) !== -1;
+      }
+    } catch (err) {
+      result = { ok: false, error: err.toString() };
+    }
+  } else {
+    // Si se accede sin parámetros, se muestra la página Index
+    return HtmlService.createHtmlOutputFromFile('Index')
+      .setTitle('Inventario - Donde El Gordo')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
+
+  const json = JSON.stringify(result);
+  if (callback) {
+    return ContentService.createTextOutput(callback + '(' + json + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.parameter.payload);
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const timestamp = new Date();
+
+    if (data.action === 'guardar_inventario_completo') {
+      // Campos requeridos por el usuario: Fecha, Turno, Área, Producto, Total
+      // Adicionalmente se crea una columna "Registrado" para marcar fecha y hora de la transacción
+      const sheet = getOrCreateSheet(ss, 'Inventario', ['Fecha', 'Turno', 'Área', 'Producto', 'Total', 'Registrado']);
+
+      data.items.forEach(function(it) {
+        // it.areas contiene la lista consolidada de áreas (ej: "PIZZA, COCINA, PARRILLA")
+        sheet.appendRow([data.fecha, data.turno, it.areas, it.nombre, it.total, timestamp]);
+      });
+
+      registrarEnvio(ss, data.idEnvio, 'inventario', timestamp);
+      return respond({ ok: true });
+
+    } else if (data.action === 'guardar_ingreso') {
+      // Ingresos del día: se registran con Fecha, Producto, Cantidad, Unidad, y timestamp
+      const sheet = getOrCreateSheet(ss, 'Ingresos', ['Fecha', 'Producto', 'Cantidad', 'Unidad', 'Registrado']);
+
+      data.items.forEach(function(it) {
+        sheet.appendRow([data.fecha, it.nombre, it.total, it.unit, timestamp]);
+      });
+
+      registrarEnvio(ss, data.idEnvio, 'ingreso', timestamp);
+      return respond({ ok: true });
+
+    } else if (data.action === 'guardar_ventas') {
+      // Tirilla de ventas del día. Se borran las filas previas de esa fecha antes de
+      // escribir, para que reenviar una corrección no duplique el gasto de insumos.
+      const sheet = getOrCreateSheet(ss, 'Ventas',
+        ['Fecha', 'Hora', 'Código_Producto', 'Producto', 'Cantidad', 'Precio_Unitario', 'Total', 'Registrado_Por']);
+
+      borrarFilasPorFecha(sheet, data.fecha, 0);
+
+      data.items.forEach(function(it) {
+        const total = it.cantidad * it.precioUnitario;
+        sheet.appendRow([data.fecha, timestamp, it.codigo, it.nombre, it.cantidad, it.precioUnitario, total, data.registradoPor || '']);
+      });
+
+      registrarEnvio(ss, data.idEnvio, 'ventas', timestamp);
+      return respond({ ok: true });
+
+    } else {
+      return respond({ ok: false, error: 'Acción no reconocida' });
+    }
+  } catch (err) {
+    return respond({ ok: false, error: err.toString() });
+  }
+}
+
+function registrarEnvio(ss, idEnvio, tipo, timestamp) {
+  if (!idEnvio) return;
+  const log = getOrCreateSheet(ss, 'Log_Envios', ['ID_Envio', 'Tipo', 'Registrado']);
+  log.appendRow([idEnvio, tipo, timestamp]);
+}
+
+function getOrCreateSheet(ss, name, headers) {
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) sheet = ss.insertSheet(name);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+  }
+  return sheet;
+}
+
+function respond(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Borra (de abajo hacia arriba, para no romper índices) las filas de `sheet` cuya
+// columna `colIndex` (0-based) coincida con la fecha `fecha` ('YYYY-MM-DD').
+function borrarFilasPorFecha(sheet, fecha, colIndex) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+  const values = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  for (let i = values.length - 1; i >= 0; i--) {
+    if (toDateStr(values[i][colIndex]) === fecha) {
+      sheet.deleteRow(i + 2);
+    }
+  }
+}
+
+// Convierte una celda de fecha (puede venir como Date o como texto) a 'YYYY-MM-DD'.
+function toDateStr(value) {
+  if (!value) return '';
+  if (Object.prototype.toString.call(value) === '[object Date]') {
+    return Utilities.formatDate(value, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  const str = value.toString().trim();
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime()) && /^\d{4}-\d{2}-\d{2}/.test(str)) {
+    return str.substring(0, 10);
+  }
+  return str;
+}
+
+// Resta `days` a una fecha 'YYYY-MM-DD' y devuelve el resultado en el mismo formato.
+function addDaysToDateStr(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+}
+
+// Motor de cruce: Había ayer + Ingreso - Gasto = Debe haber, vs. Existe real (cierre de hoy).
+function generarReporteInsumos(fecha) {
+  if (!fecha) throw new Error('Falta la fecha');
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const fechaAyer = addDaysToDateStr(fecha, -1);
+
+  // --- Insumos (catálogo base) ---
+  const insumosSheet = ss.getSheetByName('Insumos');
+  const insumosData = insumosSheet ? insumosSheet.getDataRange().getValues() : [];
+  const insumos = []; // { codigo, nombre, unidad }
+  for (let i = 1; i < insumosData.length; i++) {
+    const row = insumosData[i];
+    if (!row[0]) continue;
+    insumos.push({ codigo: row[0].toString().trim(), nombre: row[1].toString().trim(), unidad: row[2] ? row[2].toString().trim() : '' });
+  }
+
+  // --- Qué insumos SÍ se cuentan físicamente (catálogo de conteo, "Hoja 1") ---
+  const hoja1 = ss.getSheetByName('Hoja 1');
+  const hoja1Data = hoja1 ? hoja1.getDataRange().getValues() : [];
+  const trackedNames = {};
+  for (let i = 1; i < hoja1Data.length; i++) {
+    const producto = hoja1Data[i][4];
+    if (producto) trackedNames[normalizeName(producto)] = true;
+  }
+
+  // --- Recetas: Codigo_Producto -> [{ codigoInsumo, cantidad }] ---
+  const recetasSheet = ss.getSheetByName('Recetas');
+  const recetasData = recetasSheet ? recetasSheet.getDataRange().getValues() : [];
+  const recetasPorProducto = {};
+  for (let i = 1; i < recetasData.length; i++) {
+    const row = recetasData[i];
+    const codigoProducto = row[0] ? row[0].toString().trim() : '';
+    const codigoInsumo = row[2] ? row[2].toString().trim() : '';
+    const cantidad = parseFloat(row[3]) || 0;
+    if (!codigoProducto || !codigoInsumo) continue;
+    if (!recetasPorProducto[codigoProducto]) recetasPorProducto[codigoProducto] = [];
+    recetasPorProducto[codigoProducto].push({ codigoInsumo: codigoInsumo, cantidad: cantidad });
+  }
+
+  // --- Productos, para resolver nombre -> código (lo usan los Gastos J/C, que se escriben
+  // a mano, y desde 2026-07-16 también las ventas del menú digital, que no traen código) ---
+  const productosSheet = ss.getSheetByName('Productos');
+  const productosData = productosSheet ? productosSheet.getDataRange().getValues() : [];
+  const codigoPorNombreProducto = {};
+  for (let i = 1; i < productosData.length; i++) {
+    const row = productosData[i];
+    if (!row[1]) continue;
+    codigoPorNombreProducto[normalizeName(row[1])] = row[0] ? row[0].toString().trim() : '';
+  }
+
+  // --- Ventas del día (tirilla, digitada a mano en este mismo Sheet) -> Gasto de insumos ---
+  const ventasSheet = ss.getSheetByName('Ventas');
+  const ventasData = ventasSheet ? ventasSheet.getDataRange().getValues() : [];
+  const gasto = {}; // codigoInsumo -> cantidad consumida
+  for (let i = 1; i < ventasData.length; i++) {
+    const row = ventasData[i];
+    if (toDateStr(row[0]) !== fecha) continue;
+    const codigoProducto = row[2] ? row[2].toString().trim() : '';
+    const cantidadVendida = parseFloat(row[4]) || 0;
+    const receta = recetasPorProducto[codigoProducto];
+    if (!receta || !cantidadVendida) continue;
+    receta.forEach(function (r) {
+      gasto[r.codigoInsumo] = (gasto[r.codigoInsumo] || 0) + cantidadVendida * r.cantidad;
+    });
+  }
+
+  // --- Ventas del menú digital del día (Domicilio + En el local) -> Gasto de insumos ---
+  // El menú digital (menu.html) vive en OTRO Google Sheet (ver 00-PLAN-MAESTRO.md /
+  // MENU_SHEET_ID). Sus filas de Ventas no traen Código_Producto (el menú solo maneja
+  // nombre), así que el código se resuelve por nombre contra la propia hoja "Productos"
+  // de ESTE Sheet — mismo mecanismo que ya usan los Gastos J/C. Si el nombre no calza
+  // exactamente entre los dos catálogos, esa venta puntual no descuenta insumos (falla
+  // en silencio, no rompe el reporte) — revisar que los nombres coincidan si un producto
+  // nunca aparece descontando lo que debería.
+  //
+  // Se agregó 2026-07-16 para que la venta (Domicilio o En el local) cuente sola, sin
+  // depender de que alguien vuelva a digitar la tirilla. La tirilla sigue siendo válida
+  // como alternativa (ej. mientras el equipo se acostumbra al cambio) — pero si la MISMA
+  // venta se registra por los dos caminos el mismo día, se contaría doble; la tirilla
+  // debe usarse solo para ventas que no pasaron por el menú digital.
+  try {
+    const menuSs = SpreadsheetApp.openById(MENU_SHEET_ID);
+    const menuVentasSheet = menuSs.getSheetByName('Ventas');
+    const menuVentasData = menuVentasSheet ? menuVentasSheet.getDataRange().getValues() : [];
+    const menuEnc = menuVentasData[0] || [];
+    const idxMFecha = menuEnc.indexOf('Fecha');
+    const idxMProducto = menuEnc.indexOf('Producto');
+    const idxMCantidad = menuEnc.indexOf('Cantidad');
+
+    for (let i = 1; i < menuVentasData.length; i++) {
+      const row = menuVentasData[i];
+      if (toDateStr(row[idxMFecha]) !== fecha) continue;
+      const codigoProducto = codigoPorNombreProducto[normalizeName(row[idxMProducto])];
+      const cantidadVendida = parseFloat(row[idxMCantidad]) || 0;
+      const receta = codigoProducto ? recetasPorProducto[codigoProducto] : null;
+      if (!receta || !cantidadVendida) continue;
+      receta.forEach(function (r) {
+        gasto[r.codigoInsumo] = (gasto[r.codigoInsumo] || 0) + cantidadVendida * r.cantidad;
+      });
+    }
+  } catch (errMenu) {
+    // Si el Sheet del menú no está disponible (permisos, ID cambiado, etc.) el reporte
+    // sigue con lo que sí pudo leer — no se rompe por esto.
+  }
+
+  // --- Gastos J/C del día (consumo o retiro autorizado por Jaime/Clemencia) -> Gasto J/C de insumos ---
+  // Esta pestaña la llenan a mano directamente en el Sheet, por nombre de producto (no código).
+  const gastosJCSheet = getOrCreateSheet(ss, 'Gastos_JC', ['Fecha', 'Producto', 'Cantidad', 'Autorizado_Por', 'Motivo']);
+  const gastosJCData = gastosJCSheet.getDataRange().getValues();
+  const gastoJC = {}; // codigoInsumo -> cantidad
+  for (let i = 1; i < gastosJCData.length; i++) {
+    const row = gastosJCData[i];
+    if (toDateStr(row[0]) !== fecha) continue;
+    const codigoProducto = codigoPorNombreProducto[normalizeName(row[1])];
+    const cantidad = parseFloat(row[2]) || 0;
+    const receta = codigoProducto ? recetasPorProducto[codigoProducto] : null;
+    if (!receta || !cantidad) continue;
+    receta.forEach(function (r) {
+      gastoJC[r.codigoInsumo] = (gastoJC[r.codigoInsumo] || 0) + cantidad * r.cantidad;
+    });
+  }
+
+  // --- Ingresos del día, por nombre normalizado ---
+  const ingresosSheet = ss.getSheetByName('Ingresos');
+  const ingresosData = ingresosSheet ? ingresosSheet.getDataRange().getValues() : [];
+  const ingresoPorNombre = {};
+  for (let i = 1; i < ingresosData.length; i++) {
+    const row = ingresosData[i];
+    if (toDateStr(row[0]) !== fecha) continue;
+    const nombre = normalizeName(row[1]);
+    const cantidad = parseFloat(row[2]) || 0;
+    if (!nombre) continue;
+    ingresoPorNombre[nombre] = (ingresoPorNombre[nombre] || 0) + cantidad;
+  }
+
+  // --- Inventario de cierre: "Había ayer" (cierre de fechaAyer) y "Existe real" (cierre de hoy) ---
+  const inventarioSheet = ss.getSheetByName('Inventario');
+  const inventarioData = inventarioSheet ? inventarioSheet.getDataRange().getValues() : [];
+  const habiaAyerPorNombre = {};
+  const existeRealPorNombre = {};
+  for (let i = 1; i < inventarioData.length; i++) {
+    const row = inventarioData[i];
+    const filaFecha = toDateStr(row[0]);
+    const turno = (row[1] || '').toString().trim().toUpperCase();
+    if (turno !== 'CIERRE') continue;
+    const nombre = normalizeName(row[3]);
+    const total = parseFloat(row[4]) || 0;
+    if (!nombre) continue;
+    // Si hay varias filas para el mismo producto/fecha (reenvíos), gana la última (más reciente).
+    if (filaFecha === fechaAyer) habiaAyerPorNombre[nombre] = total;
+    if (filaFecha === fecha) existeRealPorNombre[nombre] = total;
+  }
+
+  // --- Cruce final, un resultado por insumo ---
+  const round2 = function (n) { return Math.round(n * 100) / 100; };
+  const reporte = insumos.map(function (ins) {
+    const nombreNorm = normalizeName(ins.nombre);
+    const sinConteo = !trackedNames[nombreNorm];
+    const habiaAyer = habiaAyerPorNombre[nombreNorm] || 0;
+    const ingreso = ingresoPorNombre[nombreNorm] || 0;
+    const gastoInsumo = round2(gasto[ins.codigo] || 0);
+    const gastoJCInsumo = round2(gastoJC[ins.codigo] || 0);
+    const existeReal = existeRealPorNombre[nombreNorm] || 0;
+    const debeHaber = round2(habiaAyer + ingreso - gastoInsumo - gastoJCInsumo);
+    const diferencia = round2(existeReal - debeHaber);
+    let estado;
+    if (sinConteo) estado = 'SIN CONTEO';
+    else if (Math.abs(diferencia) < 0.01) estado = 'BIEN';
+    else if (diferencia > 0) estado = 'SOBRO';
+    else estado = 'FALTO';
+
+    return {
+      codigo: ins.codigo,
+      insumo: ins.nombre,
+      unidad: ins.unidad,
+      habiaAyer: habiaAyer,
+      ingreso: ingreso,
+      gasto: gastoInsumo,
+      gastoJC: gastoJCInsumo,
+      debeHaber: debeHaber,
+      existeReal: existeReal,
+      diferencia: diferencia,
+      estado: estado
+    };
+  });
+
+  // --- Bitácora: se guarda en Inventario_Insumos (reemplazando lo que hubiera de ese día) ---
+  const bitacoraHeaders = ['Fecha', 'Codigo_Insumo', 'Insumo', 'Habia_Ayer', 'Ingreso', 'Gasto', 'Gasto_JC', 'Debe_Haber', 'Existe_Real', 'Diferencia', 'Estado'];
+  const bitacora = getOrCreateSheet(ss, 'Inventario_Insumos', bitacoraHeaders);
+  // Fuerza los encabezados correctos siempre (por si la pestaña quedó de una versión
+  // anterior del script con columnas distintas, lo que corría los datos de columna).
+  bitacora.getRange(1, 1, 1, bitacoraHeaders.length).setValues([bitacoraHeaders]).setFontWeight('bold');
+  borrarFilasPorFecha(bitacora, fecha, 0);
+  reporte.forEach(function (r) {
+    bitacora.appendRow([fecha, r.codigo, r.insumo, r.habiaAyer, r.ingreso, r.gasto, r.gastoJC, r.debeHaber, r.existeReal, r.diferencia, r.estado]);
+  });
+
+  return reporte;
+}
+
+// Escribe el cruce ya calculado en la pestaña "Reporte", con el formato que usa el dueño:
+// M2 = fecha, A3:C = ventas del día (Código, Producto, Cant), D3:K = cruce por insumo
+// (mismo orden que la pestaña Insumos): Insumo, Gasto, Inv_ayer, Ingreso, Gasto J/C,
+// Debe Haber, Exis_Real, Falto/Sobro.
+function escribirPestanaReporte(fecha, cruce) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const reporte = ss.getSheetByName('Reporte') || ss.insertSheet('Reporte');
+
+  reporte.getRange('A2:K2').setValues([[
+    'CODIGO', 'PRODUCTO', 'CANT', 'INSUMO', 'GASTO', 'INV_AYER', 'INGRESO', 'GASTO J/C', 'DEBE HABER', 'EXIS_REAL', 'FALTO/SOBRO'
+  ]]);
+  reporte.getRange('A2:K2').setFontWeight('bold');
+  reporte.getRange('M1').setValue('FECHA');
+  reporte.getRange('M2').setValue(fecha);
+
+  // Limpia lo que hubiera de un reporte anterior antes de escribir el nuevo.
+  const maxRows = 500;
+  reporte.getRange(3, 1, maxRows, 3).clearContent(); // A:C
+  reporte.getRange(3, 4, maxRows, 8).clearContent(); // D:K
+
+  const ventasSheet = ss.getSheetByName('Ventas');
+  const ventasData = ventasSheet ? ventasSheet.getDataRange().getValues() : [];
+  const filasVentas = [];
+  for (let i = 1; i < ventasData.length; i++) {
+    const row = ventasData[i];
+    if (toDateStr(row[0]) !== fecha) continue;
+    filasVentas.push([row[2], row[3], row[4]]); // Código_Producto, Producto, Cantidad
+  }
+  if (filasVentas.length > 0) reporte.getRange(3, 1, filasVentas.length, 3).setValues(filasVentas);
+
+  const filasInsumos = cruce.map(function (r) {
+    return [r.insumo, r.gasto, r.habiaAyer, r.ingreso, r.gastoJC, r.debeHaber, r.existeReal, r.diferencia];
+  });
+  if (filasInsumos.length > 0) reporte.getRange(3, 4, filasInsumos.length, 8).setValues(filasInsumos);
+
+  escribirResumenReporte(ss, reporte, fecha, filasVentas);
+}
+
+// Resumen Reporte (columna P, desde la fila 2): Total vendido, Número de ventas,
+// Producto más vendido y Sobra/Falta (manual), más un gráfico de ventas por producto.
+// "Producto más vendido" solo considera productos con Código >= 11 (a partir de
+// HAMB. SENCILLA) y excluye el Código 99 (DESECHABLE), para no dejar que Pizzas o
+// Desechables ganen el ranking por volumen.
+function escribirResumenReporte(ss, reporte, fecha, filasVentas) {
+  const productosSheet = ss.getSheetByName('Productos');
+  const productosData = productosSheet ? productosSheet.getDataRange().getValues() : [];
+  const precioPorCodigo = {};
+  for (let i = 1; i < productosData.length; i++) {
+    const row = productosData[i];
+    if (!row[0]) continue;
+    precioPorCodigo[row[0].toString().trim()] = parseFloat(row[3]) || 0;
+  }
+
+  let totalVendido = 0;
+  let numeroVentas = 0;
+  let masVendidoNombre = 'Sin ventas elegibles';
+  let masVendidoCantidad = -1;
+
+  filasVentas.forEach(function (fila) {
+    const codigo = fila[0] ? fila[0].toString().trim() : '';
+    const nombre = fila[1] ? fila[1].toString().trim() : '';
+    const cantidad = parseFloat(fila[2]) || 0;
+    const precio = precioPorCodigo[codigo] || 0;
+
+    totalVendido += cantidad * precio;
+    numeroVentas += cantidad;
+
+    const codigoNum = parseFloat(codigo);
+    const elegible = !isNaN(codigoNum) && codigoNum >= 11 && codigoNum !== 99;
+    if (elegible && cantidad > masVendidoCantidad) {
+      masVendidoCantidad = cantidad;
+      masVendidoNombre = nombre;
+    }
+  });
+
+  reporte.getRange('P2').setValue('RESUMEN REPORTE').setFontWeight('bold');
+  reporte.getRange('P3').setValue('Total vendido');
+  reporte.getRange('Q3').setValue(totalVendido);
+  reporte.getRange('P4').setValue('Número de ventas');
+  reporte.getRange('Q4').setValue(numeroVentas);
+  reporte.getRange('P5').setValue('Producto más vendido');
+  reporte.getRange('Q5').setValue(masVendidoNombre);
+  reporte.getRange('P6').setValue('Sobra / Falta (edítalo a mano)');
+  // Q6 no se toca: queda libre para que el dueño lo corrija a mano tras el conteo físico.
+
+  // --- Gráfico de ventas por producto, usando la misma tabla B3:C que ya se escribió ---
+  reporte.getCharts().forEach(function (chart) { reporte.removeChart(chart); });
+  if (filasVentas.length > 0) {
+    const chartRange = reporte.getRange(3, 2, filasVentas.length, 2); // B:C = Producto, Cantidad
+    const chart = reporte.newChart()
+      .setChartType(Charts.ChartType.BAR)
+      .addRange(chartRange)
+      .setPosition(8, 16, 0, 0) // ancla en fila 8, columna P
+      .setOption('title', 'Ventas por producto - ' + fecha)
+      .setOption('legend', { position: 'none' })
+      .build();
+    reporte.insertChart(chart);
+  }
+}
+
+// --- Menú directo en el Sheet, para generar el reporte sin pasar por la app ---
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('🍔 Donde el Gordo')
+    .addItem('📊 Generar Reporte del Día', 'menuGenerarReporte')
+    .addToUi();
+}
+
+function menuGenerarReporte() {
+  const ui = SpreadsheetApp.getUi();
+  const hoy = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  const resp = ui.prompt('Generar Reporte', 'Fecha a revisar (AAAA-MM-DD):', ui.ButtonSet.OK_CANCEL);
+  if (resp.getSelectedButton() !== ui.Button.OK) return;
+  const fecha = resp.getResponseText().trim() || hoy;
+
+  try {
+    const cruce = generarReporteInsumos(fecha);
+    escribirPestanaReporte(fecha, cruce);
+    const faltantes = cruce.filter(function (r) { return r.estado === 'FALTO'; }).length;
+    const sobrantes = cruce.filter(function (r) { return r.estado === 'SOBRO'; }).length;
+    ui.alert('Reporte generado para ' + fecha + '.\n\nFaltaron: ' + faltantes + ' insumos\nSobraron: ' + sobrantes + ' insumos\n\nRevisa la pestaña "Reporte".');
+  } catch (err) {
+    ui.alert('Error al generar el reporte: ' + err.message);
+  }
+}

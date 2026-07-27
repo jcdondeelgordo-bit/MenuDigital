@@ -1,0 +1,147 @@
+// ============================================================================
+// MÓDULO 3 — COMANDA DE COCINA: nuevas acciones de Apps Script
+// ============================================================================
+// Instrucciones:
+// 1. Pega las 3 funciones de abajo (listarPedidosCocina, actualizarEstadoItem,
+//    marcarPedidoCompleto) en el MISMO proyecto de Apps Script que ya tiene las
+//    acciones del Módulo 1 (modulo-1-apps-script-nuevo.gs.txt) — comparten la
+//    hoja "Ventas".
+// 2. Agrega estas 3 ramas nuevas a tu doGet(e) existente:
+//        else if (accion === 'listar_pedidos_cocina') { return listarPedidosCocina(); }
+//        else if (accion === 'actualizar_estado_item') { return actualizarEstadoItem(e); }
+//        else if (accion === 'marcar_pedido_completo') { return marcarPedidoCompleto(e); }
+// 3. En la hoja "Ventas", agrega la columna "Estado_Cocina" al final (después de
+//    "Mesero" — ver el paso 5 de modulo-1-apps-script-nuevo.gs.txt para el orden
+//    completo de columnas). crearPedido ya quedó actualizado para escribir
+//    "Pendiente" ahí por cada ítem nuevo "en el local" — usa la versión más
+//    reciente de ese archivo.
+// 4. Publica de nuevo la implementación web.
+//
+// Por qué una columna separada de "Estado": "Estado" es el estado de PAGO
+// (Pendiente de pago / Pagado, lo usa Caja — Módulo 9). "Estado_Cocina" es el
+// estado de PREPARACIÓN por ítem (Pendiente / En preparación / Listo /
+// Entregado), lo usa esta pantalla. Son dos preguntas distintas sobre la misma
+// fila ("¿ya se cobró?" vs. "¿ya se hizo este ítem?") y no deben compartir columna.
+//
+// Por qué no hay una columna ID_Item: para actualizar el estado de un ítem
+// puntual alcanza con el número de fila real de la hoja (Google Sheets ya lo
+// da gratis), así que listarPedidosCocina() lo devuelve en cada ítem y
+// actualizarEstadoItem() lo recibe de vuelta — evita sumar otra columna.
+// ============================================================================
+
+const ESTADOS_COCINA = ['Pendiente', 'En preparación', 'Listo', 'Entregado'];
+
+/**
+ * accion=listar_pedidos_cocina
+ * Devuelve los pedidos "en el local" de HOY con su desglose por ítem (incluye
+ * el número de fila real de cada ítem, para poder actualizar su Estado_Cocina
+ * después). Domicilio nunca aparece aquí porque ese camino no escribe en Ventas.
+ */
+function listarPedidosCocina() {
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Ventas');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idx = {
+    fecha: encabezados.indexOf('Fecha'),
+    hora: encabezados.indexOf('Hora'),
+    producto: encabezados.indexOf('Producto'),
+    cantidad: encabezados.indexOf('Cantidad'),
+    observacion: encabezados.indexOf('Observacion'),
+    tipoPedido: encabezados.indexOf('Tipo_Pedido'),
+    idPedido: encabezados.indexOf('ID_Pedido'),
+    mesa: encabezados.indexOf('Mesa'),
+    mesero: encabezados.indexOf('Mesero'),
+    estadoCocina: encabezados.indexOf('Estado_Cocina')
+  };
+
+  const tz = Session.getScriptTimeZone();
+  const hoy = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const pedidosPorId = {};
+
+  for (let i = 1; i < datos.length; i++) {
+    const fila = datos[i];
+    if (fila[idx.tipoPedido] !== 'local') continue;
+    const fecha = Utilities.formatDate(new Date(fila[idx.fecha]), tz, 'yyyy-MM-dd');
+    if (fecha !== hoy) continue;
+
+    const idPedido = fila[idx.idPedido];
+    if (!pedidosPorId[idPedido]) {
+      pedidosPorId[idPedido] = {
+        id_pedido: idPedido,
+        hora: Utilities.formatDate(new Date(fila[idx.hora]), tz, 'HH:mm'),
+        mesa: fila[idx.mesa] || '',
+        mesero: fila[idx.mesero] || '',
+        items: []
+      };
+    }
+    pedidosPorId[idPedido].items.push({
+      fila: i + 1, // 1-indexado como en la hoja real (i=0 es el encabezado)
+      producto: fila[idx.producto],
+      cantidad: fila[idx.cantidad],
+      observacion: fila[idx.observacion] || '',
+      estado: fila[idx.estadoCocina] || 'Pendiente'
+    });
+  }
+
+  const pedidos = Object.keys(pedidosPorId).map(function (id) {
+    const p = pedidosPorId[id];
+    p.completo = p.items.every(function (it) { return it.estado === 'Entregado'; });
+    return p;
+  });
+
+  // Más antiguo primero: es el que lleva más tiempo esperando.
+  pedidos.sort(function (a, b) { return a.hora < b.hora ? -1 : a.hora > b.hora ? 1 : 0; });
+
+  return ContentService.createTextOutput(JSON.stringify({ok: true, pedidos: pedidos}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * accion=actualizar_estado_item&fila=<num>&estado=<Pendiente|En preparación|Listo|Entregado>
+ * Actualiza el Estado_Cocina de un ítem puntual (una fila) de la hoja Ventas.
+ */
+function actualizarEstadoItem(e) {
+  const fila = Number(e.parameter.fila);
+  const estado = e.parameter.estado || '';
+
+  if (!fila || ESTADOS_COCINA.indexOf(estado) === -1) {
+    return ContentService.createTextOutput(JSON.stringify({ok: false, error: 'Fila o estado inválido'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Ventas');
+  const encabezados = hoja.getDataRange().getValues()[0];
+  const idxEstadoCocina = encabezados.indexOf('Estado_Cocina');
+  hoja.getRange(fila, idxEstadoCocina + 1).setValue(estado);
+
+  return ContentService.createTextOutput(JSON.stringify({ok: true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * accion=marcar_pedido_completo&id_pedido=<uuid>
+ * Atajo para marcar TODOS los ítems de un pedido como 'Entregado' de una vez,
+ * para cuando ya salió completo y no hace falta revisar ítem por ítem.
+ */
+function marcarPedidoCompleto(e) {
+  const idPedido = e.parameter.id_pedido || '';
+  if (!idPedido) {
+    return ContentService.createTextOutput(JSON.stringify({ok: false, error: 'Falta id_pedido'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Ventas');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idxIdPedido = encabezados.indexOf('ID_Pedido');
+  const idxEstadoCocina = encabezados.indexOf('Estado_Cocina');
+
+  for (let i = 1; i < datos.length; i++) {
+    if (datos[i][idxIdPedido] === idPedido) {
+      hoja.getRange(i + 1, idxEstadoCocina + 1).setValue('Entregado');
+    }
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({ok: true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}

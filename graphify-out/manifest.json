@@ -1,0 +1,122 @@
+{
+  "Gestion_Proyecto/00-PLAN-MAESTRO.md": {
+    "mtime": 1784072746.6882348,
+    "ast_hash": "05f63a72134920503975d89a3a478bde",
+    "semantic_hash": "05f63a72134920503975d89a3a478bde"
+  },
+  "Gestion_Proyecto/01-modulos/modulo-1-apps-script-nuevo.gs.txt": {
+    "mtime": 1784222623.3205302,
+    "ast_hash": "f4600ced3c9d734f76b770851c398978",
+    "semantic_hash": "f4600ced3c9d734f76b770851c398978"
+  },
+  "Gestion_Proyecto/01-modulos/modulo-1-menu-digital.md": {
+    "mtime": 1784057281.5404055,
+    "ast_hash": "bf70787323439469288f888605ab19e0",
+    "semantic_hash": "bf70787323439469288f888605ab19e0"
+  },
+  "Gestion_Proyecto/01-modulos/modulo-2-pedidos-mesa.md": {
+    "mtime": 1784057302.9895115,
+    "ast_hash": "a1597f1e3ad2435633565bd1cd6845dd",
+    "semantic_hash": "a1597f1e3ad2435633565bd1cd6845dd"
+  },
+  "Gestion_Proyecto/01-modulos/modulo-3-comanda-cocina.md": {
+    "mtime": 1784052686.244323,
+    "ast_hash": "21673c1ceb176e6dc99ac8583be1e432",
+    "semantic_hash": "21673c1ceb176e6dc99ac8583be1e432"
+  },
+  "Gestion_Proyecto/01-modulos/modulo-4-division-cuenta.md": {
+    "mtime": 1784052668.3371167,
+    "ast_hash": "a29b2902252820ff7d07c4e0d538f525",
+    "semantic_hash": "a29b2902252820ff7d07c4e0d538f525"
+  },
+  "Gestion_Proyecto/01-modulos/modulo-5-inventario.md": {
+    "mtime": 1784222920.3308506,
+    "ast_hash": "92bfc35a60186cf234a56842b5ce4a3b",
+    "semantic_hash": "92bfc35a60186cf234a56842b5ce4a3b"
+  },
+  "Gestion_Proyecto/01-modulos/modulo-6-fidelizacion.md": {
+    "mtime": 1784052651.5878482,
+    "ast_hash": "90ccc73bf1ed258566fce4a27c7d2cfd",
+    "semantic_hash": "90ccc73bf1ed258566fce4a27c7d2cfd"
+  },
+  "Gestion_Proyecto/01-modulos/modulo-7-panel-admin.md": {
+    "mtime": 1784044255.4471629,
+    "ast_hash": "4c3ce50f122d9f98d1c5e7b2be6d77b3",
+    "semantic_hash": "4c3ce50f122d9f98d1c5e7b2be6d77b3"
+  },
+  "Gestion_Proyecto/01-modulos/modulo-8-meseros-comisiones.md": {
+    "mtime": 1784049729.12167,
+    "ast_hash": "a1f709fc5f9c0306d5b89ad2343670f4",
+    "semantic_hash": "a1f709fc5f9c0306d5b89ad2343670f4"
+  },
+  "Gestion_Proyecto/01-modulos/modulo-9-caja-facturacion.md": {
+    "mtime": 1784053791.0751047,
+    "ast_hash": "c06ad9d89c650f6452e577d84d1cffda",
+    "semantic_hash": "c06ad9d89c650f6452e577d84d1cffda"
+  },
+  "Gestion_Proyecto/02-investigacion/referencia-menululo.md": {
+    "mtime": 1784044277.5093277,
+    "ast_hash": "e2a091b71eb48e47b28d1527a5c19b9c",
+    "semantic_hash": "e2a091b71eb48e47b28d1527a5c19b9c"
+  },
+  "Gestion_Proyecto/03-seguimiento/ESTADO.md": {
+    "mtime": 1784222898.5651739,
+    "ast_hash": "829f246fe81311397281c109df263916",
+    "semantic_hash": "829f246fe81311397281c109df263916"
+  },
+  "PLAN ZFOOD GyP.txt": {
+    "mtime": 1784042437.6167057,
+    "ast_hash": "357a45dbc56ff3d71ac7c031cc74a0ca",
+    "semantic_hash": "357a45dbc56ff3d71ac7c031cc74a0ca"
+  },
+  "bienvenida.html": {
+    "mtime": 1784056317.722716,
+    "ast_hash": "268dba7c5970c79c235e9e3062b642cc",
+    "semantic_hash": "268dba7c5970c79c235e9e3062b642cc"
+  },
+  "menu.html": {
+    "mtime": 1784222587.4641597,
+    "ast_hash": "bbd9718aa442d53864aec5eba4027bbe",
+    "semantic_hash": "bbd9718aa442d53864aec5eba4027bbe"
+  },
+  "foto.jpeg": {
+    "mtime": 1784080638.2126434,
+    "ast_hash": "60f1bef4f5774f2e588e5460bae71ca2",
+    "semantic_hash": "60f1bef4f5774f2e588e5460bae71ca2"
+  },
+  "menu dise\u00f1o.jpeg": {
+    "mtime": 1784042112.6474414,
+    "ast_hash": "79dacb6f2633a49912da6bd515912d07",
+    "semantic_hash": "79dacb6f2633a49912da6bd515912d07"
+  },
+  "Gestion_Proyecto/01-modulos/modulo-3-apps-script-comanda-cocina.gs.txt": {
+    "mtime": 1784218175.9667344,
+    "ast_hash": "471135b0b0b9bb8091626243537c7393",
+    "semantic_hash": "471135b0b0b9bb8091626243537c7393"
+  },
+  "Gestion_Proyecto/01-modulos/modulo-5-inventario-code.gs.txt": {
+    "mtime": 1784223390.983783,
+    "ast_hash": "6d2dd85152707afde809a21ba27e862c",
+    "semantic_hash": "6d2dd85152707afde809a21ba27e862c"
+  },
+  "Gestion_Proyecto/01-modulos/modulo-8-apps-script-comisiones.gs.txt": {
+    "mtime": 1784220108.803374,
+    "ast_hash": "88d3993bf4f364d62f731c701b66bdf5",
+    "semantic_hash": "88d3993bf4f364d62f731c701b66bdf5"
+  },
+  "cocina.html": {
+    "mtime": 1784218231.5858111,
+    "ast_hash": "c7f2ef416e91e364edda1cf5abd45bc7",
+    "semantic_hash": "c7f2ef416e91e364edda1cf5abd45bc7"
+  },
+  "comisiones.html": {
+    "mtime": 1784220348.7843003,
+    "ast_hash": "ba17026066fc095f8c9d00e0eaa5e7a1",
+    "semantic_hash": "ba17026066fc095f8c9d00e0eaa5e7a1"
+  },
+  "inventario.html": {
+    "mtime": 1783647511.8878844,
+    "ast_hash": "b57b872d38e00977003f868dfc97326d",
+    "semantic_hash": "b57b872d38e00977003f868dfc97326d"
+  }
+}

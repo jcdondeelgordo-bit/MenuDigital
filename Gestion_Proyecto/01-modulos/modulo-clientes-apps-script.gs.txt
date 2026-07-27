@@ -1,0 +1,199 @@
+/**
+ * Funciones de la hoja "Clientes", usadas por bienvenida.html Y por el checkout de
+ * Domicilio de menu.html (registrarClienteDesdeMenu). Columnas de Clientes: Fecha
+ * Ingreso, Telefono, Nombre, Cumpleanos, Visitas, Direccion (sin tildes/eñe, confirmado
+ * por el usuario 2026-07-21; columna Direccion agregada 2026-07-22).
+ *
+ * Requiere que la hoja Clientes tenga una columna con encabezado exacto "Direccion".
+ * Si no existe, el código simplemente no guarda la dirección (no rompe nada).
+ */
+
+function buscarCliente(e) {
+  const telefono = e.parameter.telefono || '';
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Clientes');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idxTelefono = encabezados.indexOf('Telefono');
+  const idxNombre = encabezados.indexOf('Nombre');
+  const idxVisitas = encabezados.indexOf('Visitas');
+  const idxDireccion = encabezados.indexOf('Direccion');
+
+  for (let i = 1; i < datos.length; i++) {
+    if (String(datos[i][idxTelefono]) === String(telefono)) {
+      return ContentService.createTextOutput(JSON.stringify({
+        ok: true,
+        existe: true,
+        cliente: {
+          nombre: datos[i][idxNombre],
+          visitas: Number(datos[i][idxVisitas]) || 1,
+          direccion: idxDireccion > -1 ? (datos[i][idxDireccion] || '') : ''
+        }
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({ok: true, existe: false}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * accion=actualizar_cliente&telefono=...&direccion=... (direccion es opcional)
+ * Suma 1 a "Visitas" cada vez que un cliente ya registrado vuelve (bienvenida.html, o
+ * un nuevo pedido a Domicilio desde menu.html). Si llega "direccion", también la
+ * actualiza a la más reciente — las direcciones pueden cambiar de un pedido a otro.
+ */
+function actualizarCliente(e) {
+  const telefono = e.parameter.telefono || '';
+  const direccion = e.parameter.direccion || '';
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Clientes');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idxTelefono = encabezados.indexOf('Telefono');
+  const idxVisitas = encabezados.indexOf('Visitas');
+  const idxDireccion = encabezados.indexOf('Direccion');
+
+  for (let i = 1; i < datos.length; i++) {
+    if (String(datos[i][idxTelefono]) === String(telefono)) {
+      const visitasActuales = Number(datos[i][idxVisitas]) || 0;
+      hoja.getRange(i + 1, idxVisitas + 1).setValue(visitasActuales + 1);
+      if (direccion && idxDireccion > -1) {
+        hoja.getRange(i + 1, idxDireccion + 1).setValue(direccion);
+      }
+      break;
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({ok: true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * accion=registrar_cliente&telefono=...&nombre=...&cumpleanos=...&canal=...&direccion=...
+ * Crea un cliente nuevo en "Clientes" la primera vez que alguien lo usa.
+ */
+function registrarCliente(e) {
+  const telefono = e.parameter.telefono || '';
+  const nombre = e.parameter.nombre || '';
+  const cumpleanos = e.parameter.cumpleanos || '';
+  const direccion = e.parameter.direccion || '';
+
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Clientes');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idxFecha = encabezados.indexOf('Fecha Ingreso');
+  const idxTelefono = encabezados.indexOf('Telefono');
+  const idxNombre = encabezados.indexOf('Nombre');
+  const idxCumpleanos = encabezados.indexOf('Cumpleanos');
+  const idxVisitas = encabezados.indexOf('Visitas');
+  const idxDireccion = encabezados.indexOf('Direccion');
+
+  for (let i = 1; i < datos.length; i++) {
+    if (String(datos[i][idxTelefono]) === String(telefono)) {
+      return ContentService.createTextOutput(JSON.stringify({ok: true, yaExistia: true}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  const fila = new Array(encabezados.length).fill('');
+  fila[idxFecha] = new Date();
+  fila[idxTelefono] = telefono;
+  fila[idxNombre] = nombre;
+  fila[idxCumpleanos] = cumpleanos;
+  fila[idxVisitas] = 1;
+  if (idxDireccion > -1) fila[idxDireccion] = direccion;
+  hoja.appendRow(fila);
+
+  return ContentService.createTextOutput(JSON.stringify({ok: true, yaExistia: false}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+
+
+
+
+
+
+
+function buscarCliente(e) {
+  const telefono = e.parameter.telefono || '';
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Clientes');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idxTelefono = encabezados.indexOf('Telefono');
+  const idxNombre = encabezados.indexOf('Nombre');
+  const idxVisitas = encabezados.indexOf('Visitas');
+
+  for (let i = 1; i < datos.length; i++) {
+    if (String(datos[i][idxTelefono]) === String(telefono)) {
+      return ContentService.createTextOutput(JSON.stringify({
+        ok: true,
+        existe: true,
+        cliente: {
+          nombre: datos[i][idxNombre],
+          visitas: Number(datos[i][idxVisitas]) || 1
+        }
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({ok: true, existe: false}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * accion=actualizar_cliente&telefono=...
+ * Suma 1 a "Visitas" cada vez que un cliente ya registrado vuelve a abrir bienvenida.html.
+ */
+function actualizarCliente(e) {
+  const telefono = e.parameter.telefono || '';
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Clientes');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idxTelefono = encabezados.indexOf('Telefono');
+  const idxVisitas = encabezados.indexOf('Visitas');
+
+  for (let i = 1; i < datos.length; i++) {
+    if (String(datos[i][idxTelefono]) === String(telefono)) {
+      const visitasActuales = Number(datos[i][idxVisitas]) || 0;
+      hoja.getRange(i + 1, idxVisitas + 1).setValue(visitasActuales + 1);
+      break;
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({ok: true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * accion=registrar_cliente&telefono=...&nombre=...&cumpleanos=...&canal=...
+ * Crea un cliente nuevo en "Clientes" la primera vez que alguien lo usa.
+ */
+function registrarCliente(e) {
+  const telefono = e.parameter.telefono || '';
+  const nombre = e.parameter.nombre || '';
+  const cumpleanos = e.parameter.cumpleanos || '';
+
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Clientes');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idxFecha = encabezados.indexOf('Fecha Ingreso');
+  const idxTelefono = encabezados.indexOf('Telefono');
+  const idxNombre = encabezados.indexOf('Nombre');
+  const idxCumpleanos = encabezados.indexOf('Cumpleanos');
+  const idxVisitas = encabezados.indexOf('Visitas');
+
+  for (let i = 1; i < datos.length; i++) {
+    if (String(datos[i][idxTelefono]) === String(telefono)) {
+      return ContentService.createTextOutput(JSON.stringify({ok: true, yaExistia: true}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  const fila = new Array(encabezados.length).fill('');
+  fila[idxFecha] = new Date();
+  fila[idxTelefono] = telefono;
+  fila[idxNombre] = nombre;
+  fila[idxCumpleanos] = cumpleanos;
+  fila[idxVisitas] = 1;
+  hoja.appendRow(fila);
+
+  return ContentService.createTextOutput(JSON.stringify({ok: true, yaExistia: false}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
