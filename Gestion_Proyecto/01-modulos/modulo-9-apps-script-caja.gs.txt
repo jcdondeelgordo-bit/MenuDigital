@@ -1,0 +1,128 @@
+// ============================================================================
+// MÓDULO 9 — CAJA Y FACTURACIÓN: nuevas acciones de Apps Script
+// ============================================================================
+// Instrucciones:
+// 1. Pega las 2 funciones de abajo (listarPedidosCaja, marcarPedidoPagado) en
+//    el MISMO proyecto de Apps Script que ya tiene las acciones de los
+//    Módulos 1, 2, 3 y 8 — reutilizan la hoja "Ventas".
+// 2. Agrega estas 2 ramas nuevas a tu doGet(e):
+//        else if (accion === 'listar_pedidos_caja') { return listarPedidosCaja(); }
+//        else if (accion === 'marcar_pedido_pagado') { return marcarPedidoPagado(e); }
+// 3. En la hoja "Ventas", agrega una columna nueva después de "Estado_Cocina"
+//    (sería la columna 16 / P): "Metodo_Pago". Queda vacía hasta que se cobra
+//    un pedido; luego se llena con "Efectivo", "Nequi" o "Tarjeta".
+// 4. Publica de nuevo la implementación web (Implementar > Administrar
+//    implementaciones > Editar > Nueva versión > Implementar).
+// 5. IMPORTANTE: antes de publicar, busca con Ctrl+F "function listarPedidosCaja"
+//    y "function marcarPedidoPagado" en TODO el editor y confirma que cada una
+//    aparece una sola vez — pegar por accidente una función duplicada anula el
+//    cambio en silencio (ya pasó una vez con el Módulo 8, ver ESTADO.md).
+//
+// A diferencia de Cocina (Módulo 3), Caja incluye TANTO pedidos "local" como
+// "domicilio" — el cajero necesita cerrar (marcar pagado) los dos tipos para
+// que el reporte de ventas/caja cuadre completo. El estado de pago (Estado:
+// "Pendiente de pago"/"Pagado") es independiente del estado de cocina
+// (Estado_Cocina) — un pedido puede estar Pagado en caja y seguir
+// "En preparación" en cocina, o viceversa (decisión de negocio 2026-07-14).
+// ============================================================================
+
+/**
+ * accion=listar_pedidos_caja
+ * Devuelve los pedidos de HOY desde "Ventas", agrupados por ID_Pedido,
+ * incluyendo tipo "local" y "domicilio", con su estado de pago y método
+ * (si ya se cobró).
+ */
+function listarPedidosCaja() {
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Ventas');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idx = {
+    fecha: encabezados.indexOf('Fecha'),
+    hora: encabezados.indexOf('Hora'),
+    producto: encabezados.indexOf('Producto'),
+    cantidad: encabezados.indexOf('Cantidad'),
+    total: encabezados.indexOf('Total'),
+    estado: encabezados.indexOf('Estado'),
+    tipoPedido: encabezados.indexOf('Tipo_Pedido'),
+    idPedido: encabezados.indexOf('ID_Pedido'),
+    mesa: encabezados.indexOf('Mesa'),
+    mesero: encabezados.indexOf('Mesero'),
+    metodoPago: encabezados.indexOf('Metodo_Pago')
+  };
+
+  const tz = Session.getScriptTimeZone();
+  const hoy = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const pedidosPorId = {};
+
+  for (let i = 1; i < datos.length; i++) {
+    const fila = datos[i];
+    const fecha = Utilities.formatDate(new Date(fila[idx.fecha]), tz, 'yyyy-MM-dd');
+    if (fecha !== hoy) continue;
+
+    const idPedido = fila[idx.idPedido];
+    if (!pedidosPorId[idPedido]) {
+      pedidosPorId[idPedido] = {
+        id_pedido: idPedido,
+        hora: Utilities.formatDate(new Date(fila[idx.hora]), tz, 'HH:mm'),
+        tipo: fila[idx.tipoPedido],
+        mesa: fila[idx.mesa] || '',
+        mesero: fila[idx.mesero] || '',
+        estado: fila[idx.estado],
+        metodo_pago: fila[idx.metodoPago] || '',
+        items: [],
+        total: 0
+      };
+    }
+    pedidosPorId[idPedido].items.push({
+      producto: fila[idx.producto],
+      cantidad: fila[idx.cantidad],
+      total: Number(fila[idx.total])
+    });
+    pedidosPorId[idPedido].total += Number(fila[idx.total]);
+  }
+
+  const pedidos = Object.keys(pedidosPorId).map(function (id) { return pedidosPorId[id]; });
+  return ContentService.createTextOutput(JSON.stringify({ ok: true, pedidos: pedidos }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+const METODOS_PAGO_CAJA = ['Efectivo', 'Nequi', 'Tarjeta'];
+
+/**
+ * accion=marcar_pedido_pagado&id_pedido=<uuid>&metodo_pago=<Efectivo|Nequi|Tarjeta>
+ * Marca TODAS las filas de ese ID_Pedido como Estado='Pagado' y guarda el
+ * método de pago. Independiente del Estado_Cocina de esas mismas filas.
+ */
+function marcarPedidoPagado(e) {
+  const idPedido = e.parameter.id_pedido || '';
+  const metodoPago = e.parameter.metodo_pago || '';
+
+  if (!idPedido || METODOS_PAGO_CAJA.indexOf(metodoPago) === -1) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'Falta id_pedido o metodo_pago inválido' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Ventas');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idxIdPedido = encabezados.indexOf('ID_Pedido');
+  const idxEstado = encabezados.indexOf('Estado');
+  const idxMetodoPago = encabezados.indexOf('Metodo_Pago');
+
+  let encontrado = false;
+  for (let i = 1; i < datos.length; i++) {
+    if (datos[i][idxIdPedido] === idPedido) {
+      hoja.getRange(i + 1, idxEstado + 1).setValue('Pagado');
+      hoja.getRange(i + 1, idxMetodoPago + 1).setValue(metodoPago);
+      encontrado = true;
+    }
+  }
+
+  if (!encontrado) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'No se encontró ese pedido' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({ ok: true }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
