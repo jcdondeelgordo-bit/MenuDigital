@@ -18,6 +18,7 @@ header{position:sticky;top:0;z-index:20;background:#1a0a00;border-bottom:1px sol
 
 main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
 .vacio-msg{grid-column:1/-1;text-align:center;color:rgba(240,224,176,0.5);padding:60px 0;font-size:1rem;}
+.banner-mock{grid-column:1/-1;background:#1a0a00;border:1px solid #e05050;color:#e8a0a0;border-radius:10px;padding:12px 16px;font-size:0.85rem;font-weight:700;text-align:center;}
 
 .pedido-card{background:rgba(255,255,255,0.05);border:1px solid rgba(200,132,26,0.25);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;}
 .pedido-header{display:flex;justify-content:space-between;align-items:flex-start;}
@@ -35,14 +36,14 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 
 #recibo-imprimir{display:none;}
 @media print{
-  body *{visibility:hidden;}
-  #recibo-imprimir, #recibo-imprimir *{visibility:visible;}
-  #recibo-imprimir{display:block;position:absolute;top:0;left:0;width:80mm;padding:4mm;font-family:'Courier New',monospace;font-size:11px;color:#000;background:#fff;}
+  header, main, .overlay{display:none;}
+  #recibo-imprimir{display:block;position:static;width:80mm;padding:4mm;font-family:'Courier New',monospace;font-size:11px;color:#000;background:#fff;}
   .recibo-linea{margin:2px 0;}
   .recibo-centro{text-align:center;}
   .recibo-negrita{font-weight:700;}
   .recibo-separador{border-top:1px dashed #000;margin:6px 0;}
   .recibo-item{display:flex;justify-content:space-between;}
+  @page{size:80mm auto;margin:0;}
 }
 
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:50;}
@@ -124,6 +125,7 @@ let pedidos = [];
 let vistaTipo = 'local';
 let vistaEstado = 'pendientes';
 let pedidoIdParaCobrar = null;
+let usandoDatosMuestra = false;
 const pedidosPagoPendiente = new Set();
 
 function formatoCOP(v) { return '$' + Math.round(v).toLocaleString('es-CO'); }
@@ -160,9 +162,16 @@ async function cargarPedidos() {
   try {
     const res = await fetch(SCRIPT_URL + '?accion=listar_pedidos_caja');
     const data = await res.json();
-    pedidos = (data.ok && Array.isArray(data.pedidos)) ? data.pedidos : pedidosMock();
+    if (data.ok && Array.isArray(data.pedidos)) {
+      pedidos = data.pedidos;
+      usandoDatosMuestra = false;
+    } else {
+      pedidos = pedidosMock();
+      usandoDatosMuestra = true;
+    }
   } catch (e) {
     pedidos = pedidosMock();
+    usandoDatosMuestra = true;
   }
   aplicarPendientes(pedidos);
   render();
@@ -195,15 +204,25 @@ async function confirmarCobro(metodo) {
 
   pedidosPagoPendiente.add(idPedido);
   const pedido = pedidos.find(p => p.id_pedido === idPedido);
+  const estadoAnterior = pedido ? pedido.estado : null;
+  const metodoPagoAnterior = pedido ? pedido.metodo_pago : '';
   if (pedido) { pedido.estado = 'Pagado'; pedido.metodo_pago = metodo; }
   render();
 
   try {
     const params = new URLSearchParams({ accion: 'marcar_pedido_pagado', id_pedido: idPedido, metodo_pago: metodo });
-    await fetch(SCRIPT_URL + '?' + params.toString());
+    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const data = await res.json();
+    if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Respuesta inválida del servidor');
     if (pedido && pedido.tipo === 'local') imprimirRecibo(pedido);
   } catch (e) {
-    // Backend no disponible - el cambio queda solo en pantalla (modo mock).
+    // El backend rechazó el cobro, no respondió con el formato esperado
+    // (p. ej. página HTML de login de Google) o falló la red: revertimos el
+    // cambio optimista para no dejar "Pagado" en pantalla sin que el Sheet
+    // se haya actualizado de verdad.
+    if (pedido) { pedido.estado = estadoAnterior; pedido.metodo_pago = metodoPagoAnterior; }
+    render();
+    alert('No se pudo registrar el cobro. Intenta de nuevo.');
   } finally {
     pedidosPagoPendiente.delete(idPedido);
   }
@@ -229,13 +248,16 @@ function render() {
     (vistaEstado === 'pendientes' ? p.estado !== 'Pagado' : p.estado === 'Pagado')
   );
   const cont = document.getElementById('lista-pedidos');
+  const banner = usandoDatosMuestra
+    ? '<div class="banner-mock">⚠️ SIN CONEXIÓN — mostrando datos de muestra, no se puede cobrar de verdad</div>'
+    : '';
 
   if (lista.length === 0) {
-    cont.innerHTML = `<div class="vacio-msg">No hay pedidos ${vistaEstado === 'pendientes' ? 'pendientes de pago' : 'pagados'} en ${vistaTipo === 'local' ? 'el local' : 'domicilio'} hoy.</div>`;
+    cont.innerHTML = banner + `<div class="vacio-msg">No hay pedidos ${vistaEstado === 'pendientes' ? 'pendientes de pago' : 'pagados'} en ${vistaTipo === 'local' ? 'el local' : 'domicilio'} hoy.</div>`;
     return;
   }
 
-  cont.innerHTML = lista.map(p => `
+  cont.innerHTML = banner + lista.map(p => `
     <div class="pedido-card">
       <div class="pedido-header">
         <div>
