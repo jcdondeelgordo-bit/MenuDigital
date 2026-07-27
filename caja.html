@@ -33,6 +33,18 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 .pedido-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:4px;}
 .btn-cobrar{padding:10px 16px;border-radius:10px;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;color:#1a0a00;font-weight:700;font-size:0.85rem;cursor:pointer;}
 
+#recibo-imprimir{display:none;}
+@media print{
+  body *{visibility:hidden;}
+  #recibo-imprimir, #recibo-imprimir *{visibility:visible;}
+  #recibo-imprimir{display:block;position:absolute;top:0;left:0;width:80mm;padding:4mm;font-family:'Courier New',monospace;font-size:11px;color:#000;background:#fff;}
+  .recibo-linea{margin:2px 0;}
+  .recibo-centro{text-align:center;}
+  .recibo-negrita{font-weight:700;}
+  .recibo-separador{border-top:1px dashed #000;margin:6px 0;}
+  .recibo-item{display:flex;justify-content:space-between;}
+}
+
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:50;}
 .overlay.oculto{display:none;}
 .modal-cobrar{background:#2a1500;border:1px solid rgba(200,132,26,0.4);border-radius:16px;padding:24px;width:90%;max-width:340px;display:flex;flex-direction:column;gap:12px;}
@@ -72,9 +84,23 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
   </div>
 </div>
 
+<div id="recibo-imprimir"></div>
+
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlYXsASFJpzw9arECb79_CLb3l5w-4cithWANH57ydFHbC2-788aFJddvWIxOjOyEr/exec';
 const INTERVALO_POLLING_MS = 12000;
+
+// Datos del local para el recibo de 80mm. Pendiente: el usuario dijo que trae
+// la razón social y el NIT reales el 2026-07-27 — actualizar aquí en cuanto
+// los tenga. Teléfono real ya confirmado.
+const DATOS_LOCAL = {
+  nombreComercial: 'Donde el Gordo',
+  razonSocial: '[FICTICIO — actualizar con el dato real]',
+  nit: '[FICTICIO — actualizar]',
+  direccion: '[FICTICIO — actualizar]',
+  telefono: '3167027833',
+  mensajePie: '¡Gracias por su visita!'
+};
 
 // Datos de muestra para poder ver y probar la pantalla mientras el backend
 // (modulo-9-apps-script-caja.gs.txt) no esté desplegado todavía.
@@ -101,6 +127,34 @@ let pedidoIdParaCobrar = null;
 const pedidosPagoPendiente = new Set();
 
 function formatoCOP(v) { return '$' + Math.round(v).toLocaleString('es-CO'); }
+
+function imprimirRecibo(pedido) {
+  const ahora = new Date();
+  const cont = document.getElementById('recibo-imprimir');
+  cont.innerHTML = `
+    <div class="recibo-linea recibo-centro recibo-negrita">${DATOS_LOCAL.nombreComercial}</div>
+    <div class="recibo-linea recibo-centro">${DATOS_LOCAL.razonSocial}</div>
+    <div class="recibo-linea recibo-centro">NIT ${DATOS_LOCAL.nit}</div>
+    <div class="recibo-linea recibo-centro">${DATOS_LOCAL.direccion}</div>
+    <div class="recibo-linea recibo-centro">Tel: ${DATOS_LOCAL.telefono}</div>
+    <div class="recibo-separador"></div>
+    <div class="recibo-linea">${ahora.toLocaleDateString('es-CO')}  ${ahora.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</div>
+    <div class="recibo-linea">${pedido.tipo === 'local' ? 'Mesa ' + (pedido.mesa || '—') : 'Domicilio'}</div>
+    <div class="recibo-separador"></div>
+    ${pedido.items.map(it => `<div class="recibo-item"><span>${it.cantidad}x ${it.producto}</span><span>${formatoCOP(it.total)}</span></div>`).join('')}
+    <div class="recibo-separador"></div>
+    <div class="recibo-item recibo-negrita"><span>TOTAL</span><span>${formatoCOP(pedido.total)}</span></div>
+    <div class="recibo-linea">Pago: ${pedido.metodo_pago}</div>
+    <div class="recibo-separador"></div>
+    <div class="recibo-linea recibo-centro">${DATOS_LOCAL.mensajePie}</div>
+  `;
+  window.print();
+}
+
+function imprimirReciboPorId(idPedido) {
+  const pedido = pedidos.find(p => p.id_pedido === idPedido);
+  if (pedido) imprimirRecibo(pedido);
+}
 
 async function cargarPedidos() {
   try {
@@ -147,6 +201,7 @@ async function confirmarCobro(metodo) {
   try {
     const params = new URLSearchParams({ accion: 'marcar_pedido_pagado', id_pedido: idPedido, metodo_pago: metodo });
     await fetch(SCRIPT_URL + '?' + params.toString());
+    if (pedido && pedido.tipo === 'local') imprimirRecibo(pedido);
   } catch (e) {
     // Backend no disponible - el cambio queda solo en pantalla (modo mock).
   } finally {
@@ -200,7 +255,12 @@ function render() {
         <span>TOTAL</span>
         <span>${formatoCOP(p.total)}</span>
       </div>
-      ${p.estado !== 'Pagado' ? `<div class="pedido-footer"><button class="btn-cobrar" onclick="abrirModalCobrar('${p.id_pedido}')">Cobrar</button></div>` : ''}
+      <div class="pedido-footer">
+        ${p.tipo === 'domicilio' ? `<button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="imprimirReciboPorId('${p.id_pedido}')">🖨️ ${p.estado === 'Pagado' ? 'Reimprimir' : 'Imprimir'} recibo</button>` : ''}
+        ${p.estado === 'Pagado'
+          ? (p.tipo === 'local' ? `<button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="imprimirReciboPorId('${p.id_pedido}')">🖨️ Reimprimir recibo</button>` : '')
+          : `<button class="btn-cobrar" onclick="abrirModalCobrar('${p.id_pedido}')">Cobrar</button>`}
+      </div>
     </div>
   `).join('');
 }
