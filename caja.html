@@ -30,6 +30,15 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 
 .item-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid rgba(255,255,255,0.06);font-size:0.88rem;}
 .pedido-total-row{display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(200,132,26,0.3);font-weight:800;color:#e8a832;}
+.pedido-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:4px;}
+.btn-cobrar{padding:10px 16px;border-radius:10px;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;color:#1a0a00;font-weight:700;font-size:0.85rem;cursor:pointer;}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:50;}
+.overlay.oculto{display:none;}
+.modal-cobrar{background:#2a1500;border:1px solid rgba(200,132,26,0.4);border-radius:16px;padding:24px;width:90%;max-width:340px;display:flex;flex-direction:column;gap:12px;}
+.modal-cobrar h3{color:#e8a832;font-size:1.1rem;}
+.btn-metodo{padding:14px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:0.95rem;font-weight:700;cursor:pointer;}
+.btn-cancelar{padding:12px;border-radius:10px;background:transparent;border:none;color:rgba(240,224,176,0.6);font-size:0.85rem;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -52,6 +61,16 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 </header>
 
 <main id="lista-pedidos"></main>
+
+<div class="overlay oculto" id="overlay-cobrar">
+  <div class="modal-cobrar">
+    <h3>¿Cómo pagó el cliente?</h3>
+    <button class="btn-metodo" onclick="confirmarCobro('Efectivo')">💵 Efectivo</button>
+    <button class="btn-metodo" onclick="confirmarCobro('Nequi')">📱 Nequi</button>
+    <button class="btn-metodo" onclick="confirmarCobro('Tarjeta')">💳 Tarjeta</button>
+    <button class="btn-cancelar" onclick="cerrarModalCobrar()">Cancelar</button>
+  </div>
+</div>
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlYXsASFJpzw9arECb79_CLb3l5w-4cithWANH57ydFHbC2-788aFJddvWIxOjOyEr/exec';
@@ -78,6 +97,8 @@ function pedidosMock() {
 let pedidos = [];
 let vistaTipo = 'local';
 let vistaEstado = 'pendientes';
+let pedidoIdParaCobrar = null;
+const pedidosPagoPendiente = new Set();
 
 function formatoCOP(v) { return '$' + Math.round(v).toLocaleString('es-CO'); }
 
@@ -89,7 +110,48 @@ async function cargarPedidos() {
   } catch (e) {
     pedidos = pedidosMock();
   }
+  aplicarPendientes(pedidos);
   render();
+}
+
+// Cambios optimistas todavía no confirmados por el servidor. Sin esto, el
+// polling automático (cada INTERVALO_POLLING_MS) podría pisar un cobro recién
+// hecho si llega antes de que termine de guardarse en el Sheet — mismo
+// patrón ya usado en cocina.html (ver ESTADO.md, hallazgo 2026-07-22).
+function aplicarPendientes(lista) {
+  lista.forEach(p => {
+    if (pedidosPagoPendiente.has(p.id_pedido)) p.estado = 'Pagado';
+  });
+}
+
+function abrirModalCobrar(idPedido) {
+  pedidoIdParaCobrar = idPedido;
+  document.getElementById('overlay-cobrar').classList.remove('oculto');
+}
+
+function cerrarModalCobrar() {
+  pedidoIdParaCobrar = null;
+  document.getElementById('overlay-cobrar').classList.add('oculto');
+}
+
+async function confirmarCobro(metodo) {
+  const idPedido = pedidoIdParaCobrar;
+  cerrarModalCobrar();
+  if (!idPedido) return;
+
+  pedidosPagoPendiente.add(idPedido);
+  const pedido = pedidos.find(p => p.id_pedido === idPedido);
+  if (pedido) { pedido.estado = 'Pagado'; pedido.metodo_pago = metodo; }
+  render();
+
+  try {
+    const params = new URLSearchParams({ accion: 'marcar_pedido_pagado', id_pedido: idPedido, metodo_pago: metodo });
+    await fetch(SCRIPT_URL + '?' + params.toString());
+  } catch (e) {
+    // Backend no disponible - el cambio queda solo en pantalla (modo mock).
+  } finally {
+    pedidosPagoPendiente.delete(idPedido);
+  }
 }
 
 function cambiarVistaTipo(t) {
@@ -138,6 +200,7 @@ function render() {
         <span>TOTAL</span>
         <span>${formatoCOP(p.total)}</span>
       </div>
+      ${p.estado !== 'Pagado' ? `<div class="pedido-footer"><button class="btn-cobrar" onclick="abrirModalCobrar('${p.id_pedido}')">Cobrar</button></div>` : ''}
     </div>
   `).join('');
 }
