@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Donde el Gordo - Caja</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+body{font-family:'Segoe UI',sans-serif;background:#1a0a00;color:#fff;min-height:100vh;}
+
+header{position:sticky;top:0;z-index:20;background:#1a0a00;border-bottom:1px solid rgba(200,132,26,0.3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.header-titulo{font-size:1.2rem;font-weight:800;color:#c8841a;letter-spacing:1px;}
+.header-sub{font-size:0.72rem;color:#e8c87a;letter-spacing:2px;}
+.header-tabs{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.grupo-tabs{display:flex;gap:8px;}
+.btn-tab{padding:10px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:0.85rem;font-weight:600;cursor:pointer;}
+.btn-tab.activa{background:linear-gradient(135deg,#c8841a,#e8a832);color:#1a0a00;border-color:transparent;}
+
+main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+.vacio-msg{grid-column:1/-1;text-align:center;color:rgba(240,224,176,0.5);padding:60px 0;font-size:1rem;}
+
+.pedido-card{background:rgba(255,255,255,0.05);border:1px solid rgba(200,132,26,0.25);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.pedido-header{display:flex;justify-content:space-between;align-items:flex-start;}
+.pedido-titulo{font-weight:800;font-size:1.05rem;color:#c8841a;}
+.pedido-sub{font-size:0.8rem;color:rgba(240,224,176,0.75);margin-top:2px;}
+.pedido-hora{font-size:0.78rem;color:rgba(240,224,176,0.6);text-align:right;}
+.badge-estado{padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;display:inline-block;margin-top:6px;}
+.badge-estado.pendiente{background:rgba(224,80,80,0.2);color:#e8a0a0;}
+.badge-estado.pagado{background:rgba(70,180,100,0.25);color:#5fd489;}
+
+.item-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid rgba(255,255,255,0.06);font-size:0.88rem;}
+.pedido-total-row{display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(200,132,26,0.3);font-weight:800;color:#e8a832;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-titulo">DONDE EL GORDO</div>
+    <div class="header-sub">CAJA</div>
+  </div>
+  <div class="header-tabs">
+    <div class="grupo-tabs">
+      <button class="btn-tab activa" id="btn-tipo-local" onclick="cambiarVistaTipo('local')">En el local</button>
+      <button class="btn-tab" id="btn-tipo-domicilio" onclick="cambiarVistaTipo('domicilio')">Domicilio</button>
+    </div>
+    <div class="grupo-tabs">
+      <button class="btn-tab activa" id="btn-estado-pendientes" onclick="cambiarVistaEstado('pendientes')">Pendientes</button>
+      <button class="btn-tab" id="btn-estado-pagados" onclick="cambiarVistaEstado('pagados')">Pagados</button>
+    </div>
+  </div>
+</header>
+
+<main id="lista-pedidos"></main>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlYXsASFJpzw9arECb79_CLb3l5w-4cithWANH57ydFHbC2-788aFJddvWIxOjOyEr/exec';
+const INTERVALO_POLLING_MS = 12000;
+
+// Datos de muestra para poder ver y probar la pantalla mientras el backend
+// (modulo-9-apps-script-caja.gs.txt) no esté desplegado todavía.
+function pedidosMock() {
+  const ahora = new Date();
+  const haceMin = m => {
+    const d = new Date(ahora.getTime() - m * 60000);
+    return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+  };
+  return [
+    { id_pedido: 'mock-1', hora: haceMin(10), tipo: 'local', mesa: '4', mesero: 'Carlos', estado: 'Pendiente de pago', metodo_pago: '',
+      items: [{ producto: 'Churrasco', cantidad: 1, total: 28000 }, { producto: 'Gaseosa 350 ml', cantidad: 2, total: 8000 }], total: 36000 },
+    { id_pedido: 'mock-2', hora: haceMin(30), tipo: 'domicilio', mesa: '', mesero: '', estado: 'Pendiente de pago', metodo_pago: '',
+      items: [{ producto: 'Sencilla', cantidad: 1, total: 14000 }], total: 14000 },
+    { id_pedido: 'mock-3', hora: haceMin(60), tipo: 'local', mesa: '2', mesero: 'Ana', estado: 'Pagado', metodo_pago: 'Efectivo',
+      items: [{ producto: 'Pizza Hawaiana', cantidad: 2, total: 60000 }], total: 60000 }
+  ];
+}
+
+let pedidos = [];
+let vistaTipo = 'local';
+let vistaEstado = 'pendientes';
+
+function formatoCOP(v) { return '$' + Math.round(v).toLocaleString('es-CO'); }
+
+async function cargarPedidos() {
+  try {
+    const res = await fetch(SCRIPT_URL + '?accion=listar_pedidos_caja');
+    const data = await res.json();
+    pedidos = (data.ok && Array.isArray(data.pedidos)) ? data.pedidos : pedidosMock();
+  } catch (e) {
+    pedidos = pedidosMock();
+  }
+  render();
+}
+
+function cambiarVistaTipo(t) {
+  vistaTipo = t;
+  document.getElementById('btn-tipo-local').classList.toggle('activa', t === 'local');
+  document.getElementById('btn-tipo-domicilio').classList.toggle('activa', t === 'domicilio');
+  render();
+}
+
+function cambiarVistaEstado(v) {
+  vistaEstado = v;
+  document.getElementById('btn-estado-pendientes').classList.toggle('activa', v === 'pendientes');
+  document.getElementById('btn-estado-pagados').classList.toggle('activa', v === 'pagados');
+  render();
+}
+
+function render() {
+  const lista = pedidos.filter(p =>
+    p.tipo === vistaTipo &&
+    (vistaEstado === 'pendientes' ? p.estado !== 'Pagado' : p.estado === 'Pagado')
+  );
+  const cont = document.getElementById('lista-pedidos');
+
+  if (lista.length === 0) {
+    cont.innerHTML = `<div class="vacio-msg">No hay pedidos ${vistaEstado === 'pendientes' ? 'pendientes de pago' : 'pagados'} en ${vistaTipo === 'local' ? 'el local' : 'domicilio'} hoy.</div>`;
+    return;
+  }
+
+  cont.innerHTML = lista.map(p => `
+    <div class="pedido-card">
+      <div class="pedido-header">
+        <div>
+          <div class="pedido-titulo">${p.tipo === 'local' ? '🍽️ Mesa ' + (p.mesa || '—') : '🛵 Domicilio'}</div>
+          <div class="pedido-sub">${p.mesero ? '👤 ' + p.mesero : ''}</div>
+          <div class="badge-estado ${p.estado === 'Pagado' ? 'pagado' : 'pendiente'}">${p.estado === 'Pagado' ? '✅ Pagado (' + p.metodo_pago + ')' : '⏳ Pendiente de pago'}</div>
+        </div>
+        <div class="pedido-hora">${p.hora}</div>
+      </div>
+      ${p.items.map(it => `
+        <div class="item-row">
+          <span>${it.cantidad}x ${it.producto}</span>
+          <span>${formatoCOP(it.total)}</span>
+        </div>
+      `).join('')}
+      <div class="pedido-total-row">
+        <span>TOTAL</span>
+        <span>${formatoCOP(p.total)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+setInterval(() => cargarPedidos(), INTERVALO_POLLING_MS);
+cargarPedidos();
+</script>
+</body>
+</html>
