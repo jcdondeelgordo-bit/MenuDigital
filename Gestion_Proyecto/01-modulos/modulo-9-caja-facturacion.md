@@ -3,6 +3,8 @@
 > Identificado por el usuario el 2026-07-14 como algo que "se había olvidado" del plan original. No estaba en los 7 módulos iniciales ni en el Módulo 8 (Meseros y Comisiones), aunque está relacionado.
 >
 > **Diseño cerrado el 2026-07-27** (ver sección "Diseño v1" más abajo). Listo para pasar a plan de implementación.
+>
+> **Plan de implementación ejecutado el 2026-07-27** (`modulo-9-plan-implementacion.md`, 6 tasks vía subagentes con revisión de código después de cada una). `caja.html` construido según el diseño v1 de abajo y las 2 acciones nuevas de backend verificadas en vivo contra el Sheet real (backend, no pantalla — ver "Qué falta" para lo que sigue pendiente).
 
 ## Objetivo
 Que el cajero tenga su propia vista de pedidos (igual que cocina), pueda llevar el control de qué está pendiente de pago, y al cobrar imprima el recibo del cliente.
@@ -86,12 +88,12 @@ const DATOS_LOCAL = {
 1. Probar `listar_pedidos_caja` y `marcar_pedido_pagado` contra el backend real con pedidos de prueba (mismo mecanismo usado para Módulos 3 y 8: crear pedidos de prueba vía `crear_pedido`, verificar, limpiar al final).
 2. La prueba de impresión física en la térmica queda **pendiente** para cuando el usuario tenga el PC de caja con la impresora USB conectada — avisa cuando esté listo para hacerla.
 
-## Qué falta (actualizado 2026-07-27)
-- Construir `caja.html` según el diseño de arriba.
-- Agregar las 2 acciones nuevas (`listar_pedidos_caja`, `marcar_pedido_pagado`) al Apps Script del menú y la columna `Metodo_Pago` a `Ventas`.
-- Conseguir del usuario: razón social real y NIT real (dijo que los trae el mismo día 2026-07-27).
-- Probar en vivo contra el backend real (pedidos de prueba + limpieza).
-- Probar impresión física cuando el usuario tenga el puesto de caja listo con la impresora conectada.
+## Qué falta (actualizado 2026-07-27 — plan ejecutado)
+- **Datos reales del local en el recibo**: `DATOS_LOCAL` en `caja.html` todavía tiene `'[FICTICIO — actualizar]'` en `razonSocial`, `nit` y `direccion`. El teléfono ya es el real y confirmado (3167027833).
+- **Prueba de impresión física en la térmica de 80mm real**, en el PC de Windows 11 del puesto de caja (USB) — nunca se hizo; esta ronda de trabajo solo tuvo verificación de *datos* contra el backend real (vía curl, sin navegador disponible en esta sesión), no hubo prueba visual/de pantalla ni física.
+- **Publicar `caja.html` en el hosting real del proyecto** (mismo hosting que `menu.html`/`cocina.html`) — por ahora el archivo solo existe en este worktree/branch (`worktree-modulo-9-caja`), no está publicado.
+- **⚠️ 5 filas de datos de prueba sin borrar en el `Ventas` real** — a diferencia de rondas anteriores, esta limpieza quedó pendiente de que el usuario la confirme: mesero `PRUEBA-CLAUDE-CAJA-LOCAL` (2 filas: una Pagada/Efectivo, otra Pendiente de un reintento), observación `PRUEBA-CLAUDE-CAJA-DOMICILIO` (2 filas, mismo split), mesero `PRUEBA-CLAUDE-CAJA-T4` (1 fila, Pagada/Efectivo).
+- **División de cuenta por persona (Módulo 4)**: fuera de alcance a propósito para esta v1 (decisión ya aprobada, ver "Alcance v1" arriba) — queda como su propio mini-proyecto futuro.
 
 ## Dependencias
 - Depende del Módulo 2 (la venta debe existir en `Ventas`).
