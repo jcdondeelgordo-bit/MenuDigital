@@ -52,6 +52,8 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 .input-nombre{padding:10px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#fff;font-size:0.9rem;}
 .division-subtotal{display:flex;justify-content:space-between;font-weight:800;color:#e8a832;font-size:1rem;padding-top:8px;border-top:1px solid rgba(200,132,26,0.3);}
 
+#overlay-cobrar-parcial{z-index:70;}
+
 #recibo-imprimir{display:none;}
 @media print{
   header, main, .overlay, .overlay-division{display:none;}
@@ -292,7 +294,7 @@ function iniciarCobroCajaItem() {
 
   idPedidoParaCobrarParcial = division.idPedido;
   personaParaCobrarParcial = persona;
-  montoParaCobrarParcial = subtotal;
+  montoParaCobrarParcial = Math.round(subtotal);
   detalleParaCobrarParcial = JSON.stringify(detalle);
   document.getElementById('overlay-cobrar-parcial').classList.remove('oculto');
 }
