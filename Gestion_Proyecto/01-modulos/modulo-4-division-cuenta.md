@@ -2,7 +2,7 @@
 
 > **Plan de implementación (`modulo-4-plan-implementacion.md`) ejecutado y verificado en vivo — 2026-07-28.**
 
-> **Diseño cerrado el 2026-07-28** (ver sección "Diseño v1" más abajo). Listo para pasar a plan de implementación.
+> **Diseño cerrado el 2026-07-28** (ver sección "Diseño v1" más abajo).
 
 ## Objetivo
 Permitir dividir la cuenta de una mesa de forma flexible — función de alto valor, poco común en otros sistemas.
