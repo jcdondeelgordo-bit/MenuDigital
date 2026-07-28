@@ -1,0 +1,143 @@
+// ============================================================================
+// MÓDULO 4 — DIVISIÓN DE CUENTA: nuevas acciones de Apps Script
+// ============================================================================
+// Instrucciones:
+// 1. En el Sheet del menú, crea una hoja nueva llamada exactamente "Pagos_Divididos"
+//    con esta fila de encabezados en A1:G1 (en este orden):
+//    ID_Pedido | Fecha | Hora | Persona | Monto | Metodo_Pago | Detalle
+// 2. Pega las 2 funciones de abajo (registrarPagoParcial, listarPagosDivididos) en
+//    el MISMO proyecto de Apps Script que ya tiene las acciones de los
+//    Módulos 1, 2, 3, 8 y 9.
+// 3. Agrega estas 2 ramas nuevas a tu doGet(e):
+//        else if (accion === 'registrar_pago_parcial') { return registrarPagoParcial(e); }
+//        else if (accion === 'listar_pagos_divididos') { return listarPagosDivididos(e); }
+// 4. Publica de nuevo la implementación web (Implementar > Administrar
+//    implementaciones > Editar > Nueva versión > Implementar).
+// 5. IMPORTANTE: antes de publicar, busca con Ctrl+F "function registrarPagoParcial"
+//    y "function listarPagosDivididos" y confirma que cada una aparece una sola vez.
+// 6. MUY IMPORTANTE: este archivo NO declara `METODOS_PAGO_CAJA` — esa constante ya
+//    existe desde el Módulo 9 (Caja). Si al pegar aparece duplicada, borra la copia
+//    repetida antes de publicar (una `const` duplicada rompe con SyntaxError TODO
+//    el proyecto de Apps Script, no solo esta función).
+//
+// División de cuenta NUNCA toca la hoja "Ventas" ni sus filas/cantidades — solo lee
+// su columna "Total" para saber cuánto falta por cobrar de un pedido. Todo el detalle
+// de "quién pagó qué" queda en "Pagos_Divididos". Cuando la suma de partes cobradas
+// alcanza el total del pedido, se marca TODO el pedido como Pagado en Ventas (mismo
+// mecanismo que ya usa marcarPedidoPagado del Módulo 9), y se deja Metodo_Pago en
+// Ventas como 'Dividido' — el desglose real por método vive en Pagos_Divididos.
+// ============================================================================
+
+/**
+ * accion=registrar_pago_parcial&id_pedido=...&persona=...&monto=...&metodo_pago=...&detalle=<json opcional>
+ * Registra el cobro de una "caja virtual" (una persona o un grupo) dentro de un pedido
+ * que se está dividiendo. Rechaza si el monto supera lo que falta por cobrar. Si la
+ * suma de partes ya cobradas alcanza el total del pedido, marca todo el pedido como
+ * Pagado en Ventas.
+ */
+function registrarPagoParcial(e) {
+  const idPedido = e.parameter.id_pedido || '';
+  const persona = e.parameter.persona || '';
+  const monto = Number(e.parameter.monto);
+  const metodoPago = e.parameter.metodo_pago || '';
+  const detalle = e.parameter.detalle || '';
+
+  if (!idPedido || !persona || !monto || monto <= 0 || METODOS_PAGO_CAJA.indexOf(metodoPago) === -1) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'Datos inválidos para registrar el pago parcial' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const hojaVentas = SpreadsheetApp.getActive().getSheetByName('Ventas');
+  const datosVentas = hojaVentas.getDataRange().getValues();
+  const encabezadosVentas = datosVentas[0];
+  const idxIdPedido = encabezadosVentas.indexOf('ID_Pedido');
+  const idxTotal = encabezadosVentas.indexOf('Total');
+  const idxEstado = encabezadosVentas.indexOf('Estado');
+  const idxMetodoPago = encabezadosVentas.indexOf('Metodo_Pago');
+
+  let totalPedido = 0;
+  const filasPedido = [];
+  for (let i = 1; i < datosVentas.length; i++) {
+    if (datosVentas[i][idxIdPedido] === idPedido) {
+      totalPedido += Number(datosVentas[i][idxTotal]);
+      filasPedido.push(i);
+    }
+  }
+
+  if (!filasPedido.length) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'No se encontró ese pedido' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const hojaPagos = SpreadsheetApp.getActive().getSheetByName('Pagos_Divididos');
+  const datosPagos = hojaPagos.getDataRange().getValues();
+  const encabezadosPagos = datosPagos[0];
+  const idxIdPedidoPagos = encabezadosPagos.indexOf('ID_Pedido');
+  const idxMontoPagos = encabezadosPagos.indexOf('Monto');
+
+  let totalYaPagado = 0;
+  for (let i = 1; i < datosPagos.length; i++) {
+    if (datosPagos[i][idxIdPedidoPagos] === idPedido) {
+      totalYaPagado += Number(datosPagos[i][idxMontoPagos]);
+    }
+  }
+
+  if (totalYaPagado + monto > totalPedido + 0.01) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'Ese monto supera lo que falta por cobrar de este pedido' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const ahora = new Date();
+  hojaPagos.appendRow([idPedido, ahora, ahora, persona, monto, metodoPago, detalle]);
+
+  const nuevoTotalPagado = totalYaPagado + monto;
+  const completado = nuevoTotalPagado >= totalPedido - 0.01;
+
+  if (completado) {
+    filasPedido.forEach(function (i) {
+      hojaVentas.getRange(i + 1, idxEstado + 1).setValue('Pagado');
+      hojaVentas.getRange(i + 1, idxMetodoPago + 1).setValue('Dividido');
+    });
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({
+    ok: true,
+    completado: completado,
+    restante: Math.max(0, totalPedido - nuevoTotalPagado)
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * accion=listar_pagos_divididos&id_pedido=...
+ * Devuelve las cajas virtuales ya cobradas de un pedido en división (persona, monto,
+ * método y detalle de cada una), para poder recuperar el progreso si el cajero recarga
+ * la pantalla a mitad de una división.
+ */
+function listarPagosDivididos(e) {
+  const idPedido = e.parameter.id_pedido || '';
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Pagos_Divididos');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idx = {
+    idPedido: encabezados.indexOf('ID_Pedido'),
+    persona: encabezados.indexOf('Persona'),
+    monto: encabezados.indexOf('Monto'),
+    metodoPago: encabezados.indexOf('Metodo_Pago'),
+    detalle: encabezados.indexOf('Detalle')
+  };
+
+  const partes = [];
+  for (let i = 1; i < datos.length; i++) {
+    if (datos[i][idx.idPedido] === idPedido) {
+      partes.push({
+        persona: datos[i][idx.persona],
+        monto: Number(datos[i][idx.monto]),
+        metodo_pago: datos[i][idx.metodoPago],
+        detalle: datos[i][idx.detalle] || ''
+      });
+    }
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({ ok: true, partes: partes }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
