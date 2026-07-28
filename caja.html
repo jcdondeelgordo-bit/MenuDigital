@@ -34,9 +34,27 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 .pedido-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:4px;}
 .btn-cobrar{padding:10px 16px;border-radius:10px;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;color:#1a0a00;font-weight:700;font-size:0.85rem;cursor:pointer;}
 
+.overlay-division{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;z-index:60;padding:24px 12px;}
+.overlay-division.oculto{display:none;}
+.panel-division{background:#2a1500;border:1px solid rgba(200,132,26,0.4);border-radius:16px;padding:20px;width:100%;max-width:520px;display:flex;flex-direction:column;gap:16px;}
+.panel-division h3{color:#e8a832;font-size:1.15rem;}
+.division-modos{display:flex;gap:8px;}
+.btn-modo{flex:1;padding:10px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:0.85rem;font-weight:700;cursor:pointer;}
+.btn-modo.activo{background:linear-gradient(135deg,#c8841a,#e8a832);color:#1a0a00;border-color:transparent;}
+.division-seccion{display:flex;flex-direction:column;gap:8px;}
+.division-seccion h4{color:#e8c87a;font-size:0.8rem;letter-spacing:1px;text-transform:uppercase;}
+.parte-cobrada{display:flex;justify-content:space-between;font-size:0.85rem;color:rgba(240,224,176,0.8);padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);}
+.producto-stepper{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.88rem;}
+.producto-stepper .info{display:flex;flex-direction:column;}
+.producto-stepper .disponible{font-size:0.72rem;color:rgba(240,224,176,0.5);}
+.stepper-controles{display:flex;align-items:center;gap:10px;}
+.btn-stepper{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:1.1rem;font-weight:700;cursor:pointer;}
+.input-nombre{padding:10px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#fff;font-size:0.9rem;}
+.division-subtotal{display:flex;justify-content:space-between;font-weight:800;color:#e8a832;font-size:1rem;padding-top:8px;border-top:1px solid rgba(200,132,26,0.3);}
+
 #recibo-imprimir{display:none;}
 @media print{
-  header, main, .overlay{display:none;}
+  header, main, .overlay, .overlay-division{display:none;}
   #recibo-imprimir{display:block;position:static;width:80mm;padding:4mm;font-family:'Courier New',monospace;font-size:11px;color:#000;background:#fff;}
   .recibo-linea{margin:2px 0;}
   .recibo-centro{text-align:center;}
@@ -85,6 +103,55 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
   </div>
 </div>
 
+<div class="overlay-division oculto" id="overlay-division">
+  <div class="panel-division">
+    <h3>Dividir cuenta</h3>
+    <div id="division-restante" style="font-size:0.85rem;color:rgba(240,224,176,0.8);"></div>
+
+    <div class="division-seccion">
+      <h4>Ya cobrado</h4>
+      <div id="division-partes-cobradas"></div>
+    </div>
+
+    <div class="division-modos">
+      <button class="btn-modo activo" id="btn-modo-item" onclick="cambiarModoDivision('item')">Por ítem</button>
+      <button class="btn-modo" id="btn-modo-igual" onclick="cambiarModoDivision('igual')">Partes iguales</button>
+    </div>
+
+    <div class="division-seccion" id="division-modo-item" style="display:flex;">
+      <h4>¿Quién paga ahora?</h4>
+      <input type="text" class="input-nombre" id="input-nombre-persona" placeholder="Nombre de la persona">
+      <div id="division-productos"></div>
+      <div class="division-subtotal">
+        <span>Subtotal de esta caja</span>
+        <span id="division-subtotal-caja">$0</span>
+      </div>
+      <button class="btn-cobrar" onclick="iniciarCobroCajaItem()">Cobrar a esta persona</button>
+    </div>
+
+    <div class="division-seccion" id="division-modo-igual" style="display:none;">
+      <h4>Dividir entre</h4>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" class="input-n-partes" id="input-n-partes" min="2" value="2" style="width:60px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#fff;font-size:0.9rem;text-align:center;">
+        <button class="btn-modo" onclick="generarPartesIguales()">Generar</button>
+      </div>
+      <div id="division-partes-iguales-lista"></div>
+    </div>
+
+    <button class="btn-cancelar" onclick="cerrarDivision()">Cerrar</button>
+  </div>
+</div>
+
+<div class="overlay oculto" id="overlay-cobrar-parcial">
+  <div class="modal-cobrar">
+    <h3>¿Cómo pagó esta parte?</h3>
+    <button class="btn-metodo" onclick="confirmarCobroParcial('Efectivo')">💵 Efectivo</button>
+    <button class="btn-metodo" onclick="confirmarCobroParcial('Nequi')">📱 Nequi</button>
+    <button class="btn-metodo" onclick="confirmarCobroParcial('Tarjeta')">💳 Tarjeta</button>
+    <button class="btn-cancelar" onclick="cerrarModalCobrarParcial()">Cancelar</button>
+  </div>
+</div>
+
 <div id="recibo-imprimir"></div>
 
 <script>
@@ -127,6 +194,206 @@ let vistaEstado = 'pendientes';
 let pedidoIdParaCobrar = null;
 let usandoDatosMuestra = false;
 const pedidosPagoPendiente = new Set();
+
+// Estado de la vista "Dividir cuenta" (Módulo 4). Todo esto vive solo en memoria
+// del navegador — nunca se guarda en Ventas. Lo único que se persiste es el
+// resultado de cada caja ya cobrada, vía registrar_pago_parcial.
+let division = null;
+let idPedidoParaCobrarParcial = null;
+let personaParaCobrarParcial = '';
+let montoParaCobrarParcial = 0;
+let detalleParaCobrarParcial = '';
+
+async function abrirDivision(idPedido) {
+  const pedido = pedidos.find(p => p.id_pedido === idPedido);
+  if (!pedido) return;
+
+  let partesCobradas = [];
+  try {
+    const params = new URLSearchParams({ accion: 'listar_pagos_divididos', id_pedido: idPedido });
+    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.partes)) partesCobradas = data.partes;
+  } catch (e) {
+    // Sin conexión: se continúa con lo que haya en pantalla; el cajero puede
+    // reintentar más tarde si esto deja de responder.
+  }
+
+  const disponibles = pedido.items.map(it => ({
+    producto: it.producto,
+    precioUnitario: it.total / it.cantidad,
+    cantidadLibre: it.cantidad
+  }));
+
+  partesCobradas.forEach(parte => {
+    let detalle = [];
+    try { detalle = JSON.parse(parte.detalle || '[]'); } catch (e) { detalle = []; }
+    detalle.forEach(d => {
+      const linea = disponibles.find(x => x.producto === d.producto);
+      if (linea) linea.cantidadLibre = Math.max(0, linea.cantidadLibre - d.cantidad);
+    });
+  });
+
+  division = {
+    idPedido: idPedido,
+    pedido: pedido,
+    disponibles: disponibles,
+    partesCobradas: partesCobradas,
+    modo: 'item',
+    cajaActual: { seleccion: {} },
+    nPartesIguales: 2
+  };
+
+  document.getElementById('overlay-division').classList.remove('oculto');
+  renderDivision();
+}
+
+function cerrarDivision() {
+  division = null;
+  document.getElementById('overlay-division').classList.add('oculto');
+}
+
+function cambiarModoDivision(modo) {
+  if (!division) return;
+  division.modo = modo;
+  renderDivision();
+}
+
+function ajustarUnidad(producto, delta) {
+  const linea = division.disponibles.find(x => x.producto === producto);
+  if (!linea) return;
+  const actual = division.cajaActual.seleccion[producto] || 0;
+  const nuevo = actual + delta;
+  if (nuevo < 0 || nuevo > actual + linea.cantidadLibre) return;
+  division.cajaActual.seleccion[producto] = nuevo;
+  linea.cantidadLibre -= delta;
+  renderDivision();
+}
+
+function subtotalCajaActual() {
+  let subtotal = 0;
+  Object.keys(division.cajaActual.seleccion).forEach(producto => {
+    const cant = division.cajaActual.seleccion[producto];
+    const linea = division.disponibles.find(x => x.producto === producto);
+    if (linea && cant > 0) subtotal += cant * linea.precioUnitario;
+  });
+  return subtotal;
+}
+
+function iniciarCobroCajaItem() {
+  const persona = document.getElementById('input-nombre-persona').value.trim();
+  const subtotal = subtotalCajaActual();
+  if (!persona) { alert('Escribe el nombre de la persona.'); return; }
+  if (subtotal <= 0) { alert('Selecciona al menos un ítem para esta caja.'); return; }
+
+  const detalle = Object.keys(division.cajaActual.seleccion)
+    .filter(p => division.cajaActual.seleccion[p] > 0)
+    .map(p => ({ producto: p, cantidad: division.cajaActual.seleccion[p] }));
+
+  idPedidoParaCobrarParcial = division.idPedido;
+  personaParaCobrarParcial = persona;
+  montoParaCobrarParcial = subtotal;
+  detalleParaCobrarParcial = JSON.stringify(detalle);
+  document.getElementById('overlay-cobrar-parcial').classList.remove('oculto');
+}
+
+function cerrarModalCobrarParcial() {
+  document.getElementById('overlay-cobrar-parcial').classList.add('oculto');
+}
+
+async function confirmarCobroParcial(metodo) {
+  cerrarModalCobrarParcial();
+  const idPedido = idPedidoParaCobrarParcial;
+  const persona = personaParaCobrarParcial;
+  const monto = montoParaCobrarParcial;
+  const detalle = detalleParaCobrarParcial;
+  if (!idPedido || !persona || !monto) return;
+
+  try {
+    const params = new URLSearchParams({
+      accion: 'registrar_pago_parcial',
+      id_pedido: idPedido,
+      persona: persona,
+      monto: monto,
+      metodo_pago: metodo,
+      detalle: detalle
+    });
+    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const data = await res.json();
+    if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Respuesta inválida del servidor');
+
+    let itemsDetalle = [];
+    try { itemsDetalle = JSON.parse(detalle || '[]'); } catch (e) { itemsDetalle = []; }
+    const itemsRecibo = itemsDetalle.map(d => {
+      const linea = division.disponibles.find(x => x.producto === d.producto);
+      const precioUnitario = linea ? linea.precioUnitario : (monto / d.cantidad);
+      return { producto: d.producto, cantidad: d.cantidad, total: precioUnitario * d.cantidad };
+    });
+
+    imprimirRecibo({
+      tipo: division.pedido.tipo,
+      mesa: division.pedido.mesa,
+      items: itemsRecibo,
+      total: monto,
+      metodo_pago: metodo + ' — ' + persona
+    });
+
+    division.partesCobradas.push({ persona: persona, monto: monto, metodo_pago: metodo, detalle: detalle });
+    division.cajaActual = { seleccion: {} };
+    document.getElementById('input-nombre-persona').value = '';
+
+    if (data.completado) {
+      cerrarDivision();
+      cargarPedidos();
+    } else {
+      renderDivision();
+    }
+  } catch (e) {
+    alert('No se pudo registrar el cobro de esa parte: ' + e.message);
+  }
+}
+
+function renderDivision() {
+  if (!division) return;
+  const totalPedido = division.pedido.total;
+  const totalCobrado = division.partesCobradas.reduce((s, p) => s + Number(p.monto), 0);
+  const restante = totalPedido - totalCobrado;
+
+  const contPartes = document.getElementById('division-partes-cobradas');
+  contPartes.innerHTML = division.partesCobradas.length === 0
+    ? '<div style="font-size:0.8rem;color:rgba(240,224,176,0.5);">Nadie ha pagado todavía.</div>'
+    : division.partesCobradas.map(p => `
+        <div class="parte-cobrada">
+          <span>✅ ${p.persona}</span>
+          <span>${formatoCOP(p.monto)} (${p.metodo_pago})</span>
+        </div>
+      `).join('');
+
+  document.getElementById('division-restante').textContent = 'Falta por cobrar: ' + formatoCOP(restante);
+
+  document.getElementById('btn-modo-item').classList.toggle('activo', division.modo === 'item');
+  document.getElementById('btn-modo-igual').classList.toggle('activo', division.modo === 'igual');
+  document.getElementById('division-modo-item').style.display = division.modo === 'item' ? 'flex' : 'none';
+  document.getElementById('division-modo-igual').style.display = division.modo === 'igual' ? 'flex' : 'none';
+
+  if (division.modo === 'item') {
+    const contProductos = document.getElementById('division-productos');
+    contProductos.innerHTML = division.disponibles.map(linea => `
+      <div class="producto-stepper">
+        <div class="info">
+          <span>${linea.producto}</span>
+          <span class="disponible">${linea.cantidadLibre} sin asignar</span>
+        </div>
+        <div class="stepper-controles">
+          <button class="btn-stepper" onclick="ajustarUnidad('${linea.producto}', -1)">−</button>
+          <span>${division.cajaActual.seleccion[linea.producto] || 0}</span>
+          <button class="btn-stepper" onclick="ajustarUnidad('${linea.producto}', 1)" ${linea.cantidadLibre <= 0 ? 'disabled' : ''}>+</button>
+        </div>
+      </div>
+    `).join('');
+    document.getElementById('division-subtotal-caja').textContent = formatoCOP(subtotalCajaActual());
+  }
+}
 
 function formatoCOP(v) { return '$' + Math.round(v).toLocaleString('es-CO'); }
 
@@ -279,6 +546,7 @@ function render() {
       </div>
       <div class="pedido-footer">
         ${p.tipo === 'domicilio' ? `<button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="imprimirReciboPorId('${p.id_pedido}')">🖨️ ${p.estado === 'Pagado' ? 'Reimprimir' : 'Imprimir'} recibo</button>` : ''}
+        ${p.tipo === 'local' && p.estado !== 'Pagado' ? `<button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="abrirDivision('${p.id_pedido}')">➗ Dividir cuenta</button>` : ''}
         ${p.estado === 'Pagado'
           ? (p.tipo === 'local' ? `<button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="imprimirReciboPorId('${p.id_pedido}')">🖨️ Reimprimir recibo</button>` : '')
           : `<button class="btn-cobrar" onclick="abrirModalCobrar('${p.id_pedido}')">Cobrar</button>`}
