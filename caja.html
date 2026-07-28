@@ -216,10 +216,13 @@ async function abrirDivision(idPedido) {
     const params = new URLSearchParams({ accion: 'listar_pagos_divididos', id_pedido: idPedido });
     const res = await fetch(SCRIPT_URL + '?' + params.toString());
     const data = await res.json();
-    if (data.ok && Array.isArray(data.partes)) partesCobradas = data.partes;
+    if (!data || data.ok !== true || !Array.isArray(data.partes)) {
+      throw new Error(data && data.error ? data.error : 'Respuesta inválida del servidor');
+    }
+    partesCobradas = data.partes;
   } catch (e) {
-    // Sin conexión: se continúa con lo que haya en pantalla; el cajero puede
-    // reintentar más tarde si esto deja de responder.
+    alert('No se pudo cargar el progreso de este pedido (' + e.message + '). Intenta de nuevo antes de dividir la cuenta, para no arriesgar cobrar de más o de menos.');
+    return;
   }
 
   const disponibles = pedido.items.map(it => ({
@@ -251,13 +254,32 @@ async function abrirDivision(idPedido) {
   renderDivision();
 }
 
+let cobroParcialEnCurso = false;
+
 function cerrarDivision() {
+  if (cobroParcialEnCurso) {
+    alert('Espera a que termine de procesarse el cobro actual antes de cerrar.');
+    return;
+  }
   division = null;
   document.getElementById('overlay-division').classList.add('oculto');
 }
 
+function liberarSeleccionActual() {
+  if (!division) return;
+  Object.keys(division.cajaActual.seleccion).forEach(producto => {
+    const cant = division.cajaActual.seleccion[producto];
+    if (cant > 0) {
+      const linea = division.disponibles.find(x => x.producto === producto);
+      if (linea) linea.cantidadLibre += cant;
+    }
+  });
+  division.cajaActual = { seleccion: {} };
+}
+
 function cambiarModoDivision(modo) {
   if (!division) return;
+  liberarSeleccionActual();
   division.modo = modo;
   renderDivision();
 }
@@ -312,6 +334,14 @@ async function confirmarCobroParcial(metodo) {
   const detalle = detalleParaCobrarParcial;
   if (!idPedido || !persona || !monto) return;
 
+  // Capturamos lo que necesitamos del pedido ANTES del await: "division" puede
+  // volverse null (o apuntar a otro pedido) mientras esta petición está en
+  // vuelo, si el cajero alcanza a cerrar la vista o abrir otra división.
+  const pedidoTipo = division ? division.pedido.tipo : null;
+  const pedidoMesa = division ? division.pedido.mesa : null;
+  const disponiblesSnapshot = division ? division.disponibles.map(l => ({ producto: l.producto, precioUnitario: l.precioUnitario })) : [];
+
+  cobroParcialEnCurso = true;
   try {
     const params = new URLSearchParams({
       accion: 'registrar_pago_parcial',
@@ -328,31 +358,40 @@ async function confirmarCobroParcial(metodo) {
     let itemsDetalle = [];
     try { itemsDetalle = JSON.parse(detalle || '[]'); } catch (e) { itemsDetalle = []; }
     const itemsRecibo = itemsDetalle.map(d => {
-      const linea = division.disponibles.find(x => x.producto === d.producto);
+      const linea = disponiblesSnapshot.find(x => x.producto === d.producto);
       const precioUnitario = linea ? linea.precioUnitario : (monto / d.cantidad);
       return { producto: d.producto, cantidad: d.cantidad, total: precioUnitario * d.cantidad };
     });
 
     imprimirRecibo({
-      tipo: division.pedido.tipo,
-      mesa: division.pedido.mesa,
+      tipo: pedidoTipo,
+      mesa: pedidoMesa,
       items: itemsRecibo,
       total: monto,
-      metodo_pago: metodo + ' — ' + persona
+      metodo_pago: metodo + ' — ' + persona + (data.completado ? '' : ' · PAGO PARCIAL, falta ' + formatoCOP(data.restante))
     });
 
-    division.partesCobradas.push({ persona: persona, monto: monto, metodo_pago: metodo, detalle: detalle });
-    division.cajaActual = { seleccion: {} };
-    document.getElementById('input-nombre-persona').value = '';
+    if (division && division.idPedido === idPedido) {
+      division.partesCobradas.push({ persona: persona, monto: monto, metodo_pago: metodo, detalle: detalle });
+      division.cajaActual = { seleccion: {} };
+      const inputNombre = document.getElementById('input-nombre-persona');
+      if (inputNombre) inputNombre.value = '';
+      if (!data.completado) renderDivision();
+    }
 
     if (data.completado) {
-      cerrarDivision();
-      cargarPedidos();
-    } else {
-      renderDivision();
+      pedidosPagoPendiente.add(idPedido);
+      if (division && division.idPedido === idPedido) {
+        division = null;
+        document.getElementById('overlay-division').classList.add('oculto');
+      }
+      await cargarPedidos();
+      pedidosPagoPendiente.delete(idPedido);
     }
   } catch (e) {
-    alert('No se pudo registrar el cobro de esa parte: ' + e.message);
+    alert('No se pudo confirmar el cobro de esa parte (' + e.message + '). Abre "Dividir cuenta" de nuevo y revisa "Ya cobrado" antes de reintentar — puede que el pago sí se haya registrado.');
+  } finally {
+    cobroParcialEnCurso = false;
   }
 }
 
@@ -439,6 +478,7 @@ function renderPartesIguales() {
 }
 
 function cobrarParteIgual(numeroParte, monto) {
+  if (!monto || monto <= 0) { alert('Esta parte quedó en $0 — ajusta el número de personas.'); return; }
   idPedidoParaCobrarParcial = division.idPedido;
   personaParaCobrarParcial = 'Parte ' + numeroParte + ' de ' + division.nPartesIguales;
   montoParaCobrarParcial = monto;
@@ -505,7 +545,19 @@ function aplicarPendientes(lista) {
   });
 }
 
-function abrirModalCobrar(idPedido) {
+async function abrirModalCobrar(idPedido) {
+  try {
+    const params = new URLSearchParams({ accion: 'listar_pagos_divididos', id_pedido: idPedido });
+    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.partes) && data.partes.length > 0) {
+      alert('Este pedido ya tiene pagos parciales registrados. Usa "Dividir cuenta" para terminar de cobrarlo, no el botón Cobrar.');
+      return;
+    }
+  } catch (e) {
+    // Si no se puede verificar (sin conexión), se deja continuar — no bloquear
+    // el cobro normal por una falla de red en esta comprobación preventiva.
+  }
   pedidoIdParaCobrar = idPedido;
   document.getElementById('overlay-cobrar').classList.remove('oculto');
 }
