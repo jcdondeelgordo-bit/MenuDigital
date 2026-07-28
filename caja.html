@@ -51,6 +51,7 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 .btn-stepper{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:1.1rem;font-weight:700;cursor:pointer;}
 .input-nombre{padding:10px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#fff;font-size:0.9rem;}
 .division-subtotal{display:flex;justify-content:space-between;font-weight:800;color:#e8a832;font-size:1rem;padding-top:8px;border-top:1px solid rgba(200,132,26,0.3);}
+.parte-igual-card{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border:1px solid rgba(200,132,26,0.25);border-radius:10px;}
 
 #overlay-cobrar-parcial{z-index:70;}
 
@@ -394,7 +395,55 @@ function renderDivision() {
       </div>
     `).join('');
     document.getElementById('division-subtotal-caja').textContent = formatoCOP(subtotalCajaActual());
+  } else {
+    renderPartesIguales();
   }
+}
+
+function generarPartesIguales() {
+  const n = parseInt(document.getElementById('input-n-partes').value, 10);
+  if (!n || n < 2) { alert('Escribe un número de personas de 2 o más.'); return; }
+  division.nPartesIguales = n;
+  renderPartesIguales();
+}
+
+function renderPartesIguales() {
+  const totalPedido = division.pedido.total;
+  const totalCobrado = division.partesCobradas.reduce((s, p) => s + Number(p.monto), 0);
+  const restante = totalPedido - totalCobrado;
+  const n = division.nPartesIguales;
+  const yaGeneradas = division.partesCobradas.length;
+  const partesFaltantes = Math.max(0, n - yaGeneradas);
+
+  const cont = document.getElementById('division-partes-iguales-lista');
+  if (partesFaltantes === 0) {
+    cont.innerHTML = '<div style="font-size:0.8rem;color:rgba(240,224,176,0.5);">Ya se generaron todas las partes para este número de personas.</div>';
+    return;
+  }
+
+  const base = Math.floor(restante / partesFaltantes);
+  const html = [];
+  for (let i = 0; i < partesFaltantes; i++) {
+    const esUltima = i === partesFaltantes - 1;
+    const monto = esUltima ? (restante - base * (partesFaltantes - 1)) : base;
+    const numeroParte = yaGeneradas + i + 1;
+    html.push(`
+      <div class="parte-igual-card">
+        <span>Parte ${numeroParte} de ${n}</span>
+        <span>${formatoCOP(monto)}</span>
+        <button class="btn-cobrar" onclick="cobrarParteIgual(${numeroParte}, ${monto})">Cobrar</button>
+      </div>
+    `);
+  }
+  cont.innerHTML = html.join('');
+}
+
+function cobrarParteIgual(numeroParte, monto) {
+  idPedidoParaCobrarParcial = division.idPedido;
+  personaParaCobrarParcial = 'Parte ' + numeroParte + ' de ' + division.nPartesIguales;
+  montoParaCobrarParcial = monto;
+  detalleParaCobrarParcial = '';
+  document.getElementById('overlay-cobrar-parcial').classList.remove('oculto');
 }
 
 function formatoCOP(v) { return '$' + Math.round(v).toLocaleString('es-CO'); }
