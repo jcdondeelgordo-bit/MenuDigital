@@ -15,10 +15,9 @@
 //    implementaciones > Editar > Nueva versión > Implementar).
 // 5. IMPORTANTE: antes de publicar, busca con Ctrl+F "function registrarPagoParcial"
 //    y "function listarPagosDivididos" y confirma que cada una aparece una sola vez.
-// 6. MUY IMPORTANTE: este archivo NO declara `METODOS_PAGO_CAJA` — esa constante ya
-//    existe desde el Módulo 9 (Caja). Si al pegar aparece duplicada, borra la copia
-//    repetida antes de publicar (una `const` duplicada rompe con SyntaxError TODO
-//    el proyecto de Apps Script, no solo esta función).
+// 6. NOTA: este archivo usa un arreglo en línea para validar métodos de pago
+//    (['Efectivo', 'Nequi', 'Tarjeta']), igual que ya hace marcarPedidoPagado del
+//    Módulo 9. No depende de una constante compartida METODOS_PAGO_CAJA (que no existe).
 //
 // División de cuenta NUNCA toca la hoja "Ventas" ni sus filas/cantidades — solo lee
 // su columna "Total" para saber cuánto falta por cobrar de un pedido. Todo el detalle
@@ -26,6 +25,8 @@
 // alcanza el total del pedido, se marca TODO el pedido como Pagado en Ventas (mismo
 // mecanismo que ya usa marcarPedidoPagado del Módulo 9), y se deja Metodo_Pago en
 // Ventas como 'Dividido' — el desglose real por método vive en Pagos_Divididos.
+// Este archivo es autónomo: valida métodos de pago en línea (no depende de constantes
+// compartidas) para evitar riesgo de SyntaxError o ReferenceError.
 // ============================================================================
 
 /**
@@ -42,7 +43,7 @@ function registrarPagoParcial(e) {
   const metodoPago = e.parameter.metodo_pago || '';
   const detalle = e.parameter.detalle || '';
 
-  if (!idPedido || !persona || !monto || monto <= 0 || METODOS_PAGO_CAJA.indexOf(metodoPago) === -1) {
+  if (!idPedido || !persona || !monto || monto <= 0 || ['Efectivo', 'Nequi', 'Tarjeta'].indexOf(metodoPago) === -1) {
     return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'Datos inválidos para registrar el pago parcial' }))
       .setMimeType(ContentService.MimeType.JSON);
   }
