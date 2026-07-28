@@ -75,6 +75,14 @@ Hoja nueva en el Sheet del menú (no se toca `Ventas`):
 | `Persona` | Nombre libre que escribe el cajero (ej. "Juan") |
 | `Monto` | Lo que le correspondió a esa caja virtual |
 | `Metodo_Pago` | Efectivo / Nequi / Tarjeta — propio de esa parte, puede ser distinto por persona |
+| `Detalle` | JSON con las unidades asignadas a esa caja (ej. `[{"producto":"Papas","cantidad":1}]`), o `""` en modo "partes iguales" |
+
+**Nota (agregada durante la planificación de implementación):** `Detalle` no existía en la primera
+versión de este diseño. Se agregó porque, sin ella, "recuperar el progreso" al reabrir la división
+a medias (ver sección de flujo) no era posible: `listar_pagos_divididos` necesita devolver no solo
+cuánto se cobró, sino qué unidades ya se entregaron, para que el frontend sepa cuáles siguen
+libres. Sigue sin tocar `Ventas` ni su estructura de filas — es una columna nueva únicamente en
+`Pagos_Divididos`.
 
 Cuando la suma de `Monto` de todas las filas de un `ID_Pedido` en `Pagos_Divididos` alcanza el
 total de ese pedido en `Ventas`, el backend marca automáticamente **todas** las filas de ese pedido
@@ -83,14 +91,17 @@ en `Ventas` como `Pagado` (reutilizando la misma lógica que ya usa `marcarPedid
 aunque la mesa haya pagado con métodos mixtos.
 
 ### Acciones nuevas de Apps Script
-- **`registrar_pago_parcial`** (`id_pedido`, `persona`, `monto`, `metodo_pago`): agrega una fila a
-  `Pagos_Divididos`. Recalcula la suma de partes ya pagadas para ese `id_pedido` y, si alcanza el
-  total del pedido (leído de `Ventas`), marca todas sus filas como `Pagado`. Responde
+- **`registrar_pago_parcial`** (`id_pedido`, `persona`, `monto`, `metodo_pago`, `detalle` — este
+  último un JSON opcional, `""` en modo partes iguales): agrega una fila a `Pagos_Divididos`.
+  Recalcula la suma de partes ya pagadas para ese `id_pedido` y, si alcanza el total del pedido
+  (leído de `Ventas`), marca todas sus filas como `Pagado`. Responde
   `{ok: true, completado: true|false, restante: <monto que aún falta por cobrar>}`.
   - Rechaza (`ok:false`) si `monto` o `metodo_pago` son inválidos, o si `monto` sumado a lo ya
     pagado **superara** el total del pedido (nunca se puede cobrar de más).
-- **`listar_pagos_divididos`** (`id_pedido`): devuelve las partes ya cobradas de ese pedido (para
-  recuperar el progreso si el cajero recarga `caja.html` a mitad de una división).
+- **`listar_pagos_divididos`** (`id_pedido`): devuelve las partes ya cobradas de ese pedido —
+  `persona`, `monto`, `metodo_pago` y `detalle` de cada una — para recuperar el progreso si el
+  cajero recarga `caja.html` a mitad de una división (qué unidades ya se entregaron, para no
+  ofrecerlas de nuevo).
 
 No hace falta ninguna acción para "iniciar" una división — `listar_pedidos_caja` (Módulo 9) ya
 trae el pedido completo con su desglose de ítems; el resto es enteramente frontend.
