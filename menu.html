@@ -209,7 +209,9 @@ main{padding:16px;max-width:640px;margin:0 auto;}
     </div>
     <div class="campo-grupo">
       <label id="mesa-mesero-label">Nombre del mesero</label>
-      <input type="text" id="mesa-mesero" placeholder="Su nombre">
+      <select id="mesa-mesero">
+        <option value="">-- Selecciona tu nombre --</option>
+      </select>
       <div class="mesa-nota" id="mesa-nota" style="display:none;"></div>
     </div>
   </div>
@@ -453,6 +455,40 @@ async function cargarProductos() {
     // Backend no disponible todavía — seguimos con los datos locales.
   }
   PRODUCTOS = MOCK_PRODUCTOS;
+}
+
+let EMPLEADOS = [];
+
+async function cargarEmpleados() {
+  try {
+    const res = await fetch(SCRIPT_URL + '?accion=listar_empleados');
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.empleados)) {
+      EMPLEADOS = data.empleados;
+    }
+  } catch (e) {
+    // Backend no disponible -- renderMeseroOptions() cae a texto libre.
+  }
+  renderMeseroOptions();
+}
+
+function renderMeseroOptions() {
+  const el = document.getElementById('mesa-mesero');
+  if (!el) return;
+  if (EMPLEADOS.length === 0) {
+    // Sin catálogo disponible: no bloqueamos el flujo, volvemos a campo de texto libre.
+    if (el.tagName === 'SELECT') {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = 'mesa-mesero';
+      input.placeholder = 'Su nombre';
+      el.replaceWith(input);
+    }
+    return;
+  }
+  if (el.tagName !== 'SELECT') return; // ya se reemplazó por texto libre, no hay nada que poblar
+  el.innerHTML = '<option value="">-- Selecciona tu nombre --</option>' +
+    EMPLEADOS.map(emp => `<option value="${emp.nombre.replace(/"/g, '&quot;')}">${emp.nombre}</option>`).join('');
 }
 
 function renderCategorias() {
@@ -961,6 +997,7 @@ async function editarPrecio(idx) {
 (async function init() {
   renderMesaBadge();
   await cargarProductos();
+  await cargarEmpleados();
   renderCategorias();
   renderRecomendados();
   renderProductos();
