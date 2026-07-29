@@ -1,0 +1,119 @@
+// === MODULO 10: Empleados Catalog + Accountability Columns ===
+// Paste these functions and code branches into the Apps Script editor for the INVENTARIO DONDE EL GORDO sheet.
+// This file mirrors the exact code to be pasted, line-by-line, to ensure consistency with the git repo.
+
+// ===== STEP 1: Add after normalizeName function (around line 11) =====
+
+const ADMIN_PASSWORD = 'CAMBIAR_ESTA_CLAVE'; // TODO: usar la MISMA clave real que ya está
+// configurada en el Apps Script del menú digital (ADMIN_PASSWORD), para que sea una sola
+// clave desde el punto de vista del usuario, aunque técnicamente sea una constante
+// separada en este otro proyecto de Apps Script.
+
+function normalizarActivo_(valor) {
+  return (valor || '').toString().trim().toUpperCase() === 'SI';
+}
+
+// Filas de "Empleados" (Nombre, Celular, Fecha_Ingreso, Activo) cuyo Activo normaliza a "SI".
+// Solo devuelve el nombre -- este endpoint no requiere clave y no debe exponer celular.
+function listarEmpleadosActivos_(sheetEmpleados) {
+  const datos = sheetEmpleados ? sheetEmpleados.getDataRange().getValues() : [];
+  const empleados = [];
+  for (let i = 1; i < datos.length; i++) {
+    const row = datos[i];
+    if (!row[0]) continue;
+    if (!normalizarActivo_(row[3])) continue;
+    empleados.push({ nombre: row[0].toString().trim() });
+  }
+  return empleados;
+}
+
+function verificarAdmin(e) {
+  const clave = e.parameter.clave || '';
+  return { ok: true, valido: clave === ADMIN_PASSWORD };
+}
+
+// ===== STEP 2: Add to doGet(e), before the final else (around line 110) =====
+
+} else if (action === 'verificar_admin') {
+  result = verificarAdmin(e);
+} else if (action === 'listar_empleados') {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = ss.getSheetByName('Empleados');
+    result = { ok: true, empleados: listarEmpleadosActivos_(sheet) };
+  } catch (err) {
+    result = { ok: false, error: err.toString() };
+  }
+} else if (action === 'listar_empleados_admin') {
+  const clave = e.parameter.clave || '';
+  if (clave !== ADMIN_PASSWORD) {
+    result = { ok: false, error: 'Clave inválida' };
+  } else {
+    try {
+      const ss = SpreadsheetApp.openById(SHEET_ID);
+      const sheet = ss.getSheetByName('Empleados');
+      const datos = sheet ? sheet.getDataRange().getValues() : [];
+      const empleados = [];
+      for (let i = 1; i < datos.length; i++) {
+        const row = datos[i];
+        if (!row[0]) continue;
+        empleados.push({
+          nombre: row[0].toString().trim(),
+          celular: row[1] ? row[1].toString().trim() : '',
+          fechaIngreso: row[2] ? toDateStr(row[2]) : '',
+          activo: normalizarActivo_(row[3]) ? 'Si' : 'No'
+        });
+      }
+      result = { ok: true, empleados: empleados };
+    } catch (err) {
+      result = { ok: false, error: err.toString() };
+    }
+  }
+
+// ===== STEP 3: Add to doPost(e), before the final else (around line 170) =====
+
+} else if (data.action === 'guardar_empleado') {
+  if (data.clave !== ADMIN_PASSWORD) {
+    return respond({ ok: false, error: 'Clave inválida' });
+  }
+  const nombreBuscado = (data.nombre || '').toString().trim();
+  if (!nombreBuscado) {
+    return respond({ ok: false, error: 'Falta el nombre' });
+  }
+  const sheet = getOrCreateSheet(ss, 'Empleados', ['Nombre', 'Celular', 'Fecha_Ingreso', 'Activo']);
+  const datos = sheet.getDataRange().getValues();
+  let filaEncontrada = -1;
+  for (let i = 1; i < datos.length; i++) {
+    if ((datos[i][0] || '').toString().trim() === nombreBuscado) {
+      filaEncontrada = i + 1; // 1-indexed sheet row
+      break;
+    }
+  }
+  const activo = data.activo === 'No' ? 'No' : 'Si';
+  if (filaEncontrada > 0) {
+    sheet.getRange(filaEncontrada, 1, 1, 4).setValues([[nombreBuscado, data.celular || '', data.fechaIngreso || '', activo]]);
+  } else {
+    sheet.appendRow([nombreBuscado, data.celular || '', data.fechaIngreso || '', activo]);
+  }
+  registrarEnvio(ss, data.idEnvio, 'empleado', timestamp);
+  return respond({ ok: true });
+
+// ===== STEP 4a: Replace guardar_inventario_completo body (around line 131) =====
+
+} else if (data.action === 'guardar_inventario_completo') {
+  const sheet = getOrCreateSheet(ss, 'Inventario', ['Fecha', 'Turno', 'Área', 'Producto', 'Total', 'Registrado', 'Responsable']);
+  data.items.forEach(function(it) {
+    sheet.appendRow([data.fecha, data.turno, it.areas, it.nombre, it.total, timestamp, data.responsable || '']);
+  });
+  registrarEnvio(ss, data.idEnvio, 'inventario', timestamp);
+  return respond({ ok: true });
+
+// ===== STEP 4b: Replace guardar_ingreso body (around line 144) =====
+
+} else if (data.action === 'guardar_ingreso') {
+  const sheet = getOrCreateSheet(ss, 'Ingresos', ['Fecha', 'Producto', 'Cantidad', 'Unidad', 'Registrado', 'Quien_Trae', 'Quien_Recibe']);
+  data.items.forEach(function(it) {
+    sheet.appendRow([data.fecha, it.nombre, it.total, it.unit, timestamp, data.quienTrae || '', data.quienRecibe || '']);
+  });
+  registrarEnvio(ss, data.idEnvio, 'ingreso', timestamp);
+  return respond({ ok: true });
