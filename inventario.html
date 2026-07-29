@@ -1051,9 +1051,14 @@
       // Sync shift/turn select
       document.getElementById('selectTurno').value = draft.turno || 'APERTURA';
 
-      if (document.getElementById('selectResponsable')) {
-        document.getElementById('selectResponsable').value = draft.responsable || '';
-      }
+      // Note: selectResponsable is intentionally NOT restored here. Unlike selectTurno,
+      // its <option> list is empty until fetchEmpleados()'s async JSONP call resolves,
+      // so setting .value to a not-yet-existing option silently fails (selectedIndex
+      // becomes -1) and the immediate updateMetaDraft() call below would then persist
+      // that failure back into the draft, clobbering the saved responsable. Instead,
+      // renderResponsableSelect() (called once EMPLEADOS actually loads) re-applies
+      // draft.responsable against the real option list, which is the only point where
+      // restoring it can succeed.
 
       updateMetaDraft();
     }
@@ -1289,7 +1294,11 @@
       draft.fecha = document.getElementById('inputFecha').value;
       draft.turno = document.getElementById('selectTurno').value;
       const responsableEl = document.getElementById('selectResponsable');
-      if (responsableEl) draft.responsable = responsableEl.value;
+      // Only trust the DOM value once EMPLEADOS has actually loaded (i.e. selectResponsable
+      // has real <option>s beyond the static placeholder). Before that, the select can only
+      // ever read back "" — saving it here would clobber a previously persisted
+      // draft.responsable before renderResponsableSelect() gets a chance to restore it.
+      if (responsableEl && EMPLEADOS.length > 0) draft.responsable = responsableEl.value;
       saveDraft(draft);
     }
 
