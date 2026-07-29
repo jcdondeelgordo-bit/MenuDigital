@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Empleados - Donde el Gordo</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background:#111; color:#eee; margin:0; padding:24px; }
+  h1 { font-size: 1.4rem; }
+  .panel { max-width: 480px; margin: 60px auto; background:#1c1c1c; padding:24px; border-radius:12px; }
+  input, button { font-size:1rem; padding:10px; border-radius:8px; border:1px solid #444; background:#222; color:#eee; width:100%; box-sizing:border-box; margin-bottom:10px; }
+  button { background:#e0552b; border:none; cursor:pointer; font-weight:bold; }
+  button:disabled { opacity:0.5; cursor:not-allowed; }
+  table { width:100%; border-collapse: collapse; margin-top:16px; }
+  td, th { padding:8px; border-bottom:1px solid #333; text-align:left; font-size:0.9rem; }
+  .estado-si { color:#4caf50; font-weight:bold; }
+  .estado-no { color:#888; }
+  .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 20px; border-radius:8px; display:none; }
+</style>
+</head>
+<body>
+
+<div class="panel" id="panelClave">
+  <h1>🔒 Empleados — Donde el Gordo</h1>
+  <input type="password" id="inputClave" placeholder="Clave de administrador">
+  <button onclick="verificarClave()">Entrar</button>
+</div>
+
+<div id="panelPrincipal" style="display:none; max-width:700px; margin:0 auto;">
+  <h1>👥 Empleados</h1>
+
+  <div class="panel" style="max-width:none;">
+    <h2 style="font-size:1.1rem;">Agregar empleado</h2>
+    <input type="text" id="nuevoNombre" placeholder="Nombre completo">
+    <input type="text" id="nuevoCelular" placeholder="Celular">
+    <input type="date" id="nuevaFechaIngreso">
+    <button onclick="agregarEmpleado()">Guardar</button>
+  </div>
+
+  <table id="tablaEmpleados">
+    <thead><tr><th>Nombre</th><th>Celular</th><th>Fecha ingreso</th><th>Estado</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzo45isSgsJoCJxyvBl81Eb9fMAMwsB3GS5IRwV9QxTgk7NLfj8BiE8j5CgeP6dWgb6/exec';
+  let CLAVE_ADMIN = '';
+  let EMPLEADOS_ADMIN = [];
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 3000);
+  }
+
+  function jsonp(url) {
+    return new Promise((resolve, reject) => {
+      const callbackName = 'jsonp_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+      window[callbackName] = function (data) {
+        delete window[callbackName];
+        script.remove();
+        resolve(data);
+      };
+      const script = document.createElement('script');
+      script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
+      script.onerror = () => { delete window[callbackName]; script.remove(); reject(new Error('jsonp failed')); };
+      document.body.appendChild(script);
+    });
+  }
+
+  function postForm(payload) {
+    return new Promise((resolve) => {
+      const idEnvio = 'env_' + Date.now();
+      payload.idEnvio = idEnvio;
+      const iframeName = 'iframe_' + Date.now();
+      const iframe = document.createElement('iframe');
+      iframe.name = iframeName;
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = SCRIPT_URL;
+      form.target = iframeName;
+      form.style.display = 'none';
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'payload';
+      input.value = JSON.stringify(payload);
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+
+      setTimeout(async () => {
+        try {
+          const data = await jsonp(SCRIPT_URL + '?action=verificar_envio&id=' + encodeURIComponent(idEnvio));
+          document.body.removeChild(iframe);
+          resolve(!!(data && data.ok && data.confirmado));
+        } catch (e) {
+          document.body.removeChild(iframe);
+          resolve(false);
+        }
+      }, 1500);
+    });
+  }
+
+  async function verificarClave() {
+    const clave = document.getElementById('inputClave').value;
+    try {
+      const data = await jsonp(SCRIPT_URL + '?action=verificar_admin&clave=' + encodeURIComponent(clave));
+      if (data && data.ok && data.valido) {
+        CLAVE_ADMIN = clave;
+        document.getElementById('panelClave').style.display = 'none';
+        document.getElementById('panelPrincipal').style.display = 'block';
+        cargarEmpleados();
+      } else {
+        showToast('Clave incorrecta');
+      }
+    } catch (e) {
+      showToast('No se pudo conectar con el servidor');
+    }
+  }
+
+  async function cargarEmpleados() {
+    try {
+      const data = await jsonp(SCRIPT_URL + '?action=listar_empleados_admin&clave=' + encodeURIComponent(CLAVE_ADMIN));
+      if (data && data.ok) {
+        EMPLEADOS_ADMIN = data.empleados;
+        renderTabla();
+      } else {
+        showToast('Error al cargar empleados');
+      }
+    } catch (e) {
+      showToast('No se pudo conectar con el servidor');
+    }
+  }
+
+  function renderTabla() {
+    const tbody = document.querySelector('#tablaEmpleados tbody');
+    tbody.innerHTML = EMPLEADOS_ADMIN.map(emp => `
+      <tr>
+        <td>${emp.nombre}</td>
+        <td>${emp.celular}</td>
+        <td>${emp.fechaIngreso}</td>
+        <td class="${emp.activo === 'Si' ? 'estado-si' : 'estado-no'}">${emp.activo === 'Si' ? 'Activo' : 'Inactivo'}</td>
+        <td><button onclick="cambiarEstado('${emp.nombre.replace(/'/g, "\\'")}', '${emp.activo}')">${emp.activo === 'Si' ? 'Desactivar' : 'Reactivar'}</button></td>
+      </tr>
+    `).join('');
+  }
+
+  async function cambiarEstado(nombre, activoActual) {
+    const emp = EMPLEADOS_ADMIN.find(e => e.nombre === nombre);
+    if (!emp) return;
+    const ok = await postForm({
+      action: 'guardar_empleado',
+      clave: CLAVE_ADMIN,
+      nombre: emp.nombre,
+      celular: emp.celular,
+      fechaIngreso: emp.fechaIngreso,
+      activo: activoActual === 'Si' ? 'No' : 'Si'
+    });
+    if (ok) {
+      showToast('Actualizado');
+      cargarEmpleados();
+    } else {
+      showToast('Error al actualizar');
+    }
+  }
+
+  async function agregarEmpleado() {
+    const nombre = document.getElementById('nuevoNombre').value.trim();
+    const celular = document.getElementById('nuevoCelular').value.trim();
+    const fechaIngreso = document.getElementById('nuevaFechaIngreso').value;
+    if (!nombre) { showToast('Falta el nombre'); return; }
+    const ok = await postForm({ action: 'guardar_empleado', clave: CLAVE_ADMIN, nombre, celular, fechaIngreso, activo: 'Si' });
+    if (ok) {
+      showToast('Empleado guardado');
+      document.getElementById('nuevoNombre').value = '';
+      document.getElementById('nuevoCelular').value = '';
+      document.getElementById('nuevaFechaIngreso').value = '';
+      cargarEmpleados();
+    } else {
+      showToast('Error al guardar');
+    }
+  }
+</script>
+</body>
+</html>
