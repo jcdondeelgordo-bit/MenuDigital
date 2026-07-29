@@ -738,6 +738,12 @@
           <option value="MEDIODIA">☀️ Mediodía</option>
         </select>
       </div>
+      <div class="meta-input-group">
+        <label for="selectResponsable">Responsable del conteo</label>
+        <select id="selectResponsable" onchange="updateMetaDraft()">
+          <option value="">-- Selecciona --</option>
+        </select>
+      </div>
     </div>
 
     <div class="area-grid">
@@ -836,6 +842,21 @@
       <button class="btn-back" onclick="openScreen('screen-home')">←</button>
       <h2>Ingresos de Mercancía</h2>
       <span class="badge">📥</span>
+    </div>
+
+    <div class="meta-card glass">
+      <div class="meta-input-group">
+        <label for="selectQuienTrae">Quién trae</label>
+        <select id="selectQuienTrae">
+          <option value="">-- Selecciona --</option>
+        </select>
+      </div>
+      <div class="meta-input-group">
+        <label for="selectQuienRecibe">Quién recibe</label>
+        <select id="selectQuienRecibe">
+          <option value="">-- Selecciona --</option>
+        </select>
+      </div>
     </div>
 
     <div class="search-container">
@@ -1009,6 +1030,7 @@
       loadSavedCatalog();
       loadSavedProductosCatalog();
       fetchOnlineCatalog();
+      fetchEmpleados();
       updateDashboardCounters();
     };
 
@@ -1028,7 +1050,11 @@
       
       // Sync shift/turn select
       document.getElementById('selectTurno').value = draft.turno || 'APERTURA';
-      
+
+      if (document.getElementById('selectResponsable')) {
+        document.getElementById('selectResponsable').value = draft.responsable || '';
+      }
+
       updateMetaDraft();
     }
 
@@ -1262,6 +1288,8 @@
       const draft = loadDraft();
       draft.fecha = document.getElementById('inputFecha').value;
       draft.turno = document.getElementById('selectTurno').value;
+      const responsableEl = document.getElementById('selectResponsable');
+      if (responsableEl) draft.responsable = responsableEl.value;
       saveDraft(draft);
     }
 
@@ -1705,6 +1733,7 @@
         idEnvio: idEnvio,
         fecha: draft.fecha,
         turno: draft.turno,
+        responsable: draft.responsable || '',
         items: items.map(it => ({
           nombre: it.producto,
           total: it.total,
@@ -1885,6 +1914,13 @@
         }
       });
 
+      const quienTrae = document.getElementById('selectQuienTrae').value;
+      const quienRecibe = document.getElementById('selectQuienRecibe').value;
+      if (!quienTrae || !quienRecibe) {
+        showToast("Selecciona quién trae y quién recibe.", "error");
+        return;
+      }
+
       if (items.length === 0) {
         showToast("No hay ingresos para guardar.", "error");
         return;
@@ -1895,6 +1931,8 @@
         action: 'guardar_ingreso',
         idEnvio: idEnvio,
         fecha: parentDraft.fecha,
+        quienTrae: quienTrae,
+        quienRecibe: quienRecibe,
         items: items
       };
 
@@ -1939,6 +1977,42 @@
         showToast('Error al sincronizar productos. Usando catálogo local.', 'error');
       }
     };
+
+    // --- EMPLEADOS (RESPONSABLE / QUIEN TRAE / QUIEN RECIBE) ---
+    let EMPLEADOS = [];
+
+    function fetchEmpleados() {
+      const script = document.createElement('script');
+      script.src = `${SCRIPT_URL}?action=listar_empleados&callback=onEmpleadosLoaded`;
+      script.onerror = () => { EMPLEADOS = []; renderResponsableSelect(); renderIngresoSelects(); };
+      document.body.appendChild(script);
+    }
+
+    window.onEmpleadosLoaded = function (response) {
+      EMPLEADOS = (response && response.ok && Array.isArray(response.empleados)) ? response.empleados : [];
+      renderResponsableSelect();
+      renderIngresoSelects();
+    };
+
+    function empleadosOptionsHtml(selected) {
+      const opciones = ['<option value="">-- Selecciona --</option>']
+        .concat(EMPLEADOS.map(emp => `<option value="${emp.nombre.replace(/"/g, '&quot;')}"${emp.nombre === selected ? ' selected' : ''}>${emp.nombre}</option>`));
+      return opciones.join('');
+    }
+
+    function renderResponsableSelect() {
+      const el = document.getElementById('selectResponsable');
+      if (!el) return;
+      const draft = loadDraft();
+      el.innerHTML = empleadosOptionsHtml(draft.responsable || '');
+    }
+
+    function renderIngresoSelects() {
+      const trae = document.getElementById('selectQuienTrae');
+      const recibe = document.getElementById('selectQuienRecibe');
+      if (trae) trae.innerHTML = empleadosOptionsHtml('');
+      if (recibe) recibe.innerHTML = empleadosOptionsHtml('');
+    }
 
     function getVentasDraft() {
       try {
