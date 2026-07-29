@@ -1,0 +1,46 @@
+// ============================================================================
+// Ficha de Empleados — nueva acción de solo lectura para el Apps Script del
+// menú digital (el mismo proyecto que sirve listar_productos, crear_pedido,
+// estado_mesa, etc. via accion=... en su doGet).
+// ============================================================================
+// Instrucciones:
+// 1. Pega la constante y la función de abajo en el editor de Apps Script del
+//    menú digital.
+// 2. Busca tu doGet(e) existente y agrega esta rama nueva junto a las demás
+//    (mismo patrón: if/else if sobre e.parameter.accion):
+//        else if (accion === 'listar_empleados') { return listarEmpleadosMenu(); }
+// 3. Publica de nuevo la implementación web (Implementar > Administrar
+//    implementaciones > Editar > Nueva versión).
+// ============================================================================
+
+// Mismo Sheet ID que SHEET_ID en el Code.gs de Inventario — ahí vive la hoja
+// "Empleados". Lectura cruzada, mismo patrón que Code.gs ya usa (en sentido
+// contrario) para leer las Ventas del menú desde MENU_SHEET_ID.
+const INVENTARIO_SHEET_ID = '1BpzdVNZtBnzbqqPq9aiPrDKtNo386b8H33v0LaJyJYA';
+
+/**
+ * accion=listar_empleados
+ * Lee la hoja "Empleados" del Sheet de Inventario y devuelve solo los activos.
+ * Nunca falla con ok:false -- si el Sheet cruzado no está disponible (permisos,
+ * ID cambiado, etc.), devuelve una lista vacía para que menu.html caiga a un
+ * campo de texto libre en vez de bloquear el flujo de pedido.
+ */
+function listarEmpleadosMenu() {
+  let empleados = [];
+  try {
+    const ss = SpreadsheetApp.openById(INVENTARIO_SHEET_ID);
+    const sheet = ss.getSheetByName('Empleados');
+    const datos = sheet ? sheet.getDataRange().getValues() : [];
+    for (let i = 1; i < datos.length; i++) {
+      const row = datos[i];
+      if (!row[0]) continue;
+      const activo = (row[3] || '').toString().trim().toUpperCase() === 'SI';
+      if (!activo) continue;
+      empleados.push({ nombre: row[0].toString().trim() });
+    }
+  } catch (err) {
+    // Sheet cruzado no disponible: seguimos con lista vacía, no rompemos el menú.
+  }
+  return ContentService.createTextOutput(JSON.stringify({ ok: true, empleados: empleados }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
