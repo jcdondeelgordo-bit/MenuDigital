@@ -118,10 +118,12 @@
       padding: 16px;
       margin-bottom: 24px;
       display: flex;
+      flex-wrap: wrap;
       gap: 12px;
     }
     .meta-input-group {
-      flex: 1;
+      flex: 1 1 140px;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -2014,13 +2016,42 @@
       if (!el) return;
       const draft = loadDraft();
       el.innerHTML = empleadosOptionsHtml(draft.responsable || '');
+      // Reconcile: if the persisted responsable had no matching <option> (deactivated/
+      // renamed employee, or a stale fetch), the select silently falls back to the
+      // placeholder ('') while the draft still holds the old name. Write back what the
+      // UI actually ended up showing so submitInventory() never ships a stale, invisible
+      // Responsable.
+      if (el.value !== (draft.responsable || '')) {
+        draft.responsable = el.value;
+        saveDraft(draft);
+      }
     }
 
     function renderIngresoSelects() {
       const trae = document.getElementById('selectQuienTrae');
       const recibe = document.getElementById('selectQuienRecibe');
-      if (trae) trae.innerHTML = empleadosOptionsHtml('');
-      if (recibe) recibe.innerHTML = empleadosOptionsHtml('');
+      if (EMPLEADOS.length === 0) {
+        // Sin catálogo disponible: no bloqueamos Ingresos, volvemos a campo de texto libre
+        // (mismo patrón que renderMeseroOptions() en menu.html).
+        if (trae && trae.tagName === 'SELECT') {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.id = 'selectQuienTrae';
+          input.placeholder = 'Nombre de quien trae';
+          trae.replaceWith(input);
+        }
+        if (recibe && recibe.tagName === 'SELECT') {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.id = 'selectQuienRecibe';
+          input.placeholder = 'Nombre de quien recibe';
+          recibe.replaceWith(input);
+        }
+        return;
+      }
+      // ya se reemplazaron por texto libre, no hay nada que poblar
+      if (trae && trae.tagName === 'SELECT') trae.innerHTML = empleadosOptionsHtml('');
+      if (recibe && recibe.tagName === 'SELECT') recibe.innerHTML = empleadosOptionsHtml('');
     }
 
     function getVentasDraft() {

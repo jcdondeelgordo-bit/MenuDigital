@@ -72,6 +72,29 @@
     });
   }
 
+  // Retry loop for the post-submit receipt check: Apps Script cold starts routinely take
+  // longer than a single 1.5s wait, so we poll up to 6 times (~10s total) before giving up.
+  // Same shape as inventario.html's verifyTransactionReceipt().
+  function verificarEnvioConReintentos(idEnvio, attempt, onOk, onFail) {
+    jsonp(SCRIPT_URL + '?action=verificar_envio&id=' + encodeURIComponent(idEnvio))
+      .then((data) => {
+        if (data && data.ok && data.confirmado) {
+          onOk();
+        } else if (attempt >= 6) {
+          onFail();
+        } else {
+          setTimeout(() => verificarEnvioConReintentos(idEnvio, attempt + 1, onOk, onFail), 1500);
+        }
+      })
+      .catch(() => {
+        if (attempt >= 6) {
+          onFail();
+        } else {
+          setTimeout(() => verificarEnvioConReintentos(idEnvio, attempt + 1, onOk, onFail), 1500);
+        }
+      });
+  }
+
   function postForm(payload) {
     return new Promise((resolve) => {
       const idEnvio = 'env_' + Date.now();
@@ -96,15 +119,14 @@
       form.submit();
       document.body.removeChild(form);
 
-      setTimeout(async () => {
-        try {
-          const data = await jsonp(SCRIPT_URL + '?action=verificar_envio&id=' + encodeURIComponent(idEnvio));
+      setTimeout(() => {
+        verificarEnvioConReintentos(idEnvio, 0, () => {
           document.body.removeChild(iframe);
-          resolve(!!(data && data.ok && data.confirmado));
-        } catch (e) {
+          resolve(true);
+        }, () => {
           document.body.removeChild(iframe);
           resolve(false);
-        }
+        });
       }, 1500);
     });
   }

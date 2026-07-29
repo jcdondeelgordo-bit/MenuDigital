@@ -763,6 +763,15 @@ async function verificarMesa() {
     mesaAbiertaInfo = { abierta: data.abierta, mesero: data.mesero || '' };
 
     if (data.abierta && data.mesero) {
+      // Setting .value on a <select> with no matching <option> is a silent no-op — if the
+      // mesa was opened under a name that isn't (or no longer is) in the active Empleados
+      // catalog, inject a one-off option so the assignment actually displays and submits.
+      if (meseroInput.tagName === 'SELECT' && !EMPLEADOS.some(emp => emp.nombre === data.mesero)) {
+        const opt = document.createElement('option');
+        opt.value = data.mesero;
+        opt.textContent = data.mesero;
+        meseroInput.appendChild(opt);
+      }
       meseroInput.value = data.mesero;
       meseroInput.disabled = true;
       label.textContent = 'Mesero asignado';
