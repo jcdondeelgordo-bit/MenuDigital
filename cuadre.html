@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Donde el Gordo - Cuadre de Caja</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Segoe UI',sans-serif;background:#1a0a00;color:#fff;min-height:100vh;}
+
+header{position:sticky;top:0;z-index:20;background:#1a0a00;border-bottom:1px solid rgba(200,132,26,0.3);padding:14px 18px;}
+.header-titulo{font-size:1.2rem;font-weight:800;color:#c8841a;letter-spacing:1px;}
+.header-sub{font-size:0.72rem;color:#e8c87a;letter-spacing:2px;}
+.header-fecha{font-size:0.78rem;color:rgba(240,224,176,0.7);margin-top:4px;}
+
+.tabs{display:flex;gap:8px;padding:14px 18px 0;flex-wrap:wrap;}
+.btn-tab{padding:10px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:0.85rem;font-weight:600;cursor:pointer;}
+.btn-tab.activa{background:linear-gradient(135deg,#c8841a,#e8a832);color:#1a0a00;border-color:transparent;}
+
+main{padding:18px;max-width:560px;margin:0 auto;}
+.vista{display:none;flex-direction:column;gap:14px;}
+.vista.activa{display:flex;}
+
+.card{background:rgba(255,255,255,0.05);border:1px solid rgba(200,132,26,0.25);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;}
+.card h3{color:#c8841a;font-size:1rem;}
+label{font-size:0.82rem;color:rgba(240,224,176,0.85);display:block;margin-bottom:4px;}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(200,132,26,0.35);background:rgba(255,255,255,0.06);color:#fff;font-size:0.95rem;}
+.btn-primario{padding:14px;border-radius:10px;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;color:#1a0a00;font-weight:800;font-size:0.95rem;cursor:pointer;}
+.fila-dato{display:flex;justify-content:space-between;font-size:0.9rem;padding:6px 0;border-top:1px solid rgba(255,255,255,0.06);}
+.fila-dato.total{font-weight:800;color:#e8a832;border-top:1px solid rgba(200,132,26,0.3);padding-top:10px;}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;z-index:100;display:none;}
+.toast.ok{background:rgba(70,180,100,0.9);color:#fff;}
+.toast.error{background:rgba(224,80,80,0.9);color:#fff;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-titulo">DONDE EL GORDO</div>
+  <div class="header-sub">CUADRE DE CAJA</div>
+  <div class="header-fecha" id="header-fecha"></div>
+</header>
+
+<div class="tabs">
+  <button class="btn-tab activa" id="btn-pestana-apertura" onclick="cambiarPestana('apertura')">Abrir caja</button>
+  <button class="btn-tab" id="btn-pestana-dia" onclick="cambiarPestana('dia')">Durante el día</button>
+  <button class="btn-tab" id="btn-pestana-cierre" onclick="cambiarPestana('cierre')">Cerrar caja</button>
+</div>
+
+<main>
+  <div class="vista activa" id="vista-apertura">
+    <div class="card">
+      <h3>Base con la que arranca hoy</h3>
+      <div id="apertura-sugerida" class="fila-dato">Cargando base sugerida...</div>
+      <div>
+        <label for="input-base-apertura">Confirmar o ajustar el valor</label>
+        <input type="number" id="input-base-apertura" placeholder="0">
+      </div>
+      <button class="btn-primario" onclick="confirmarApertura()">Confirmar apertura</button>
+    </div>
+  </div>
+
+  <div class="vista" id="vista-dia"></div>
+  <div class="vista" id="vista-cierre"></div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzo45isSgsJoCJxyvBl81Eb9fMAMwsB3GS5IRwV9QxTgk7NLfj8BiE8j5CgeP6dWgb6/exec';
+
+function fechaHoy() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function formatoCOP(v) { return '$' + Math.round(v).toLocaleString('es-CO'); }
+
+document.getElementById('header-fecha').textContent = new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+function mostrarToast(msg, tipo) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + tipo;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+function cambiarPestana(nombre) {
+  ['apertura', 'dia', 'cierre'].forEach(n => {
+    document.getElementById('vista-' + n).classList.toggle('activa', n === nombre);
+    document.getElementById('btn-pestana-' + n).classList.toggle('activa', n === nombre);
+  });
+  if (nombre === 'dia') cargarRegistrosDia();
+  if (nombre === 'cierre') cargarResumenCierre();
+}
+
+// --- Lectura: JSONP (mismo mecanismo ya usado por inventario.html) ---
+function jsonpGet(accionYParams, callbackFn) {
+  const callbackName = 'jsonp_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+  window[callbackName] = function (response) {
+    delete window[callbackName];
+    const scriptNode = document.getElementById(callbackName);
+    if (scriptNode) scriptNode.remove();
+    callbackFn(response);
+  };
+  const script = document.createElement('script');
+  script.id = callbackName;
+  script.src = SCRIPT_URL + '?' + accionYParams + '&callback=' + callbackName;
+  script.onerror = () => { delete window[callbackName]; script.remove(); callbackFn(null); };
+  document.body.appendChild(script);
+}
+
+// --- Escritura: formulario oculto + iframe + verificación por JSONP (mismo mecanismo
+// ya usado por inventario.html para evitar el límite de CORS en doPost) ---
+function postToGoogleSheets(payload, onSuccess, onFail) {
+  const idEnvio = payload.idEnvio;
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = SCRIPT_URL;
+  const iframeName = 'iframe_' + Date.now();
+  const iframe = document.createElement('iframe');
+  iframe.name = iframeName;
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+  form.target = iframeName;
+  form.style.display = 'none';
+
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = 'payload';
+  input.value = JSON.stringify(payload);
+  form.appendChild(input);
+  document.body.appendChild(form);
+  form.submit();
+  document.body.removeChild(form);
+
+  setTimeout(() => {
+    verifyTransactionReceipt(idEnvio, 0, () => {
+      document.body.removeChild(iframe);
+      onSuccess();
+    }, () => {
+      document.body.removeChild(iframe);
+      if (onFail) onFail(); else mostrarToast('Error de conexión. Inténtalo de nuevo.', 'error');
+    });
+  }, 1500);
+}
+
+function verifyTransactionReceipt(idEnvio, attempt, onOk, onFail) {
+  const callbackName = 'jsonpVerify_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+  window[callbackName] = function (response) {
+    delete window[callbackName];
+    const scriptNode = document.getElementById(callbackName);
+    if (scriptNode) scriptNode.remove();
+    if (response && response.ok && response.confirmado) {
+      onOk();
+    } else if (attempt >= 6) {
+      onFail();
+    } else {
+      setTimeout(() => verifyTransactionReceipt(idEnvio, attempt + 1, onOk, onFail), 1500);
+    }
+  };
+  const script = document.createElement('script');
+  script.id = callbackName;
+  script.src = SCRIPT_URL + '?action=verificar_envio&id=' + encodeURIComponent(idEnvio) + '&callback=' + callbackName;
+  script.onerror = () => {
+    delete window[callbackName];
+    script.remove();
+    if (attempt >= 6) onFail(); else setTimeout(() => verifyTransactionReceipt(idEnvio, attempt + 1, onOk, onFail), 2000);
+  };
+  document.body.appendChild(script);
+}
+
+// --- Pestaña "Abrir caja" ---
+function cargarBaseSugerida() {
+  jsonpGet('action=sugerir_base_apertura&fecha=' + fechaHoy(), function (res) {
+    const sugerida = (res && res.ok) ? res.baseSugerida : 0;
+    document.getElementById('apertura-sugerida').textContent = 'Sugerida (efectivo contado ayer): ' + formatoCOP(sugerida);
+    document.getElementById('input-base-apertura').value = sugerida;
+  });
+}
+
+function confirmarApertura() {
+  const base = parseFloat(document.getElementById('input-base-apertura').value) || 0;
+  const idEnvio = 'env_' + Date.now();
+  postToGoogleSheets({ action: 'abrir_caja', idEnvio: idEnvio, fecha: fechaHoy(), baseApertura: base, abiertoPor: '' }, function () {
+    mostrarToast('Caja abierta con base ' + formatoCOP(base), 'ok');
+  });
+}
+
+cargarBaseSugerida();
+</script>
+</body>
+</html>
