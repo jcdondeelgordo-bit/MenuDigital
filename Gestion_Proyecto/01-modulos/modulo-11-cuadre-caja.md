@@ -3,8 +3,6 @@
 > Identificado por el usuario el 2026-07-30 (`guardian-proyecto`, área "módulos faltantes"): llevan este cuadre a mano en un libro físico, dividido en 4 secciones (compras, pago a empleados, recogida parcial de Jaime/Clemencia, y Nequi), y no existía todavía como pieza del sistema.
 >
 > **Diseño cerrado el 2026-07-30** (brainstorming con el usuario). Listo para pasar a plan de implementación.
->
-> **Plan ejecutado el 2026-07-30**: 4 tasks + revisión final. `cuadre.html` con 3 pestañas (Abrir caja / Durante el día / Cerrar caja), 10 acciones en Apps Script (Inventario), integración de daños en `Gastos_JC`, y verificación de backend con curl de punta a punta.
 
 ## Objetivo
 
@@ -93,8 +91,5 @@ Tres momentos, un solo archivo:
 
 ## Qué falta
 
-- **Publicar `cuadre.html` en el hosting real** — está construido y verificado en backend, pero no disponible en URL pública todavía.
-- **Uso real de prueba con el cajero durante unos días** — confirmar que el faltante/sobrante calculado coincide con lo que el equipo ya sabe del libro físico, y que el flujo de registrar gastos/pagos/recogidas/daños durante el día es cómodo de usar.
-- **Corrección de un cierre ya hecho el mismo día**: resuelto en el diseño. `cerrar_caja` sobrescribe la fila de `Cuadre_Caja` correspondiente a esa fecha (no append) — si se dan cuenta de un error después de cerrar y llaman `cerrar_caja` de nuevo con el `efectivo_contado` corregido, la fila se actualiza con los nuevos cálculos.
-- **Hallazgo menor (code review, no es defecto funcional):** cuando el catálogo de `Empleados` está vacío, `cuadre.html` muestra un `<select>` con solo placeholder (no permite texto libre), a diferencia de otros campos de empleado en el proyecto (`menu.html`, `inventario.html`) que sí caen a texto libre si no hay empleados. Esto es cosmético — el usuario debe poblar `Empleados` antes de poder usarlo.
-- **Hallazgo cosmético (code review):** en `listarRegistrosDiaCaja_`, el campo `tipo` de un daño Insumo se obtiene directo de la célda sin `.trim()`, así que si hay espacios antes/después quedan visibles. No afecta cálculos, solo la apariencia en pantalla — se puede corregir cuando se redeploye por otra razón.
+- Plan de implementación (siguiente paso).
+- Confirmar con el usuario si se puede corregir un `Cuadre_Caja` ya cerrado el mismo día (por si se dan cuenta de un error después de cerrar) — no definido todavía, se resuelve en el plan si hace falta.
