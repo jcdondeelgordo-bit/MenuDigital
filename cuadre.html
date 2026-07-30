@@ -40,6 +40,10 @@ input,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(20
   <div class="header-titulo">DONDE EL GORDO</div>
   <div class="header-sub">CUADRE DE CAJA</div>
   <div class="header-fecha" id="header-fecha"></div>
+  <div style="margin-top:10px;">
+    <label for="input-quien-registra" style="margin-bottom:2px;">¿Quién registra?</label>
+    <input type="text" id="input-quien-registra" placeholder="Tu nombre" style="padding:8px 12px;font-size:0.85rem;">
+  </div>
 </header>
 
 <div class="tabs">
@@ -158,6 +162,16 @@ function formatoCOP(v) { return '$' + Math.round(v).toLocaleString('es-CO'); }
 
 document.getElementById('header-fecha').textContent = new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+function quienRegistra() { return document.getElementById('input-quien-registra').value.trim(); }
+
+(function () {
+  const inputQuien = document.getElementById('input-quien-registra');
+  inputQuien.value = localStorage.getItem('cuadre_quien_registra') || '';
+  inputQuien.addEventListener('input', function () {
+    localStorage.setItem('cuadre_quien_registra', inputQuien.value);
+  });
+})();
+
 function mostrarToast(msg, tipo) {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -254,7 +268,12 @@ function verifyTransactionReceipt(idEnvio, attempt, onOk, onFail) {
 // --- Pestaña "Abrir caja" ---
 function cargarBaseSugerida() {
   jsonpGet('action=sugerir_base_apertura&fecha=' + fechaHoy(), function (res) {
-    const sugerida = (res && res.ok) ? res.baseSugerida : 0;
+    if (!res || !res.ok) {
+      document.getElementById('apertura-sugerida').textContent = 'No se pudo cargar la base sugerida — puedes escribirla a mano.';
+      document.getElementById('input-base-apertura').value = '';
+      return;
+    }
+    const sugerida = res.baseSugerida;
     document.getElementById('apertura-sugerida').textContent = 'Sugerida (efectivo contado ayer): ' + formatoCOP(sugerida);
     document.getElementById('input-base-apertura').value = sugerida;
   });
@@ -263,7 +282,7 @@ function cargarBaseSugerida() {
 function confirmarApertura() {
   const base = parseFloat(document.getElementById('input-base-apertura').value) || 0;
   const idEnvio = 'env_' + Date.now();
-  postToGoogleSheets({ action: 'abrir_caja', idEnvio: idEnvio, fecha: fechaHoy(), baseApertura: base, abiertoPor: '' }, function () {
+  postToGoogleSheets({ action: 'abrir_caja', idEnvio: idEnvio, fecha: fechaHoy(), baseApertura: base, abiertoPor: quienRegistra() }, function () {
     mostrarToast('Caja abierta con base ' + formatoCOP(base), 'ok');
   });
 }
@@ -277,7 +296,7 @@ function cargarEmpleadosSelect() {
     const el = document.getElementById('select-pago-empleado');
     el.innerHTML = empleados.length
       ? empleados.map(e => `<option value="${e.nombre.replace(/"/g, '&quot;')}">${e.nombre}</option>`).join('')
-      : '<option value="">-- Sin catálogo, escribir a mano --</option>';
+      : '<option value="">-- No hay empleados registrados --</option>';
   });
 }
 
@@ -305,7 +324,7 @@ function registrarGasto() {
   const concepto = document.getElementById('input-gasto-concepto').value.trim();
   const monto = parseFloat(document.getElementById('input-gasto-monto').value) || 0;
   if (!concepto || !monto) { mostrarToast('Falta el concepto o el valor', 'error'); return; }
-  postToGoogleSheets({ action: 'registrar_gasto_caja', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), concepto: concepto, monto: monto, registradoPor: '' }, function () {
+  postToGoogleSheets({ action: 'registrar_gasto_caja', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), concepto: concepto, monto: monto, registradoPor: quienRegistra() }, function () {
     mostrarToast('Gasto registrado: ' + formatoCOP(monto), 'ok');
     document.getElementById('input-gasto-concepto').value = '';
     document.getElementById('input-gasto-monto').value = '';
@@ -317,7 +336,7 @@ function registrarPagoEmpleado() {
   const empleado = document.getElementById('select-pago-empleado').value;
   const monto = parseFloat(document.getElementById('input-pago-monto').value) || 0;
   if (!empleado || !monto) { mostrarToast('Falta el empleado o el valor', 'error'); return; }
-  postToGoogleSheets({ action: 'registrar_pago_empleado_caja', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), empleado: empleado, monto: monto, registradoPor: '' }, function () {
+  postToGoogleSheets({ action: 'registrar_pago_empleado_caja', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), empleado: empleado, monto: monto, registradoPor: quienRegistra() }, function () {
     mostrarToast('Pago registrado: ' + formatoCOP(monto), 'ok');
     document.getElementById('input-pago-monto').value = '';
     cargarRegistrosDia();
@@ -328,7 +347,7 @@ function registrarRecogida() {
   const quien = document.getElementById('input-recogida-quien').value.trim();
   const monto = parseFloat(document.getElementById('input-recogida-monto').value) || 0;
   if (!quien || !monto) { mostrarToast('Falta quién recogió o el valor', 'error'); return; }
-  postToGoogleSheets({ action: 'registrar_recogida_caja', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), quien: quien, monto: monto, registradoPor: '' }, function () {
+  postToGoogleSheets({ action: 'registrar_recogida_caja', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), quien: quien, monto: monto, registradoPor: quienRegistra() }, function () {
     mostrarToast('Recogida registrada: ' + formatoCOP(monto), 'ok');
     document.getElementById('input-recogida-quien').value = '';
     document.getElementById('input-recogida-monto').value = '';
@@ -342,7 +361,7 @@ function registrarDano() {
   const cantidad = parseFloat(document.getElementById('input-dano-cantidad').value) || 0;
   const motivo = document.getElementById('input-dano-motivo').value.trim();
   if (!nombre || !cantidad) { mostrarToast('Falta el nombre o la cantidad', 'error'); return; }
-  postToGoogleSheets({ action: 'registrar_dano', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), tipo: tipo, nombre: nombre, cantidad: cantidad, motivo: motivo, registradoPor: '' }, function () {
+  postToGoogleSheets({ action: 'registrar_dano', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), tipo: tipo, nombre: nombre, cantidad: cantidad, motivo: motivo, registradoPor: quienRegistra() }, function () {
     mostrarToast('Daño registrado: ' + cantidad + ' x ' + nombre, 'ok');
     document.getElementById('input-dano-cantidad').value = '';
     document.getElementById('input-dano-motivo').value = '';
@@ -377,7 +396,15 @@ function cargarResumenCierre() {
     if (!res || !res.ok) { el.textContent = 'No se pudo cargar el resumen.'; return; }
     ULTIMO_RESUMEN = res.resumen;
     const r = ULTIMO_RESUMEN;
-    el.innerHTML = `
+    if (r.cajaAbierta === false) {
+      el.innerHTML = `<div class="fila-dato">Primero abre la caja de hoy en la pestaña "Abrir caja".</div>`;
+      return;
+    }
+    let aviso = '';
+    if (r.ventasLeidas === false) {
+      aviso = `<div class="fila-dato" style="color:#e05050;font-weight:700;">⚠️ No se pudieron leer las ventas del día — el resumen de abajo NO incluye la venta total real. No cierres la caja hasta resolver esto.</div>`;
+    }
+    el.innerHTML = aviso + `
       <div class="fila-dato"><span>Venta total</span><span>${formatoCOP(r.ventaTotal)}</span></div>
       <div class="fila-dato"><span>Base de apertura</span><span>${formatoCOP(r.baseApertura)}</span></div>
       <div class="fila-dato"><span>- Gastos</span><span>${formatoCOP(r.totalGastos)}</span></div>
@@ -404,8 +431,18 @@ function calcularFaltanteSobrante() {
 document.getElementById('input-efectivo-contado').addEventListener('input', calcularFaltanteSobrante);
 
 function confirmarCierre() {
-  const contado = parseFloat(document.getElementById('input-efectivo-contado').value) || 0;
-  postToGoogleSheets({ action: 'cerrar_caja', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), efectivoContado: contado, cerradoPor: '' }, function () {
+  const valorCrudo = document.getElementById('input-efectivo-contado').value;
+  if (valorCrudo === '') { mostrarToast('Falta el efectivo contado', 'error'); return; }
+  if (ULTIMO_RESUMEN && ULTIMO_RESUMEN.cajaAbierta === false) {
+    mostrarToast('Primero abre la caja de hoy en la pestaña "Abrir caja"', 'error');
+    return;
+  }
+  if (ULTIMO_RESUMEN && ULTIMO_RESUMEN.ventasLeidas === false) {
+    mostrarToast('No se pudieron leer las ventas del día. No se puede cerrar la caja todavía.', 'error');
+    return;
+  }
+  const contado = parseFloat(valorCrudo) || 0;
+  postToGoogleSheets({ action: 'cerrar_caja', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), efectivoContado: contado, cerradoPor: quienRegistra() }, function () {
     mostrarToast('Caja cerrada. Efectivo contado: ' + formatoCOP(contado), 'ok');
     cargarResumenCierre();
   });

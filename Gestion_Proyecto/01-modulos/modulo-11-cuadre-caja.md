@@ -90,6 +90,7 @@ Tres momentos, un solo archivo:
 - Depende de Módulo 10 (Ficha de Empleados) para el selector de Pagos a empleados — Módulo 10 está construido pero **todavía no desplegado en vivo** (ver `ESTADO.md`); si no está disponible, el selector cae a texto libre (mismo patrón de degradación que ya usa `menu.html`/`inventario.html` con Empleados).
 - Alimenta al Módulo 5 (Inventario): los daños quedan reflejados en el reporte de faltantes/sobrantes sin margen de tolerancia (decisión ya confirmada en esa sesión — un daño explica un faltante puntual, no lo esconde).
 - Alimenta al Módulo 7 (Panel administrativo, pendiente): el histórico de `Cuadre_Caja` es una fuente natural para reportes de caja día a día.
+- **Nota de compatibilidad futura con Módulo 4 (División de cuenta, todavía Pendiente)**: Módulo 4 está pensado para escribir `Ventas.Metodo_Pago = 'Dividido'` en cuentas divididas. Hoy, `calcularResumenCaja_` en `Code.gs` trata como efectivo cualquier `Metodo_Pago` que no sea exactamente `'Nequi'` o `'Tarjeta'`, así que una cuenta dividida con una parte pagada electrónicamente se contaría hoy como 100% efectivo en el cuadre. Cuando se construya Módulo 4, `calcularResumenCaja_` debe actualizarse para manejar `'Dividido'` correctamente (por ejemplo, leyendo los montos por método desde donde Módulo 4 los guarde, en vez de asumir un solo método por venta).
 
 ## Qué falta
 
