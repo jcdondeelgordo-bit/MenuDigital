@@ -130,7 +130,18 @@ input,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(20
       <div id="lista-registros-dia">Cargando...</div>
     </div>
   </div>
-  <div class="vista" id="vista-cierre"></div>
+  <div class="vista" id="vista-cierre">
+    <div class="card">
+      <h3>Resumen del día</h3>
+      <div id="resumen-cierre">Cargando...</div>
+      <div>
+        <label for="input-efectivo-contado">Efectivo contado físicamente</label>
+        <input type="number" id="input-efectivo-contado" placeholder="0">
+      </div>
+      <div id="resultado-cuadre"></div>
+      <button class="btn-primario" onclick="confirmarCierre()">Cerrar caja</button>
+    </div>
+  </div>
 </main>
 
 <div class="toast" id="toast"></div>
@@ -357,6 +368,48 @@ cargarEmpleadosSelect();
 cargarCatalogosDano();
 renderOpcionesDano();
 cargarBaseSugerida();
+
+let ULTIMO_RESUMEN = null;
+
+function cargarResumenCierre() {
+  jsonpGet('action=resumen_dia_caja&fecha=' + fechaHoy(), function (res) {
+    const el = document.getElementById('resumen-cierre');
+    if (!res || !res.ok) { el.textContent = 'No se pudo cargar el resumen.'; return; }
+    ULTIMO_RESUMEN = res.resumen;
+    const r = ULTIMO_RESUMEN;
+    el.innerHTML = `
+      <div class="fila-dato"><span>Venta total</span><span>${formatoCOP(r.ventaTotal)}</span></div>
+      <div class="fila-dato"><span>Base de apertura</span><span>${formatoCOP(r.baseApertura)}</span></div>
+      <div class="fila-dato"><span>- Gastos</span><span>${formatoCOP(r.totalGastos)}</span></div>
+      <div class="fila-dato"><span>- Pagos a empleados</span><span>${formatoCOP(r.totalPagosEmpleados)}</span></div>
+      <div class="fila-dato"><span>- Recogidas</span><span>${formatoCOP(r.totalRecogidas)}</span></div>
+      <div class="fila-dato"><span>- Nequi</span><span>${formatoCOP(r.nequi)}</span></div>
+      <div class="fila-dato"><span>- Tarjeta</span><span>${formatoCOP(r.tarjeta)}</span></div>
+      <div class="fila-dato total"><span>Nueva base esperada</span><span>${formatoCOP(r.nuevaBaseEsperada)}</span></div>
+    `;
+    calcularFaltanteSobrante();
+  });
+}
+
+function calcularFaltanteSobrante() {
+  if (!ULTIMO_RESUMEN) return;
+  const contado = parseFloat(document.getElementById('input-efectivo-contado').value) || 0;
+  const diferencia = Math.round((contado - ULTIMO_RESUMEN.nuevaBaseEsperada) * 100) / 100;
+  const el = document.getElementById('resultado-cuadre');
+  if (!document.getElementById('input-efectivo-contado').value) { el.innerHTML = ''; return; }
+  const etiqueta = diferencia === 0 ? 'CUADRA EXACTO' : (diferencia > 0 ? 'SOBRÓ ' + formatoCOP(diferencia) : 'FALTÓ ' + formatoCOP(Math.abs(diferencia)));
+  el.innerHTML = `<div class="fila-dato total"><span>${etiqueta}</span></div>`;
+}
+
+document.getElementById('input-efectivo-contado').addEventListener('input', calcularFaltanteSobrante);
+
+function confirmarCierre() {
+  const contado = parseFloat(document.getElementById('input-efectivo-contado').value) || 0;
+  postToGoogleSheets({ action: 'cerrar_caja', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), efectivoContado: contado, cerradoPor: '' }, function () {
+    mostrarToast('Caja cerrada. Efectivo contado: ' + formatoCOP(contado), 'ok');
+    cargarResumenCierre();
+  });
+}
 </script>
 </body>
 </html>
