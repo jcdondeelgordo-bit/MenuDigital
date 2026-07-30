@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Donde el Gordo</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Segoe UI',sans-serif;background:#1a0a00;color:#fff;min-height:100vh;}
+
+main{max-width:640px;margin:0 auto;padding:40px 20px 60px;display:flex;flex-direction:column;align-items:center;gap:28px;}
+
+.logo{width:180px;height:auto;border-radius:50%;box-shadow:0 8px 30px rgba(200,132,26,0.35);}
+
+.marca{text-align:center;}
+.marca-titulo{font-size:1.8rem;font-weight:800;color:#c8841a;letter-spacing:1px;}
+.marca-sub{font-size:0.85rem;color:#e8c87a;letter-spacing:3px;margin-top:4px;}
+
+.btn-menu{display:flex;align-items:center;gap:10px;padding:18px 36px;border-radius:14px;background:linear-gradient(135deg,#c8841a,#e8a832);color:#1a0a00;font-weight:800;font-size:1.05rem;text-decoration:none;box-shadow:0 6px 20px rgba(200,132,26,0.3);}
+
+.separador{width:100%;display:flex;align-items:center;gap:12px;color:rgba(240,224,176,0.5);font-size:0.78rem;letter-spacing:2px;text-transform:uppercase;}
+.separador::before,.separador::after{content:'';flex:1;height:1px;background:rgba(200,132,26,0.25);}
+
+.herramientas{width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;}
+.tool-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 12px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(200,132,26,0.25);color:#f0e0b0;text-decoration:none;font-size:0.85rem;font-weight:600;text-align:center;}
+.tool-card .tool-icon{font-size:1.8rem;}
+
+footer{text-align:center;padding:20px;color:rgba(240,224,176,0.4);font-size:0.75rem;}
+</style>
+</head>
+<body>
+
+<main>
+  <img class="logo" src="logo.png" alt="Donde el Gordo">
+
+  <div class="marca">
+    <div class="marca-titulo">DONDE EL GORDO</div>
+    <div class="marca-sub">COMIDAS RÁPIDAS</div>
+  </div>
+
+  <a class="btn-menu" href="bienvenida.html">🍕 Ver el Menú</a>
+
+  <div class="separador">Herramientas del equipo</div>
+
+  <div class="herramientas">
+    <a class="tool-card" href="caja.html"><span class="tool-icon">💰</span>Caja</a>
+    <a class="tool-card" href="cuadre.html"><span class="tool-icon">🧾</span>Cuadre de Caja</a>
+    <a class="tool-card" href="cocina.html"><span class="tool-icon">🍳</span>Cocina</a>
+    <a class="tool-card" href="inventario.html"><span class="tool-icon">📦</span>Inventario</a>
+    <a class="tool-card" href="comisiones.html"><span class="tool-icon">📊</span>Comisiones</a>
+    <a class="tool-card" href="empleados.html"><span class="tool-icon">👥</span>Empleados</a>
+  </div>
+</main>
+
+<footer>Donde el Gordo — sistema interno</footer>
+
+</body>
+</html>
