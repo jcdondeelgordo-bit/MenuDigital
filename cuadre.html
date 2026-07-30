@@ -61,7 +61,75 @@ input,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(20
     </div>
   </div>
 
-  <div class="vista" id="vista-dia"></div>
+  <div class="vista" id="vista-dia">
+    <div class="card">
+      <h3>Gasto (compra)</h3>
+      <div>
+        <label for="input-gasto-concepto">¿Qué se compró / dónde?</label>
+        <input type="text" id="input-gasto-concepto" placeholder="Ej: Verduras - Plaza de mercado">
+      </div>
+      <div>
+        <label for="input-gasto-monto">Valor</label>
+        <input type="number" id="input-gasto-monto" placeholder="0">
+      </div>
+      <button class="btn-primario" onclick="registrarGasto()">Registrar gasto</button>
+    </div>
+
+    <div class="card">
+      <h3>Pago a empleado</h3>
+      <div>
+        <label for="select-pago-empleado">Empleado</label>
+        <select id="select-pago-empleado"><option value="">Cargando...</option></select>
+      </div>
+      <div>
+        <label for="input-pago-monto">Valor</label>
+        <input type="number" id="input-pago-monto" placeholder="0">
+      </div>
+      <button class="btn-primario" onclick="registrarPagoEmpleado()">Registrar pago</button>
+    </div>
+
+    <div class="card">
+      <h3>Recogida parcial</h3>
+      <div>
+        <label for="input-recogida-quien">¿Quién recogió?</label>
+        <input type="text" id="input-recogida-quien" placeholder="Ej: Jaime">
+      </div>
+      <div>
+        <label for="input-recogida-monto">Valor</label>
+        <input type="number" id="input-recogida-monto" placeholder="0">
+      </div>
+      <button class="btn-primario" onclick="registrarRecogida()">Registrar recogida</button>
+    </div>
+
+    <div class="card">
+      <h3>Daño / sobrante</h3>
+      <div>
+        <label for="select-dano-tipo">Tipo</label>
+        <select id="select-dano-tipo" onchange="cambiarTipoDano()">
+          <option value="Producto">Producto terminado (ej. porción de pizza sobrante)</option>
+          <option value="Insumo">Insumo crudo (ej. carne, pan)</option>
+        </select>
+      </div>
+      <div>
+        <label for="select-dano-nombre">Nombre</label>
+        <select id="select-dano-nombre"><option value="">Cargando...</option></select>
+      </div>
+      <div>
+        <label for="input-dano-cantidad">Cantidad</label>
+        <input type="number" id="input-dano-cantidad" placeholder="0">
+      </div>
+      <div>
+        <label for="input-dano-motivo">Motivo</label>
+        <input type="text" id="input-dano-motivo" placeholder="Ej: Se quemó / Sobró al cierre">
+      </div>
+      <button class="btn-primario" onclick="registrarDano()">Registrar daño</button>
+    </div>
+
+    <div class="card">
+      <h3>Ya registrado hoy</h3>
+      <div id="lista-registros-dia">Cargando...</div>
+    </div>
+  </div>
   <div class="vista" id="vista-cierre"></div>
 </main>
 
@@ -189,6 +257,105 @@ function confirmarApertura() {
   });
 }
 
+let CATALOGO_PRODUCTOS = [];
+let CATALOGO_INSUMOS = [];
+
+function cargarEmpleadosSelect() {
+  jsonpGet('action=listar_empleados', function (res) {
+    const empleados = (res && res.ok && Array.isArray(res.empleados)) ? res.empleados : [];
+    const el = document.getElementById('select-pago-empleado');
+    el.innerHTML = empleados.length
+      ? empleados.map(e => `<option value="${e.nombre.replace(/"/g, '&quot;')}">${e.nombre}</option>`).join('')
+      : '<option value="">-- Sin catálogo, escribir a mano --</option>';
+  });
+}
+
+function cargarCatalogosDano() {
+  jsonpGet('action=get_productos', function (res) {
+    CATALOGO_PRODUCTOS = (res && res.ok && Array.isArray(res.data)) ? res.data : [];
+    if (document.getElementById('select-dano-tipo').value === 'Producto') renderOpcionesDano();
+  });
+  jsonpGet('action=listar_insumos', function (res) {
+    CATALOGO_INSUMOS = (res && res.ok && Array.isArray(res.insumos)) ? res.insumos : [];
+    if (document.getElementById('select-dano-tipo').value === 'Insumo') renderOpcionesDano();
+  });
+}
+
+function renderOpcionesDano() {
+  const tipo = document.getElementById('select-dano-tipo').value;
+  const lista = tipo === 'Insumo' ? CATALOGO_INSUMOS : CATALOGO_PRODUCTOS;
+  const el = document.getElementById('select-dano-nombre');
+  el.innerHTML = lista.map(item => `<option value="${item.nombre.replace(/"/g, '&quot;')}">${item.nombre}</option>`).join('') || '<option value="">-- Sin catálogo --</option>';
+}
+
+function cambiarTipoDano() { renderOpcionesDano(); }
+
+function registrarGasto() {
+  const concepto = document.getElementById('input-gasto-concepto').value.trim();
+  const monto = parseFloat(document.getElementById('input-gasto-monto').value) || 0;
+  if (!concepto || !monto) { mostrarToast('Falta el concepto o el valor', 'error'); return; }
+  postToGoogleSheets({ action: 'registrar_gasto_caja', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), concepto: concepto, monto: monto, registradoPor: '' }, function () {
+    mostrarToast('Gasto registrado: ' + formatoCOP(monto), 'ok');
+    document.getElementById('input-gasto-concepto').value = '';
+    document.getElementById('input-gasto-monto').value = '';
+    cargarRegistrosDia();
+  });
+}
+
+function registrarPagoEmpleado() {
+  const empleado = document.getElementById('select-pago-empleado').value;
+  const monto = parseFloat(document.getElementById('input-pago-monto').value) || 0;
+  if (!empleado || !monto) { mostrarToast('Falta el empleado o el valor', 'error'); return; }
+  postToGoogleSheets({ action: 'registrar_pago_empleado_caja', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), empleado: empleado, monto: monto, registradoPor: '' }, function () {
+    mostrarToast('Pago registrado: ' + formatoCOP(monto), 'ok');
+    document.getElementById('input-pago-monto').value = '';
+    cargarRegistrosDia();
+  });
+}
+
+function registrarRecogida() {
+  const quien = document.getElementById('input-recogida-quien').value.trim();
+  const monto = parseFloat(document.getElementById('input-recogida-monto').value) || 0;
+  if (!quien || !monto) { mostrarToast('Falta quién recogió o el valor', 'error'); return; }
+  postToGoogleSheets({ action: 'registrar_recogida_caja', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), quien: quien, monto: monto, registradoPor: '' }, function () {
+    mostrarToast('Recogida registrada: ' + formatoCOP(monto), 'ok');
+    document.getElementById('input-recogida-quien').value = '';
+    document.getElementById('input-recogida-monto').value = '';
+    cargarRegistrosDia();
+  });
+}
+
+function registrarDano() {
+  const tipo = document.getElementById('select-dano-tipo').value;
+  const nombre = document.getElementById('select-dano-nombre').value;
+  const cantidad = parseFloat(document.getElementById('input-dano-cantidad').value) || 0;
+  const motivo = document.getElementById('input-dano-motivo').value.trim();
+  if (!nombre || !cantidad) { mostrarToast('Falta el nombre o la cantidad', 'error'); return; }
+  postToGoogleSheets({ action: 'registrar_dano', idEnvio: 'env_' + Date.now(), fecha: fechaHoy(), tipo: tipo, nombre: nombre, cantidad: cantidad, motivo: motivo, registradoPor: '' }, function () {
+    mostrarToast('Daño registrado: ' + cantidad + ' x ' + nombre, 'ok');
+    document.getElementById('input-dano-cantidad').value = '';
+    document.getElementById('input-dano-motivo').value = '';
+    cargarRegistrosDia();
+  });
+}
+
+function cargarRegistrosDia() {
+  jsonpGet('action=listar_registros_dia_caja&fecha=' + fechaHoy(), function (res) {
+    const el = document.getElementById('lista-registros-dia');
+    if (!res || !res.ok) { el.textContent = 'No se pudo cargar.'; return; }
+    const r = res.registros;
+    const filas = []
+      .concat(r.gastos.map(g => `Gasto: ${g.concepto} — ${formatoCOP(g.monto)}`))
+      .concat(r.pagos.map(p => `Pago: ${p.empleado} — ${formatoCOP(p.monto)}`))
+      .concat(r.recogidas.map(c => `Recogida: ${c.quien} — ${formatoCOP(c.monto)}`))
+      .concat(r.danos.map(d => `Daño (${d.tipo}): ${d.cantidad} x ${d.nombre}${d.motivo ? ' — ' + d.motivo : ''}`));
+    el.innerHTML = filas.length ? filas.map(f => `<div class="fila-dato">${f}</div>`).join('') : 'Nada registrado todavía hoy.';
+  });
+}
+
+cargarEmpleadosSelect();
+cargarCatalogosDano();
+renderOpcionesDano();
 cargarBaseSugerida();
 </script>
 </body>
