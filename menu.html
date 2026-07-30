@@ -711,6 +711,7 @@ function elegirTipo(tipo) {
   tipoPedidoSeleccionado = tipo;
   cerrarCheckout();
   if (tipo === 'domicilio') {
+    precargarDatosDomicilio();
     document.getElementById('overlay-domicilio').classList.add('visible');
     document.getElementById('panel-domicilio').classList.add('visible');
   } else if (mesaQR !== null) {
@@ -804,6 +805,35 @@ function cerrarDomicilio() {
   document.getElementById('panel-domicilio').classList.remove('visible');
 }
 
+/**
+ * Rellena nombre/celular/fecha de nacimiento con lo que el cliente ya escribió en
+ * bienvenida.html (guardado ahí en localStorage, clave 'degCliente') para no
+ * pedírselo dos veces. La dirección NUNCA se precarga a propósito — puede cambiar
+ * de un pedido a otro, así que siempre se vuelve a pedir (y sigue siendo obligatoria
+ * en enviarDomicilio()). Los campos precargados quedan editables por si el pedido
+ * es para otra persona.
+ */
+function precargarDatosDomicilio() {
+  let datos;
+  try {
+    datos = JSON.parse(localStorage.getItem('degCliente') || 'null');
+  } catch (e) {
+    datos = null;
+  }
+  if (!datos) return;
+
+  if (datos.nombre) document.getElementById('dom-nombre').value = datos.nombre;
+  if (datos.tel) document.getElementById('dom-celular').value = datos.tel;
+  if (datos.cumple) {
+    const partes = datos.cumple.split('-'); // 'YYYY-MM-DD'
+    if (partes.length === 3) {
+      document.getElementById('dom-anio-nac').value = partes[0];
+      document.getElementById('dom-mes-nac').value = String(parseInt(partes[1], 10));
+      document.getElementById('dom-dia-nac').value = String(parseInt(partes[2], 10));
+    }
+  }
+}
+
 function resumenPedidoTexto() {
   const lineas = carrito.map(i => `• ${i.cantidad}x ${i.producto}${i.observacion ? ' (' + i.observacion + ')' : ''} — ${formatoCOP(i.precio * i.cantidad)}`);
   const total = carrito.reduce((s, i) => s + i.cantidad * i.precio, 0);
@@ -844,6 +874,9 @@ async function enviarDomicilio() {
   const cumpleISO = (diaNac && mesNac && anioNac)
     ? `${anioNac}-${String(mesNac).padStart(2, '0')}-${String(diaNac).padStart(2, '0')}`
     : '';
+  try {
+    localStorage.setItem('degCliente', JSON.stringify({nombre, tel: celular, cumple: cumpleISO}));
+  } catch (e) {}
   await registrarVentaEnSheet('domicilio', total);
   await registrarClienteDesdeMenu(nombre, celular, cumpleISO, direccion);
   carrito = [];

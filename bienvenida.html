@@ -139,6 +139,16 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// Guarda nombre/celular/cumpleaños en localStorage para que menu.html los reutilice
+// en el checkout de Domicilio, sin pedirlos de nuevo (solo queda pedir la dirección,
+// que sí puede cambiar de un pedido a otro). Mismo origen que menu.html, así que
+// localStorage viaja con el navegador de un archivo al otro.
+function guardarDatosClienteLocal(nombre, tel, cumpleISO) {
+  try {
+    localStorage.setItem('degCliente', JSON.stringify({nombre: nombre || '', tel: tel || '', cumple: cumpleISO || ''}));
+  } catch (e) {}
+}
+
 async function buscarCliente(tel) {
   try {
     const res = await fetch(SCRIPT_URL + '?accion=buscar_cliente&telefono=' + encodeURIComponent(tel));
@@ -146,6 +156,7 @@ async function buscarCliente(tel) {
     mostrarSpinner(false);
     if (data.ok && data.existe) {
       const c = data.cliente;
+      guardarDatosClienteLocal(c.nombre, tel, '');
       const pn = c.nombre.split(' ')[0];
       const v = c.visitas || 1;
       const msg = v <= 1
@@ -190,6 +201,8 @@ async function registrarCliente() {
     const p = new URLSearchParams({accion:'registrar_cliente',telefono:tel,nombre,cumpleanos:cumple,canal:obtenerCanal()});
     await fetch(SCRIPT_URL + '?' + p.toString());
   } catch(e) {}
+
+  guardarDatosClienteLocal(nombre, tel, cumple);
 
   mostrarSpinner(false);
   const pn = nombre.split(' ')[0];
