@@ -289,6 +289,51 @@ main{padding:16px;max-width:640px;margin:0 auto;}
   </div>
 </div>
 
+<!-- PANEL FIDELIZACION (solo Asesor de Ventas, primera ronda de una mesa nueva) -->
+<div class="overlay" id="overlay-fidelizacion" onclick="cerrarFidelizacion()"></div>
+<div class="panel" id="panel-fidelizacion">
+  <div class="panel-header">
+    <h3>🎖️ Datos del cliente (opcional)</h3>
+    <button class="panel-cerrar" onclick="cerrarFidelizacion()">×</button>
+  </div>
+  <div class="panel-body">
+    <div class="campo-grupo">
+      <label>Celular</label>
+      <input type="tel" id="fid-celular" placeholder="Ej: 3001234567">
+    </div>
+    <div class="campo-grupo">
+      <label>Nombre</label>
+      <input type="text" id="fid-nombre" placeholder="Nombre del cliente">
+    </div>
+    <div class="campo-grupo">
+      <label>Fecha de nacimiento</label>
+      <div class="campo-fila">
+        <input type="number" id="fid-dia-nac" placeholder="Día" min="1" max="31">
+        <select id="fid-mes-nac">
+          <option value="">Mes</option>
+          <option value="1">Enero</option>
+          <option value="2">Febrero</option>
+          <option value="3">Marzo</option>
+          <option value="4">Abril</option>
+          <option value="5">Mayo</option>
+          <option value="6">Junio</option>
+          <option value="7">Julio</option>
+          <option value="8">Agosto</option>
+          <option value="9">Septiembre</option>
+          <option value="10">Octubre</option>
+          <option value="11">Noviembre</option>
+          <option value="12">Diciembre</option>
+        </select>
+        <input type="number" id="fid-anio-nac" placeholder="Año (ej: 1990)" min="1930" max="2026">
+      </div>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <button class="btn-principal" onclick="confirmarFidelizacionYPedido(true)">Guardar y confirmar</button>
+    <button class="btn-secundario" onclick="confirmarFidelizacionYPedido(false)">Omitir y confirmar</button>
+  </div>
+</div>
+
 <!-- PANEL CONFIRMACION LOCAL -->
 <div class="overlay" id="overlay-confirmacion" onclick="cerrarConfirmacion()"></div>
 <div class="panel" id="panel-confirmacion">
@@ -424,6 +469,7 @@ let adminClave = '';
 let tipoPedidoSeleccionado = null;
 let puntos = parseInt(localStorage.getItem('zfood_puntos') || '0', 10);
 let mesaQR = new URLSearchParams(window.location.search).get('mesa');
+let meseroQR = new URLSearchParams(window.location.search).get('mesero');
 
 function renderMesaBadge() {
   const badge = document.getElementById('mesa-badge');
@@ -441,6 +487,13 @@ function formatoCOP(valor) {
 
 function guardarCarrito() {
   localStorage.setItem('zfood_carrito', JSON.stringify(carrito));
+  // Solo se etiqueta el carrito con la mesa cuando viene del flujo asesor (mesa Y
+  // mesero por URL) -- es el único flujo donde un mismo dispositivo pasa de mesa
+  // en mesa, así que es el único con riesgo de facturar un carrito viejo a la
+  // mesa equivocada. QR-only y Domicilio no lo necesitan (un dispositivo = una mesa).
+  if (meseroQR) {
+    localStorage.setItem('zfood_carrito_mesa', mesaQR);
+  }
 }
 
 async function cargarProductos() {
@@ -714,6 +767,11 @@ function elegirTipo(tipo) {
     precargarDatosDomicilio();
     document.getElementById('overlay-domicilio').classList.add('visible');
     document.getElementById('panel-domicilio').classList.add('visible');
+  } else if (mesaQR !== null && meseroQR) {
+    // Mesa Y mesero llegaron por URL (desde asesorventas.html): el mesero ya se
+    // identificó en el grid, no hace falta pedirle nada más aquí -- solo revisar
+    // si es la primera ronda de la mesa para ofrecer la captura de fidelización.
+    abrirFlujoLocalAsesor();
   } else if (mesaQR !== null) {
     // Mesa ya identificada por QR: autoservicio. Si un mesero ya la había
     // reclamado en una vuelta anterior, el backend le acredita el pedido igual.
@@ -803,6 +861,98 @@ function confirmarMesaMesero() {
 function cerrarDomicilio() {
   document.getElementById('overlay-domicilio').classList.remove('visible');
   document.getElementById('panel-domicilio').classList.remove('visible');
+}
+
+/**
+ * Flujo de "en el local" cuando mesa Y mesero llegan por URL (asesorventas.html).
+ * Solo se pide fidelización si la mesa todavía no estaba abierta -- rondas
+ * siguientes de la misma mesa van directo a confirmar, sin volver a preguntar.
+ * Si no se puede verificar (sin conexión), se asume mesa nueva y se pide de
+ * todas formas -- "Omitir" sigue disponible, así que nunca bloquea el pedido.
+ */
+let flujoAsesorEnCurso = false;
+
+async function abrirFlujoLocalAsesor() {
+  // Sin esto, un doble toque en "Hacer pedido" -> "En el local" dispara dos
+  // veces esta función durante la ventana en que la primera todavía está
+  // esperando la respuesta de estado_mesa (1-3s), y ambas terminan llamando a
+  // confirmarPedidoLocal -- dos filas de pedido en Ventas por lo mismo.
+  if (flujoAsesorEnCurso) return;
+  flujoAsesorEnCurso = true;
+  // Mismo overlay/mensaje que ya usa confirmarPedidoLocal ("Enviando tu
+  // pedido...") -- así el catálogo y el botón flotante del carrito quedan
+  // bloqueados visualmente durante todo el chequeo, igual que en ese otro flujo.
+  const cont = document.getElementById('confirmacion-contenido');
+  cont.innerHTML = `<div class="confirmacion-icono">⏳</div><h3>Verificando la mesa...</h3>`;
+  document.getElementById('overlay-confirmacion').classList.add('visible');
+  document.getElementById('panel-confirmacion').classList.add('visible');
+  try {
+    let abierta = false;
+    let meseroExistente = '';
+    try {
+      const res = await fetch(SCRIPT_URL + '?accion=estado_mesa&mesa=' + encodeURIComponent(mesaQR));
+      const data = await res.json();
+      if (data.ok) { abierta = data.abierta; meseroExistente = data.mesero || ''; }
+    } catch (e) {
+      // Sin conexión para verificar -- se sigue con el flujo de fidelización igual.
+    }
+    if (abierta) {
+      // Mismo aviso que ya existe en el panel manual (mesa-nota) cuando otro
+      // mesero atiende la mesa -- aquí se muestra automático, sin que nadie
+      // tenga que escribir ni tocar ningún campo para verlo.
+      if (meseroExistente && meseroExistente !== meseroQR) {
+        alert('📍 Esta mesa ya la está atendiendo ' + meseroExistente + '. Los productos nuevos quedan a su nombre.');
+      }
+      // Se espera a que termine (a diferencia de las otras llamadas a esta función,
+      // que son "fire and forget") para mantener flujoAsesorEnCurso activo durante
+      // todo el crear_pedido y así cerrar también la ventana de doble toque ahí.
+      await confirmarPedidoLocal(mesaQR, meseroQR);
+    } else {
+      // El overlay de "Verificando..." no debe quedar atascado detrás del panel
+      // de fidelización -- se cierra explícitamente antes de abrirlo.
+      cerrarConfirmacion();
+      abrirFidelizacion();
+    }
+  } finally {
+    flujoAsesorEnCurso = false;
+  }
+}
+
+function abrirFidelizacion() {
+  document.getElementById('fid-celular').value = '';
+  document.getElementById('fid-nombre').value = '';
+  document.getElementById('fid-dia-nac').value = '';
+  document.getElementById('fid-mes-nac').value = '';
+  document.getElementById('fid-anio-nac').value = '';
+  document.getElementById('overlay-fidelizacion').classList.add('visible');
+  document.getElementById('panel-fidelizacion').classList.add('visible');
+}
+
+function cerrarFidelizacion() {
+  document.getElementById('overlay-fidelizacion').classList.remove('visible');
+  document.getElementById('panel-fidelizacion').classList.remove('visible');
+}
+
+/**
+ * guardar=true guarda los datos en Clientes (reusando registrarClienteDesdeMenu,
+ * sin dirección -- no aplica a mesa) antes de confirmar; guardar=false (Omitir)
+ * confirma el pedido directamente. Cualquiera de los dos caminos siempre termina
+ * en confirmarPedidoLocal -- nunca se bloquea el pedido por esto.
+ */
+function confirmarFidelizacionYPedido(guardar) {
+  const celular = document.getElementById('fid-celular').value.trim();
+  const nombre = document.getElementById('fid-nombre').value.trim();
+  const diaNac = document.getElementById('fid-dia-nac').value.trim();
+  const mesNac = document.getElementById('fid-mes-nac').value;
+  const anioNac = document.getElementById('fid-anio-nac').value.trim();
+  cerrarFidelizacion();
+  if (guardar && celular) {
+    const cumpleISO = (diaNac && mesNac && anioNac)
+      ? `${anioNac}-${String(mesNac).padStart(2, '0')}-${String(diaNac).padStart(2, '0')}`
+      : '';
+    registrarClienteDesdeMenu(nombre, celular, cumpleISO, '');
+  }
+  confirmarPedidoLocal(mesaQR, meseroQR);
 }
 
 /**
@@ -1037,6 +1187,22 @@ async function editarPrecio(idx) {
 }
 
 (async function init() {
+  // Riesgo de facturación cruzada: en el flujo asesor un mismo teléfono pasa de
+  // mesa en mesa (asesorventas.html). Si el mesero abrió la Mesa 5, agregó
+  // productos y abandonó ese pedido sin confirmarlo (falla de red, cambió de
+  // idea, cerró el panel de fidelización tocando fuera), el carrito viejo sigue
+  // en localStorage y se facturaría en silencio a la Mesa 7 en cuanto la abra.
+  // Si el carrito guardado quedó etiquetado con una mesa distinta a la actual,
+  // se descarta automáticamente -- más seguro que preguntar con confirm(), y
+  // consistente con que este archivo nunca usa confirm() (solo alert() para avisos).
+  if (meseroQR && mesaQR !== null) {
+    const carritoMesaGuardada = localStorage.getItem('zfood_carrito_mesa');
+    if (carrito.length > 0 && carritoMesaGuardada !== mesaQR) {
+      alert(`Había un pedido sin enviar de otra mesa (Mesa ${carritoMesaGuardada || '?'}). Se vació el carrito para no facturarlo por error a la Mesa ${mesaQR}.`);
+      carrito = [];
+      guardarCarrito();
+    }
+  }
   renderMesaBadge();
   await cargarProductos();
   await cargarEmpleados();
