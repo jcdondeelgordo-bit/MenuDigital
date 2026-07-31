@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Donde el Gordo - Asesor de Ventas</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+body{font-family:'Segoe UI',sans-serif;background:#1a0a00;color:#fff;min-height:100vh;}
+
+header{position:sticky;top:0;z-index:20;background:#1a0a00;border-bottom:1px solid rgba(200,132,26,0.3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.header-marca{display:flex;align-items:center;gap:10px;}
+.logo-header{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;}
+.header-titulo{font-size:1.2rem;font-weight:800;color:#c8841a;letter-spacing:1px;}
+.header-sub{font-size:0.72rem;color:#e8c87a;letter-spacing:2px;}
+.header-derecha{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.mesero-activo{font-size:0.85rem;color:#f0e0b0;}
+.btn-cambiar{background:transparent;border:none;color:rgba(255,255,255,0.4);font-size:0.78rem;cursor:pointer;text-decoration:underline;}
+.btn-tab{padding:10px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:0.85rem;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;}
+
+main{padding:18px;max-width:640px;margin:0 auto;}
+.vacio-msg{text-align:center;color:rgba(240,224,176,0.5);padding:40px 0;font-size:1rem;}
+.banner-mock{background:#1a0a00;border:1px solid #e05050;color:#e8a0a0;border-radius:10px;padding:12px 16px;font-size:0.85rem;font-weight:700;text-align:center;margin-bottom:14px;}
+
+.grid-mesas{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.btn-mesa{aspect-ratio:1;border-radius:14px;border:none;font-weight:800;font-size:0.68rem;letter-spacing:0.5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#fff;background:#1c1c1c;}
+.btn-mesa-num{font-size:1.35rem;line-height:1;}
+.btn-mesa.estado-libre{background:#1c1c1c;color:#fff;border:1px solid rgba(255,255,255,0.15);}
+.btn-mesa.estado-ocupada-pendiente{background:linear-gradient(135deg,#a8291c,#e05050);color:#fff;}
+.btn-mesa.estado-ocupada-pagada{background:linear-gradient(135deg,#c8941a,#e8c832);color:#1a0a00;}
+
+.pantalla-login{max-width:400px;margin:60px auto;padding:0 20px;display:flex;flex-direction:column;gap:16px;}
+.pantalla-login h2{color:#c8841a;font-size:1.2rem;text-align:center;}
+.campo-grupo label{display:block;font-size:0.8rem;color:#c8841a;margin-bottom:5px;}
+.campo-grupo input,.campo-grupo select{width:100%;padding:11px 13px;background:rgba(255,255,255,0.07);border:1px solid rgba(200,132,26,0.4);border-radius:10px;color:#fff;font-size:0.93rem;outline:none;}
+.btn-principal{width:100%;padding:15px;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;border-radius:12px;color:#1a0a00;font-size:1.02rem;font-weight:700;letter-spacing:1px;cursor:pointer;margin-top:10px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-marca">
+    <img class="logo-header" src="logo.png" alt="Donde el Gordo">
+    <div>
+      <div class="header-titulo">DONDE EL GORDO</div>
+      <div class="header-sub">ASESOR DE VENTAS</div>
+    </div>
+  </div>
+  <div class="header-derecha" id="header-derecha" style="display:none;">
+    <span class="mesero-activo" id="mesero-activo-txt"></span>
+    <button class="btn-cambiar" onclick="cambiarMesero()">Cambiar mesero</button>
+    <a class="btn-tab" href="index.html">← MENU</a>
+  </div>
+</header>
+
+<div class="pantalla-login" id="pantalla-login">
+  <h2>¿Quién eres?</h2>
+  <div class="campo-grupo">
+    <label>Tu nombre</label>
+    <select id="login-mesero">
+      <option value="">-- Selecciona tu nombre --</option>
+    </select>
+  </div>
+  <button class="btn-principal" onclick="confirmarLogin()">Entrar</button>
+</div>
+
+<main id="pantalla-grid" style="display:none;">
+  <div id="grid-contenido"></div>
+</main>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlYXsASFJpzw9arECb79_CLb3l5w-4cithWANH57ydFHbC2-788aFJddvWIxOjOyEr/exec';
+const INTERVALO_POLLING_MS = 12000;
+
+let EMPLEADOS = [];
+let mesero = null;
+let pedidos = [];
+let pedidosCargados = false;
+let errorCarga = false;
+let pollingIniciado = false;
+
+async function cargarEmpleados() {
+  try {
+    const res = await fetch(SCRIPT_URL + '?accion=listar_empleados');
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.empleados)) {
+      EMPLEADOS = data.empleados;
+    }
+  } catch (e) {
+    // Backend no disponible -- renderLoginOptions() cae a texto libre.
+  }
+  renderLoginOptions();
+}
+
+function renderLoginOptions() {
+  const el = document.getElementById('login-mesero');
+  if (EMPLEADOS.length === 0) {
+    // Sin catálogo disponible: no bloqueamos el flujo, volvemos a campo de texto libre.
+    if (el.tagName === 'SELECT') {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.id = 'login-mesero';
+      input.placeholder = 'Tu nombre';
+      el.replaceWith(input);
+    }
+    return;
+  }
+  if (el.tagName !== 'SELECT') return; // ya se reemplazó por texto libre, no hay nada que poblar
+  el.innerHTML = '<option value="">-- Selecciona tu nombre --</option>' +
+    EMPLEADOS.map(emp => `<option value="${emp.nombre.replace(/"/g, '&quot;')}">${emp.nombre}</option>`).join('');
+}
+
+function confirmarLogin() {
+  const el = document.getElementById('login-mesero');
+  const nombre = el.value.trim();
+  if (!nombre) { alert('Selecciona o escribe tu nombre.'); return; }
+  mesero = nombre;
+  try { localStorage.setItem('asesorMesero', nombre); } catch (e) {}
+  mostrarGrid();
+}
+
+function cambiarMesero() {
+  try { localStorage.removeItem('asesorMesero'); } catch (e) {}
+  mesero = null;
+  mostrarLogin();
+}
+
+function mostrarLogin() {
+  document.getElementById('pantalla-login').style.display = 'flex';
+  document.getElementById('pantalla-grid').style.display = 'none';
+  document.getElementById('header-derecha').style.display = 'none';
+}
+
+function mostrarGrid() {
+  document.getElementById('pantalla-login').style.display = 'none';
+  document.getElementById('pantalla-grid').style.display = 'block';
+  document.getElementById('header-derecha').style.display = 'flex';
+  document.getElementById('mesero-activo-txt').textContent = '👤 ' + mesero;
+  cargarPedidos();
+  if (!pollingIniciado) {
+    pollingIniciado = true;
+    setInterval(cargarPedidos, INTERVALO_POLLING_MS);
+  }
+}
+
+// Misma regla que caja.html (estadoMesaColor): una mesa con alguna ronda de hoy
+// en Pendiente de pago se ve roja; si todo lo de hoy está Pagado (nada
+// pendiente, nada liberado) se ve ámbar; sin ninguna fila activa hoy, libre.
+function estadoMesaColor(numMesa) {
+  const activos = pedidos.filter(p => p.tipo === 'local' && String(p.mesa) === String(numMesa) && p.estado !== 'Liberado');
+  if (activos.length === 0) return 'libre';
+  if (activos.some(p => p.estado === 'Pendiente de pago')) return 'ocupada-pendiente';
+  return 'ocupada-pagada';
+}
+
+async function cargarPedidos() {
+  try {
+    const res = await fetch(SCRIPT_URL + '?accion=listar_pedidos_caja');
+    const data = await res.json();
+    if (!data.ok || !Array.isArray(data.pedidos)) throw new Error('respuesta no ok');
+    pedidos = data.pedidos;
+    pedidosCargados = true;
+    errorCarga = false;
+  } catch (e) {
+    errorCarga = true;
+  }
+  if (mesero) renderGrid();
+}
+
+function abrirMesa(numMesa) {
+  const url = 'menu.html?mesa=' + numMesa + '&mesero=' + encodeURIComponent(mesero);
+  window.location.href = url;
+}
+
+function renderGrid() {
+  const cont = document.getElementById('grid-contenido');
+
+  // Nunca se asume "todo libre" si la primera carga falló -- se muestra un
+  // estado de error explícito con reintento en vez de arriesgar que un mesero
+  // abra una mesa que en realidad ya está ocupada.
+  if (errorCarga && !pedidosCargados) {
+    cont.innerHTML = '<div class="vacio-msg">⚠️ No se pudo cargar el estado de las mesas.</div>' +
+      '<button class="btn-principal" onclick="cargarPedidos()">Reintentar</button>';
+    return;
+  }
+
+  const banner = errorCarga
+    ? '<div class="banner-mock">⚠️ Sin conexión — mostrando el último estado conocido, puede no estar actualizado</div>'
+    : '';
+
+  const mesasHtml = [];
+  for (let n = 1; n <= 20; n++) {
+    const estado = estadoMesaColor(n);
+    mesasHtml.push(`<button class="btn-mesa estado-${estado}" onclick="abrirMesa(${n})">MESA<span class="btn-mesa-num">${n}</span></button>`);
+  }
+
+  cont.innerHTML = banner + `<div class="grid-mesas">${mesasHtml.join('')}</div>`;
+}
+
+(async function init() {
+  await cargarEmpleados();
+  try {
+    const guardado = localStorage.getItem('asesorMesero');
+    if (guardado) { mesero = guardado; }
+  } catch (e) {}
+  if (mesero) mostrarGrid(); else mostrarLogin();
+})();
+</script>
+</body>
+</html>
