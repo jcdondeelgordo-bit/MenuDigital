@@ -193,9 +193,10 @@ const INTERVALO_POLLING_MS = 12000;
 // los tenga. Teléfono real ya confirmado.
 const DATOS_LOCAL = {
   nombreComercial: 'Donde el Gordo',
-  razonSocial: '[FICTICIO — actualizar con el dato real]',
-  nit: '[FICTICIO — actualizar]',
-  direccion: '[FICTICIO — actualizar]',
+  razonSocial: 'COMIRAPIDAS DONDE EL GORDO',
+  nit: '1022348274-2',
+  representanteLegal: 'Clemencia Reyes',
+  direccion: 'Cr 12 # 7-1 Centro, Esquina Parque la Macarena, Puerto Gaitán Meta',
   telefono: '3167027833',
   mensajePie: '¡Gracias por su visita!'
 };
@@ -579,6 +580,7 @@ function imprimirRecibo(pedido) {
     <div class="recibo-linea recibo-centro recibo-negrita">${DATOS_LOCAL.nombreComercial}</div>
     <div class="recibo-linea recibo-centro">${DATOS_LOCAL.razonSocial}</div>
     <div class="recibo-linea recibo-centro">NIT ${DATOS_LOCAL.nit}</div>
+    <div class="recibo-linea recibo-centro">Rep. Legal: ${DATOS_LOCAL.representanteLegal}</div>
     <div class="recibo-linea recibo-centro">${DATOS_LOCAL.direccion}</div>
     <div class="recibo-linea recibo-centro">Tel: ${DATOS_LOCAL.telefono}</div>
     <div class="recibo-separador"></div>
