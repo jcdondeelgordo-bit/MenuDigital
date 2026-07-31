@@ -78,7 +78,7 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 /* Pantalla de grid (mesas + domicilios) -- rediseño 2026-07-30 */
 .header-marca{display:flex;align-items:center;gap:10px;}
 .logo-caja{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;}
-.pantalla-grid{display:flex;flex-direction:column;gap:14px;max-width:640px;margin:0 auto;}
+.pantalla-grid{grid-column:1/-1;display:flex;flex-direction:column;gap:14px;max-width:640px;margin:0 auto;}
 .grid-mesas,.grid-domicilios{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
 .btn-mesa,.btn-domicilio{aspect-ratio:1;border-radius:14px;border:none;font-weight:800;font-size:0.68rem;letter-spacing:0.5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#fff;background:#1c1c1c;}
 .btn-mesa-num{font-size:1.35rem;line-height:1;}
@@ -98,14 +98,14 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 .ronda-bloque{display:flex;flex-direction:column;gap:2px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);}
 .ronda-header{display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;color:rgba(240,224,176,0.65);margin-bottom:4px;}
 .btn-liberar{padding:10px 16px;border-radius:10px;background:transparent;border:1px solid rgba(224,80,80,0.5);color:#e8a0a0;font-size:0.85rem;font-weight:700;cursor:pointer;}
-.historial-filtros{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px;}
+.historial-filtros{grid-column:1/-1;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px;}
 </style>
 </head>
 <body>
 
 <header>
   <div class="header-marca">
-    <img class="logo-caja" src="logo gordo.png" alt="Donde el Gordo">
+    <img class="logo-caja" src="logo.png" alt="Donde el Gordo">
     <div>
       <div class="header-titulo">DONDE EL GORDO</div>
       <div class="header-sub">CAJA</div>
@@ -231,6 +231,12 @@ let mesaAbierta = null;      // número de mesa mostrado en el panel de detalle,
 let domicilioAbierto = null; // id_pedido de domicilio mostrado en el panel de detalle, o null
 let cobroModo = 'individual'; // 'individual' (domicilio) | 'mesa' (varias rondas combinadas)
 let mesaParaCobrar = null;
+// Ids de ronda verificados (sin pagos parciales en curso) y mostrados al cajero
+// en el momento de abrir el modal de método de pago -- confirmarCobroMesa cobra
+// exactamente esta lista, nunca una relectura fresca de "pendientes" en vivo
+// (ver hallazgo 2 de la revisión final: evita cobrar una ronda que llegó por
+// polling mientras el modal ya estaba abierto y nunca fue verificada/mostrada).
+let idsParaCobrarMesa = [];
 let domicilioCupos = {}; // id_pedido -> número de cupo (1-5), persistido en localStorage
 // Mismo mecanismo que pedidosPagoPendiente (ver aplicarPendientes) pero para
 // una liberación en curso: evita que el polling automático le devuelva
@@ -660,6 +666,7 @@ function renderDetalleMesa() {
         <span class="badge-estado ${r.estado === 'Pendiente de pago' ? 'pendiente' : 'pagado'}">${r.estado === 'Pendiente de pago' ? '⏳ Pendiente' : '✅ Pagado'}</span>
       </div>
       ${r.items.map(it => `<div class="item-row"><span>${it.cantidad}x ${it.producto}</span><span>${formatoCOP(it.total)}</span></div>`).join('')}
+      ${r.estado === 'Pendiente de pago' ? `<div style="display:flex;justify-content:flex-end;margin-top:6px;"><button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);padding:8px 12px;font-size:0.78rem;" onclick="abrirDivision('${r.id_pedido}')">➗ Dividir cuenta</button></div>` : ''}
     </div>
   `).join('');
 
@@ -669,7 +676,6 @@ function renderDetalleMesa() {
     <div class="pedido-total-row"><span>TOTAL PENDIENTE</span><span>${formatoCOP(totalPendiente)}</span></div>
     <div class="pedido-footer" style="flex-wrap:wrap;gap:8px;">
       ${pendientes.length > 0 ? `<button class="btn-cobrar" onclick="abrirModalCobrarMesa(${mesaAbierta})">Cobrar ${formatoCOP(totalPendiente)}</button>` : ''}
-      ${rondas.length === 1 && pendientes.length === 1 ? `<button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="abrirDivision('${rondas[0].id_pedido}')">➗ Dividir cuenta</button>` : ''}
       ${pendientes.length === 0 ? `<button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="reimprimirReciboMesa(${mesaAbierta})">🖨️ Reimprimir recibo</button>` : ''}
       ${pendientes.length === 0 ? `<button class="btn-liberar" onclick="liberarMesa(${mesaAbierta})">🚪 Liberar mesa</button>` : ''}
     </div>
@@ -808,18 +814,28 @@ async function abrirModalCobrarMesa(numMesa) {
   }
   cobroModo = 'mesa';
   mesaParaCobrar = numMesa;
+  idsParaCobrarMesa = pendientes.map(p => p.id_pedido);
   document.getElementById('overlay-cobrar').classList.remove('oculto');
 }
 
 function cerrarModalCobrar() {
   pedidoIdParaCobrar = null;
+  cobroModo = 'individual';
+  mesaParaCobrar = null;
+  idsParaCobrarMesa = [];
   document.getElementById('overlay-cobrar').classList.add('oculto');
 }
 
 async function confirmarCobro(metodo) {
+  // Capturamos todo lo que hace falta ANTES de cerrarModalCobrar(): esa función
+  // ahora resetea cobroModo/mesaParaCobrar/idsParaCobrarMesa (hallazgo 3 de la
+  // revisión final), así que si los leyéramos después ya estarían en blanco.
   const idPedido = pedidoIdParaCobrar;
+  const modo = cobroModo;
+  const numMesaCobrar = mesaParaCobrar;
+  const idsCobrar = idsParaCobrarMesa.slice();
   cerrarModalCobrar();
-  if (cobroModo === 'mesa') { await confirmarCobroMesa(metodo); return; }
+  if (modo === 'mesa') { await confirmarCobroMesa(numMesaCobrar, idsCobrar, metodo); return; }
 
   if (!idPedido) return;
 
@@ -849,10 +865,19 @@ async function confirmarCobro(metodo) {
   }
 }
 
-async function confirmarCobroMesa(metodo) {
-  const numMesa = mesaParaCobrar;
+async function confirmarCobroMesa(numMesa, idsCobrar, metodo) {
   if (!numMesa) return;
-  const pendientes = pedidos.filter(p => p.tipo === 'local' && String(p.mesa) === String(numMesa) && p.estado === 'Pendiente de pago');
+  // Cobrar exactamente los ids verificados y mostrados al abrir el modal
+  // (capturados por confirmarCobro en idsCobrar, a partir de idsParaCobrarMesa),
+  // no una relectura fresca de "pendientes" en vivo -- si una nueva ronda llegó
+  // por polling mientras el modal estaba abierto, nunca pasó por la
+  // verificación de listar_pagos_divididos ni la vio el cajero, así que no se
+  // cobra automáticamente con ella (hallazgo 2 de la revisión final). Se
+  // filtra a las que sigan Pendiente de pago por si alguna se resolvió de
+  // otra forma mientras tanto.
+  const pendientes = idsCobrar
+    .map(id => pedidos.find(p => p.id_pedido === id))
+    .filter(p => p && p.estado === 'Pendiente de pago');
   if (pendientes.length === 0) return;
 
   const idsAfectados = pendientes.map(p => p.id_pedido);
@@ -993,6 +1018,7 @@ function renderHistorial() {
         <span>${formatoCOP(p.total)}</span>
       </div>
       <div class="pedido-footer">
+        ${p.estado === 'Pendiente de pago' ? `<button class="btn-cobrar" onclick="abrirModalCobrar('${p.id_pedido}')">Cobrar</button>` : ''}
         <button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="imprimirReciboPorId('${p.id_pedido}')">🖨️ ${p.estado === 'Pendiente de pago' ? 'Imprimir' : 'Reimprimir'} recibo</button>
       </div>
     </div>

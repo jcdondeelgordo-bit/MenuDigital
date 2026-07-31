@@ -137,7 +137,9 @@ function marcarPedidoPagado(e) {
  * accion=liberar_mesa&mesa=<num>
  * Pone en 'Liberado' todas las filas de HOY de esa mesa cuyo Estado sea 'Pagado'.
  * Si queda alguna en 'Pendiente de pago', no libera nada -- no se puede liberar
- * una mesa que todavía debe. Requiere que la mesa tenga al menos una fila hoy.
+ * una mesa que todavía debe. Si la mesa no tiene ninguna fila hoy (ya libre,
+ * mesa inexistente, etc.), no es un error: simplemente no hay nada que liberar
+ * y responde {ok:true} igual.
  */
 function liberarMesa(e) {
   const mesa = e.parameter.mesa || '';
