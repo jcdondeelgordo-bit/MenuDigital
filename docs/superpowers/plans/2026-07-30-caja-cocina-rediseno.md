@@ -266,7 +266,10 @@
   .ronda-header{display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;color:rgba(240,224,176,0.65);margin-bottom:4px;}
   .btn-liberar{padding:10px 16px;border-radius:10px;background:transparent;border:1px solid rgba(224,80,80,0.5);color:#e8a0a0;font-size:0.85rem;font-weight:700;cursor:pointer;}
   .historial-filtros{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px;}
+  #overlay-cobrar{z-index:65;}
   ```
+
+  Sin esta última regla, `#overlay-cobrar` y el nuevo `#overlay-detalle` (Step 4) comparten la clase `.overlay` con el mismo `z-index:50` — al abrir "Cobrar" desde el panel de detalle, el modal de método de pago quedaría pintado DETRÁS del panel de detalle (que sigue abierto encima), inalcanzable. Mismo patrón que ya usa este archivo para `#overlay-cobrar-parcial{z-index:70;}` sobre `.overlay-division{z-index:60;}`.
 
 - [ ] **Step 3: Reemplazar el `<header>` (líneas 78-93 del archivo original)**
 
@@ -702,13 +705,12 @@
     cerrarModalCobrar();
     if (!idPedido) return;
   ```
-  con:
+  con (¡ojo! captura `idPedido` ANTES de `cerrarModalCobrar()`, igual que el original — `cerrarModalCobrar()` pone `pedidoIdParaCobrar = null`, así que invertir el orden deja `idPedido` siempre `null` y el cobro individual queda muerto):
   ```javascript
   async function confirmarCobro(metodo) {
+    const idPedido = pedidoIdParaCobrar;
     cerrarModalCobrar();
     if (cobroModo === 'mesa') { await confirmarCobroMesa(metodo); return; }
-
-    const idPedido = pedidoIdParaCobrar;
     if (!idPedido) return;
   ```
 
