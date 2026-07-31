@@ -53,6 +53,7 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 .division-subtotal{display:flex;justify-content:space-between;font-weight:800;color:#e8a832;font-size:1rem;padding-top:8px;border-top:1px solid rgba(200,132,26,0.3);}
 .parte-igual-card{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border:1px solid rgba(200,132,26,0.25);border-radius:10px;}
 
+#overlay-cobrar{z-index:65;}
 #overlay-cobrar-parcial{z-index:70;}
 
 #recibo-imprimir{display:none;}
@@ -231,6 +232,11 @@ let domicilioAbierto = null; // id_pedido de domicilio mostrado en el panel de d
 let cobroModo = 'individual'; // 'individual' (domicilio) | 'mesa' (varias rondas combinadas)
 let mesaParaCobrar = null;
 let domicilioCupos = {}; // id_pedido -> número de cupo (1-5), persistido en localStorage
+// Mismo mecanismo que pedidosPagoPendiente (ver aplicarPendientes) pero para
+// una liberación en curso: evita que el polling automático le devuelva
+// 'Pagado' a un pedido que el cajero ya marcó 'Liberado' optimistamente,
+// mientras la petición liberar_mesa/liberar_pedido sigue en vuelo.
+const pedidosLiberacionPendiente = new Set();
 
 function cargarCuposDomicilio() {
   try { domicilioCupos = JSON.parse(localStorage.getItem('degCajaCuposDomicilio') || '{}'); }
@@ -617,6 +623,7 @@ async function cargarPedidos() {
 function aplicarPendientes(lista) {
   lista.forEach(p => {
     if (pedidosPagoPendiente.has(p.id_pedido)) p.estado = 'Pagado';
+    else if (pedidosLiberacionPendiente.has(p.id_pedido)) p.estado = 'Liberado';
   });
 }
 
@@ -691,6 +698,8 @@ async function liberarMesa(numMesa) {
   const activos = pedidos.filter(p => p.tipo === 'local' && String(p.mesa) === String(numMesa) && p.estado !== 'Liberado');
   if (activos.length === 0) return;
 
+  const idsAfectados = activos.map(p => p.id_pedido);
+  idsAfectados.forEach(id => pedidosLiberacionPendiente.add(id));
   const estadosAnteriores = activos.map(p => p.estado);
   activos.forEach(p => { p.estado = 'Liberado'; });
   renderPrincipal();
@@ -705,6 +714,8 @@ async function liberarMesa(numMesa) {
     activos.forEach((p, i) => { p.estado = estadosAnteriores[i]; });
     renderPrincipal();
     alert('No se pudo liberar la mesa: ' + e.message);
+  } finally {
+    idsAfectados.forEach(id => pedidosLiberacionPendiente.delete(id));
   }
 }
 
@@ -742,6 +753,7 @@ async function liberarPedidoDomicilio(idPedido) {
   const pedido = pedidos.find(p => p.id_pedido === idPedido);
   if (!pedido) return;
 
+  pedidosLiberacionPendiente.add(idPedido);
   const estadoAnterior = pedido.estado;
   pedido.estado = 'Liberado';
   renderPrincipal();
@@ -756,6 +768,8 @@ async function liberarPedidoDomicilio(idPedido) {
     pedido.estado = estadoAnterior;
     renderPrincipal();
     alert('No se pudo liberar el pedido: ' + e.message);
+  } finally {
+    pedidosLiberacionPendiente.delete(idPedido);
   }
 }
 
@@ -803,10 +817,10 @@ function cerrarModalCobrar() {
 }
 
 async function confirmarCobro(metodo) {
+  const idPedido = pedidoIdParaCobrar;
   cerrarModalCobrar();
   if (cobroModo === 'mesa') { await confirmarCobroMesa(metodo); return; }
 
-  const idPedido = pedidoIdParaCobrar;
   if (!idPedido) return;
 
   pedidosPagoPendiente.add(idPedido);
@@ -874,15 +888,11 @@ async function confirmarCobroMesa(metodo) {
 
 function cambiarVistaTipo(t) {
   vistaTipo = t;
-  document.getElementById('btn-tipo-local').classList.toggle('activa', t === 'local');
-  document.getElementById('btn-tipo-domicilio').classList.toggle('activa', t === 'domicilio');
   renderPrincipal();
 }
 
 function cambiarVistaEstado(v) {
   vistaEstado = v;
-  document.getElementById('btn-estado-pendientes').classList.toggle('activa', v === 'pendientes');
-  document.getElementById('btn-estado-pagados').classList.toggle('activa', v === 'pagados');
   renderPrincipal();
 }
 
