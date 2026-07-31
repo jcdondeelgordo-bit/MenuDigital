@@ -70,7 +70,7 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 
 #recibo-imprimir{display:none;}
 @media print{
-  header, main, .overlay, .overlay-division{display:none;}
+  header, main, .overlay, .overlay-vr, .overlay-division{display:none;}
   #recibo-imprimir{display:block;position:static;width:80mm;padding:4mm;font-family:'Courier New',monospace;font-size:11px;color:#000;background:#fff;}
   .recibo-linea{margin:2px 0;}
   .recibo-centro{text-align:center;}
@@ -633,7 +633,10 @@ let itemsVentaRapidaSnapshot = []; // Snapshot del carrito capturado cuando crea
 let cobroVentaRapidaEnCurso = false; // Guard contra double-tap en iniciarCobroVentaRapida
 
 function abrirVentaRapida() {
-  if (productosVentaRapida.length === 0 && !productosVentaRapidaError) cargarProductosVentaRapida();
+  // Finding 3: recargamos el catálogo en cada apertura (no solo si está vacío)
+  // para no servir precios obsoletos si el dueño los edita desde menu.html
+  // mientras la tablet de caja se queda abierta todo el turno.
+  cargarProductosVentaRapida();
   document.getElementById('overlay-vr').classList.remove('oculto');
   renderCarritoVR();
 }
@@ -642,6 +645,7 @@ function cerrarVentaRapida() {
   document.getElementById('overlay-vr').classList.add('oculto');
   carritoVentaRapida = [];
   itemsVentaRapidaSnapshot = [];
+  idPedidoVentaRapida = null;
   document.getElementById('vr-nombre').value = '';
 }
 
@@ -657,7 +661,12 @@ async function cargarProductosVentaRapida() {
     renderProductosVR();
   } catch (e) {
     productosVentaRapidaError = true;
-    document.getElementById('vr-productos').innerHTML = '<div class="vr-vacio">⚠️ No se pudo cargar el catálogo. <button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);display:inline;" onclick="cargarProductosVentaRapida()">Reintentar</button></div>';
+    // Finding 3: si ya había un catálogo cargado de una petición anterior exitosa,
+    // un refetch fallido (hipo de red) no debe borrar la lista que ya funciona --
+    // la dejamos tal cual y solo mostramos el banner de error cuando no hay nada.
+    if (productosVentaRapida.length === 0) {
+      document.getElementById('vr-productos').innerHTML = '<div class="vr-vacio">⚠️ No se pudo cargar el catálogo. <button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);display:inline;" onclick="cargarProductosVentaRapida()">Reintentar</button></div>';
+    }
   }
 }
 
@@ -774,6 +783,13 @@ async function confirmarCobroVentaRapida(metodo) {
   itemsVentaRapidaSnapshot = [];
   if (!idPedido) return;
 
+  // Mismo mecanismo que confirmarCobro/liberarPedidoDomicilio/marcarMostradorRecogido
+  // (ver aplicarPendientes): protege contra el polling automático de 12s pisando
+  // este cobro con un estado obsoleto si una respuesta llega mientras la petición
+  // sigue en vuelo (hallazgo 2 de la revisión final).
+  pedidosPagoPendiente.add(idPedido);
+  if (entregar) pedidosLiberacionPendiente.add(idPedido);
+
   try {
     const params = new URLSearchParams({ accion: 'marcar_pedido_pagado', id_pedido: idPedido, metodo_pago: metodo });
     const res = await fetch(SCRIPT_URL + '?' + params.toString());
@@ -794,6 +810,9 @@ async function confirmarCobroVentaRapida(metodo) {
     await cargarPedidos();
   } catch (e) {
     alert('No se pudo confirmar el cobro (' + e.message + '). El pedido queda pendiente de pago -- lo puedes cobrar desde el Historial (pestaña Mostrador).');
+  } finally {
+    pedidosPagoPendiente.delete(idPedido);
+    pedidosLiberacionPendiente.delete(idPedido);
   }
 }
 
