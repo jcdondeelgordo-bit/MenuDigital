@@ -231,6 +231,8 @@
 - Consumes: Task 1's `accion=liberar_mesa`, `accion=liberar_pedido`. También el `Estado='Liberado'` que ahora puede venir en la respuesta de `listar_pedidos_caja` (ya soportada sin cambios por ese endpoint, que no filtra por `Estado`).
 - Produces: ninguna interfaz nueva consumida por otras tareas (Task 3 es un archivo separado).
 
+**Aviso importante sobre este Task:** este plan se escribió leyendo `caja.html` ANTES de que se mergeara a `master` la rama `worktree-modulo-4-division-cuenta` (Módulo 4, División de cuenta) — ese merge pasó `caja.html` de ~611 a 665 líneas y desactualizó todos los números de línea citados en los Steps de abajo. La mayoría del código citado como "old" sigue siendo textualmente idéntico (el merge fue aditivo en su mayoría), **excepto** `abrirModalCobrar`, que ahora es `async` y tiene una comprobación adicional (Step 9 ya está corregido para reflejarlo). Para cada Step: ubica el bloque por el texto citado, nunca por el número de línea — si un texto "old" no aparece tal cual en el archivo, detente y pregunta en vez de adivinar dónde aplicar el cambio.
+
 - [ ] **Step 1: Agregar la imagen del logo al proyecto (ya existe en el repo)**
 
   Confirmar que `E:\Proyectos ZFood GyP\logo gordo.png` existe (ya está en el repo, agregado el 2026-07-30 junto con el mockup). No requiere ninguna acción — solo se referenciará por ruta relativa `logo gordo.png` desde `caja.html`.
@@ -631,29 +633,69 @@
 
 - [ ] **Step 9: Extender el cobro para soportar el modo "mesa" (varias rondas combinadas)**
 
-  Reemplazar la función `abrirModalCobrar` existente (línea 506-509 del archivo original):
+  **Nota sobre esta versión del plan:** después de escribirse este plan, `caja.html` recibió el merge de la rama `worktree-modulo-4-division-cuenta` (Módulo 4, División de cuenta) directo a `master` — ese merge agregó, entre otras cosas, una comprobación en `abrirModalCobrar` que evita cobrar de golpe un pedido que ya tiene una división en curso (hallazgo Crítico de la revisión final de esa rama: "el botón normal 'Cobrar' no sabía si un pedido ya tenía pagos parciales registrados"). Los números de línea de todo este plan (Steps 1-14) quedaron desactualizados por ese merge — ubica cada bloque por el texto que se cita, no por el número de línea. Este Step 9 ya está actualizado para reflejar el `abrirModalCobrar` real.
+
+  Reemplazar la función `abrirModalCobrar` existente (búscala por el texto — es un `async function`, no un `function` plano):
   ```javascript
-  function abrirModalCobrar(idPedido) {
+  async function abrirModalCobrar(idPedido) {
+    try {
+      const params = new URLSearchParams({ accion: 'listar_pagos_divididos', id_pedido: idPedido });
+      const res = await fetch(SCRIPT_URL + '?' + params.toString());
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.partes) && data.partes.length > 0) {
+        alert('Este pedido ya tiene pagos parciales registrados. Usa "Dividir cuenta" para terminar de cobrarlo, no el botón Cobrar.');
+        return;
+      }
+    } catch (e) {
+      // Si no se puede verificar (sin conexión), se deja continuar — no bloquear
+      // el cobro normal por una falla de red en esta comprobación preventiva.
+    }
     pedidoIdParaCobrar = idPedido;
     document.getElementById('overlay-cobrar').classList.remove('oculto');
   }
   ```
-  con:
+  con (se agrega `cobroModo = 'individual';` sin tocar el resto de la lógica existente, y se agrega `abrirModalCobrarMesa` con la MISMA protección aplicada a cada ronda pendiente de la mesa — si cualquiera de ellas ya tiene una división en curso, no se abre el cobro combinado):
   ```javascript
-  function abrirModalCobrar(idPedido) {
+  async function abrirModalCobrar(idPedido) {
+    try {
+      const params = new URLSearchParams({ accion: 'listar_pagos_divididos', id_pedido: idPedido });
+      const res = await fetch(SCRIPT_URL + '?' + params.toString());
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.partes) && data.partes.length > 0) {
+        alert('Este pedido ya tiene pagos parciales registrados. Usa "Dividir cuenta" para terminar de cobrarlo, no el botón Cobrar.');
+        return;
+      }
+    } catch (e) {
+      // Si no se puede verificar (sin conexión), se deja continuar — no bloquear
+      // el cobro normal por una falla de red en esta comprobación preventiva.
+    }
     cobroModo = 'individual';
     pedidoIdParaCobrar = idPedido;
     document.getElementById('overlay-cobrar').classList.remove('oculto');
   }
 
-  function abrirModalCobrarMesa(numMesa) {
+  async function abrirModalCobrarMesa(numMesa) {
+    const pendientes = pedidos.filter(p => p.tipo === 'local' && String(p.mesa) === String(numMesa) && p.estado === 'Pendiente de pago');
+    for (const p of pendientes) {
+      try {
+        const params = new URLSearchParams({ accion: 'listar_pagos_divididos', id_pedido: p.id_pedido });
+        const res = await fetch(SCRIPT_URL + '?' + params.toString());
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.partes) && data.partes.length > 0) {
+          alert('Una de las rondas de esta mesa ya tiene pagos parciales registrados. Usa "Dividir cuenta" para terminar de cobrarla antes de cobrar el resto de la mesa.');
+          return;
+        }
+      } catch (e) {
+        // Si no se puede verificar (sin conexión), se deja continuar para esa ronda.
+      }
+    }
     cobroModo = 'mesa';
     mesaParaCobrar = numMesa;
     document.getElementById('overlay-cobrar').classList.remove('oculto');
   }
   ```
 
-  Reemplazar el inicio de `confirmarCobro` (línea 516-519 del archivo original):
+  Reemplazar el inicio de `confirmarCobro` (búscalo por el texto, no por línea):
   ```javascript
   async function confirmarCobro(metodo) {
     const idPedido = pedidoIdParaCobrar;
