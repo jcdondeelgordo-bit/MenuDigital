@@ -1,6 +1,8 @@
 # Módulo 4 — División de cuenta
 
-> **Diseño cerrado el 2026-07-28** (ver sección "Diseño v1" más abajo). Listo para pasar a plan de implementación.
+> **Plan de implementación (`modulo-4-plan-implementacion.md`) ejecutado y verificado en vivo — 2026-07-28.**
+
+> **Diseño cerrado el 2026-07-28** (ver sección "Diseño v1" más abajo).
 
 ## Objetivo
 Permitir dividir la cuenta de una mesa de forma flexible — función de alto valor, poco común en otros sistemas.
@@ -148,8 +150,7 @@ pasa a `Pagado` en `Ventas` únicamente al completar la última parte (nunca ant
 de cobrar de más es rechazado, y que cerrar/reabrir la división recupera el progreso ya cobrado.
 Limpieza de filas de prueba al final.
 
-## Qué falta (actualizado 2026-07-28)
-- Agregar la hoja `Pagos_Divididos` al Sheet del menú.
-- Escribir y pegar `registrar_pago_parcial`/`listar_pagos_divididos` en el Apps Script real.
-- Construir la vista de "Dividir cuenta" en `caja.html` (los dos modos: por ítem y partes iguales).
-- Probar en vivo contra el backend real (pedidos de prueba + limpieza).
+## Qué falta (actualizado 2026-07-28 — plan ejecutado, revisión final aplicada, y verificado en vivo)
+- **Nada del alcance de este plan queda pendiente**: la hoja `Pagos_Divididos`, el backend (`registrar_pago_parcial`/`listar_pagos_divididos`), los dos modos de `caja.html` (por ítem y partes iguales) y la verificación en vivo (backend por curl, frontend con navegador real, recuperación de progreso tras cerrar/reabrir, y partes iguales de punta a punta) quedaron completos — ver `ESTADO.md` para el detalle de lo verificado. Una revisión final de toda la rama encontró 1 hallazgo Crítico y 3 Importantes de integración entre módulos (riesgo de doble cobro si se usaba el botón "Cobrar" normal sobre un pedido con pagos parciales; unidades atrapadas al cambiar de modo sin cobrar; una condición de carrera en el cobro parcial; y una pantalla que mentía "nadie ha pagado" si fallaba la consulta de progreso) — los 4 se corrigieron y se re-verificaron en vivo. Todos los datos de prueba (`PRUEBA-CLAUDE-DIVISION*`) ya fueron borrados por el usuario.
+- **Publicar `caja.html` en el hosting real** — mismo pendiente ya anotado en Módulo 9; la vista "Dividir cuenta" vive en el mismo archivo, así que hereda esa misma pendiente.
+- **Prueba de impresión física en la térmica de 80mm real** para el recibo individual de cada caja virtual — la impresión ya funciona en pantalla (mismo diálogo de impresión del navegador que usa Módulo 9), pero la prueba contra la impresora física del puesto de caja sigue sin hacerse (mismo pendiente ya anotado en Módulo 9).
