@@ -2,9 +2,9 @@
 // MÓDULO 9 — CAJA Y FACTURACIÓN: nuevas acciones de Apps Script
 // ============================================================================
 // Instrucciones:
-// 1. Pega las 2 funciones de abajo (listarPedidosCaja, marcarPedidoPagado) en
-//    el MISMO proyecto de Apps Script que ya tiene las acciones de los
-//    Módulos 1, 2, 3 y 8 — reutilizan la hoja "Ventas".
+// 1. Pega las 4 funciones de abajo (listarPedidosCaja, marcarPedidoPagado,
+//    liberarMesa, liberarPedido) en el MISMO proyecto de Apps Script que ya
+//    tiene las acciones de los Módulos 1, 2, 3 y 8 — reutilizan la hoja "Ventas".
 // 2. Agrega estas 4 ramas nuevas a tu doGet(e):
 //        else if (accion === 'listar_pedidos_caja') { return listarPedidosCaja(); }
 //        else if (accion === 'marcar_pedido_pagado') { return marcarPedidoPagado(e); }
@@ -17,14 +17,14 @@
 //    implementaciones > Editar > Nueva versión > Implementar).
 // 5. IMPORTANTE: antes de publicar, busca con Ctrl+F "function listarPedidosCaja",
 //    "function marcarPedidoPagado", "function liberarMesa" y "function liberarPedido"
-//    en TODO el editor y confirma que cada una aparece una sola vez.
-//    cambio en silencio (ya pasó una vez con el Módulo 8, ver ESTADO.md). Este
-//    archivo contiene exactamente esas 2 funciones y nada más a nivel superior
-//    (no hay ningún const/variable global que pegar ni de qué cuidarse: a
-//    diferencia de una función duplicada, que solo se sobrescribe en
-//    silencio, una constante duplicada rompe con SyntaxError TODO el proyecto
-//    de Apps Script, afectando también a los módulos de menú, cocina,
-//    comisiones y clientes que comparten el mismo despliegue).
+//    en TODO el editor y confirma que cada una aparece una sola vez — pegar por
+//    accidente una función duplicada anula el cambio en silencio (ya pasó una vez
+//    con el Módulo 8, ver ESTADO.md). Este archivo contiene exactamente esas 4
+//    funciones y nada más a nivel superior (no hay ningún const/variable global
+//    que pegar ni de qué cuidarse: a diferencia de una función duplicada, que
+//    solo se sobrescribe en silencio, una constante duplicada rompe con SyntaxError
+//    TODO el proyecto de Apps Script, afectando también a los módulos de menú,
+//    cocina, comisiones y clientes que comparten el mismo despliegue).
 //
 // A diferencia de Cocina (Módulo 3), Caja incluye TANTO pedidos "local" como
 // "domicilio" — el cajero necesita cerrar (marcar pagado) los dos tipos para
