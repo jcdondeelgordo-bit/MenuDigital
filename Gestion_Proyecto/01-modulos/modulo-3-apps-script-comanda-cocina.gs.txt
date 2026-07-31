@@ -60,7 +60,8 @@ function listarPedidosCocina() {
 
   for (let i = 1; i < datos.length; i++) {
     const fila = datos[i];
-    if (fila[idx.tipoPedido] !== 'local') continue;
+    // Antes se excluía todo lo que no fuera 'local' (corregido 2026-07-30): un
+    // domicilio también se cocina, así que también debe entrar en la comanda.
     const fecha = Utilities.formatDate(new Date(fila[idx.fecha]), tz, 'yyyy-MM-dd');
     if (fecha !== hoy) continue;
 
@@ -69,6 +70,7 @@ function listarPedidosCocina() {
       pedidosPorId[idPedido] = {
         id_pedido: idPedido,
         hora: Utilities.formatDate(new Date(fila[idx.hora]), tz, 'HH:mm'),
+        tipo: fila[idx.tipoPedido] || 'local',
         mesa: fila[idx.mesa] || '',
         mesero: fila[idx.mesero] || '',
         items: []

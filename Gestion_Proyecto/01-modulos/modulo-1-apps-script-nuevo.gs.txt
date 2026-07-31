@@ -141,6 +141,11 @@ function estadoMesa(e) {
  * siendo la confirmación real con el cliente — esta llamada es silenciosa (no
  * bloquea ni le muestra error al cliente si el backend no responde).
  *
+ * Estado_Cocina se activa para local Y domicilio (corregido 2026-07-30): un
+ * domicilio también se cocina, así que también debe aparecer en la comanda de
+ * cocina. Antes solo se activaba para 'local' — los domicilios quedaban
+ * invisibles para cocina aunque sí se estuvieran vendiendo (hallazgo del usuario).
+ *
  * Regla de negocio (Módulo 2, 2026-07-16): si la mesa ya tiene un pedido abierto hoy
  * con un mesero asignado, ese mesero se respeta sin importar lo que venga en esta
  * llamada — así un mesero distinto agregue productos después, la venta sigue
@@ -187,7 +192,7 @@ function crearPedido(e) {
       item.observacion || '',   // Observacion (columna nueva)
       mesa,                     // Mesa (columna nueva)
       mesero,                   // Mesero (columna nueva)
-      tipo === 'local' ? 'Pendiente' : ''  // Estado_Cocina (columna nueva, Módulo 3): solo aplica a "en el local"
+      'Pendiente'                // Estado_Cocina (columna nueva, Módulo 3): local y domicilio, ambos se cocinan
     ]);
   });
 

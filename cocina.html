@@ -81,17 +81,20 @@ function pedidosMock() {
     return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
   };
   return [
-    { id_pedido: 'mock-1', hora: haceMin(22), mesa: '4', mesero: 'Carlos', items: [
+    { id_pedido: 'mock-1', hora: haceMin(22), tipo: 'local', mesa: '4', mesero: 'Carlos', items: [
       { fila: 2, producto: 'Churrasco', cantidad: 1, observacion: 'Término medio', estado: 'En preparación' },
       { fila: 3, producto: 'Gaseosa 350 ml', cantidad: 2, observacion: '', estado: 'Entregado' }
     ], completo: false },
-    { id_pedido: 'mock-2', hora: haceMin(5), mesa: '7', mesero: '', items: [
+    { id_pedido: 'mock-2', hora: haceMin(5), tipo: 'local', mesa: '7', mesero: '', items: [
       { fila: 4, producto: 'Sencilla', cantidad: 1, observacion: 'Sin cebolla', estado: 'Pendiente' },
       { fila: 5, producto: 'Porción Papa Francesa', cantidad: 1, observacion: '', estado: 'Pendiente' }
     ], completo: false },
-    { id_pedido: 'mock-3', hora: haceMin(40), mesa: '2', mesero: 'Ana', items: [
+    { id_pedido: 'mock-3', hora: haceMin(40), tipo: 'local', mesa: '2', mesero: 'Ana', items: [
       { fila: 6, producto: 'Pizza Hawaiana', cantidad: 2, observacion: '', estado: 'Entregado' }
-    ], completo: true }
+    ], completo: true },
+    { id_pedido: 'mock-4', hora: haceMin(8), tipo: 'domicilio', mesa: '', mesero: '', items: [
+      { fila: 7, producto: 'Doble Pollo', cantidad: 1, observacion: '', estado: 'Pendiente' }
+    ], completo: false }
   ];
 }
 
@@ -203,8 +206,8 @@ function render() {
     <div class="pedido-card${urgente ? ' urgente' : ''}${p.completo ? ' completo' : ''}">
       <div class="pedido-header">
         <div>
-          <div class="pedido-mesa">🍽️ Mesa ${p.mesa || '—'}</div>
-          <div class="pedido-mesero">${p.mesero ? '👤 ' + p.mesero : '📱 Autoservicio'}</div>
+          <div class="pedido-mesa">${p.tipo === 'domicilio' ? '🛵 Domicilio' : '🍽️ Mesa ' + (p.mesa || '—')}</div>
+          <div class="pedido-mesero">${p.tipo === 'domicilio' ? '' : (p.mesero ? '👤 ' + p.mesero : '📱 Autoservicio')}</div>
         </div>
         <div class="pedido-tiempo">
           <div class="pedido-hora">${p.hora}</div>
