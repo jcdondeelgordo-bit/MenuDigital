@@ -14,7 +14,7 @@
 - **`E:\Proyectos ZFood GyP` SÍ es un repositorio git** (a diferencia de cuando se escribió el plan de Módulo 9) — cada tarea de este plan termina con un `git commit` de los archivos locales que haya tocado. Los cambios manuales del usuario en Apps Script/Sheets no se commitean (no existen como archivo versionado más allá de la copia `.gs.txt` de referencia).
 - **No hay framework de pruebas automatizadas** en este proyecto. La verificación de backend se hace con `curl` real contra el `SCRIPT_URL` desplegado — en este entorno Windows usar siempre `curl -s -L --ssl-no-revoke` (sin `--ssl-no-revoke` falla por revocación de certificado de schannel). La verificación de frontend es manual: abrir `caja.html` en el navegador, servido por HTTP (no con doble clic — el `fetch` real no corre desde `file://`). Para servir localmente durante la verificación: `python -m http.server 8000` desde `E:\Proyectos ZFood GyP` y abrir `http://localhost:8000/caja.html`.
 - **Todo dato de prueba debe llevar el prefijo `PRUEBA-CLAUDE-DIVISION-`** en mesero/persona para poder identificarlo y borrarlo al final — mismo criterio que Módulos 3/8/9. Esta vez hay que limpiar en **dos** hojas: `Ventas` y la nueva `Pagos_Divididos`.
-- **Cuidado al pegar código en el editor de Apps Script online:** verificar con Ctrl+F que cada función nueva aparece **una sola vez** antes de publicar. **Importante y específico de este plan:** el proyecto ya tiene declarada `const METODOS_PAGO_CAJA = ['Efectivo', 'Nequi', 'Tarjeta'];` desde Módulo 9 — el código de este plan **reutiliza esa constante existente y no la vuelve a declarar**. Si al pegar aparece duplicada, hay que borrar la copia repetida antes de publicar (una `const` duplicada rompe con `SyntaxError` **todo** el proyecto de Apps Script, no solo Caja).
+- **Cuidado al pegar código en el editor de Apps Script online:** verificar con Ctrl+F que cada función nueva aparece **una sola vez** antes de publicar. **Corrección tras verificación en vivo (2026-07-28):** la primera versión de este plan asumía que `METODOS_PAGO_CAJA` seguía existiendo como constante compartida desde Módulo 9 — **falso**. Esa constante se eliminó a propósito durante una corrección anterior de Módulo 9 en esta misma sesión (para evitar el riesgo de `SyntaxError` por declaración duplicada) y se reemplazó por un arreglo en línea dentro de `marcarPedidoPagado`. El usuario lo confirmó con Ctrl+F: todo lo demás aparecía, pero `METODOS_PAGO_CAJA` no existe en ningún lado del proyecto real. El código de este plan **no depende de ninguna constante compartida** — usa su propio arreglo en línea `['Efectivo', 'Nequi', 'Tarjeta']`, igual que ya hace `marcarPedidoPagado`.
 - **La hoja `Ventas` no se modifica en absoluto por este módulo** — ni sus columnas ni sus filas. Todo lo nuevo vive en la hoja `Pagos_Divididos`.
 - **Los datos ficticios de `DATOS_LOCAL` en `caja.html`** (razón social/NIT/dirección) siguen pendientes de que el usuario traiga los datos reales — no es parte de este plan, no se toca.
 
@@ -62,10 +62,11 @@ Crear `E:\Proyectos ZFood GyP\Gestion_Proyecto\01-modulos\modulo-4-apps-script-d
 //    implementaciones > Editar > Nueva versión > Implementar).
 // 5. IMPORTANTE: antes de publicar, busca con Ctrl+F "function registrarPagoParcial"
 //    y "function listarPagosDivididos" y confirma que cada una aparece una sola vez.
-// 6. MUY IMPORTANTE: este archivo NO declara `METODOS_PAGO_CAJA` — esa constante ya
-//    existe desde el Módulo 9 (Caja). Si al pegar aparece duplicada, borra la copia
-//    repetida antes de publicar (una `const` duplicada rompe con SyntaxError TODO
-//    el proyecto de Apps Script, no solo esta función).
+// 6. Este archivo NO declara ninguna constante compartida de métodos de pago — usa
+//    su propio arreglo en línea ['Efectivo', 'Nequi', 'Tarjeta'], igual que ya hace
+//    marcarPedidoPagado del Módulo 9. (Nota: una versión anterior de este comentario
+//    decía que existía una constante METODOS_PAGO_CAJA compartida — eso era
+//    incorrecto; no depender de ninguna constante externa evita el problema de raíz.)
 //
 // División de cuenta NUNCA toca la hoja "Ventas" ni sus filas/cantidades — solo lee
 // su columna "Total" para saber cuánto falta por cobrar de un pedido. Todo el detalle
@@ -89,7 +90,7 @@ function registrarPagoParcial(e) {
   const metodoPago = e.parameter.metodo_pago || '';
   const detalle = e.parameter.detalle || '';
 
-  if (!idPedido || !persona || !monto || monto <= 0 || METODOS_PAGO_CAJA.indexOf(metodoPago) === -1) {
+  if (!idPedido || !persona || !monto || monto <= 0 || ['Efectivo', 'Nequi', 'Tarjeta'].indexOf(metodoPago) === -1) {
     return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'Datos inválidos para registrar el pago parcial' }))
       .setMimeType(ContentService.MimeType.JSON);
   }
@@ -200,7 +201,7 @@ Decirle al usuario, en estos términos:
 else if (accion === 'registrar_pago_parcial') { return registrarPagoParcial(e); }
 else if (accion === 'listar_pagos_divididos') { return listarPagosDivididos(e); }
 ```
-4. Con Ctrl+F, confirmar que `function registrarPagoParcial` y `function listarPagosDivididos` aparecen **una sola vez** cada una, y que `METODOS_PAGO_CAJA` sigue apareciendo **una sola vez** en todo el proyecto (no se debió pegar una segunda declaración).
+4. Con Ctrl+F, confirmar que `function registrarPagoParcial` y `function listarPagosDivididos` aparecen **una sola vez** cada una.
 5. Guardar (Ctrl+S) y publicar nueva versión: Implementar → Administrar implementaciones → editar (lápiz) → Nueva versión → Implementar.
 6. Avisar cuando esté listo.
 
@@ -336,7 +337,10 @@ En `caja.html`, dentro de `<style>`, justo antes de `#recibo-imprimir{display:no
 .btn-stepper{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:1.1rem;font-weight:700;cursor:pointer;}
 .input-nombre{padding:10px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#fff;font-size:0.9rem;}
 .division-subtotal{display:flex;justify-content:space-between;font-weight:800;color:#e8a832;font-size:1rem;padding-top:8px;border-top:1px solid rgba(200,132,26,0.3);}
+#overlay-cobrar-parcial{z-index:70;}
 ```
+
+**Nota (corrección tras revisión, 2026-07-28):** `#overlay-cobrar-parcial{z-index:70;}` es necesario porque reutiliza la clase `.overlay` compartida con el modal de cobro total de Módulo 9, cuyo z-index es 50 — menor que `.overlay-division` (60). Sin esta regla, al abrir el modal de método de pago desde dentro de la vista de división, el panel de división quedaría pintado encima y los botones Efectivo/Nequi/Tarjeta serían inaccesibles. No se modifica la clase `.overlay` compartida (no debe afectar el modal original de Módulo 9).
 
 - [ ] **Step 2: Incluir la vista de división en la regla de impresión existente**
 
@@ -550,7 +554,7 @@ function iniciarCobroCajaItem() {
 
   idPedidoParaCobrarParcial = division.idPedido;
   personaParaCobrarParcial = persona;
-  montoParaCobrarParcial = subtotal;
+  montoParaCobrarParcial = Math.round(subtotal);
   detalleParaCobrarParcial = JSON.stringify(detalle);
   document.getElementById('overlay-cobrar-parcial').classList.remove('oculto');
 }
