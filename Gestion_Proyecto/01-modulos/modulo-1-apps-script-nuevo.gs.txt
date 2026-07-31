@@ -101,7 +101,7 @@ function buscarMeseroMesaAbierta(hoja, mesa) {
   for (let i = datos.length - 1; i >= 1; i--) {
     const fila = datos[i];
     if (String(fila[idxMesa]) !== String(mesa)) continue;
-    if (fila[idxEstado] === 'Pagado') continue; // esa mesa ya se cerró, no cuenta
+    if (fila[idxEstado] === 'Liberado') continue; // esa mesa ya se liberó, no cuenta
     const fecha = Utilities.formatDate(new Date(fila[idxFecha]), tz, 'yyyy-MM-dd');
     if (fecha !== hoy) continue;
     return fila[idxMesero] || '';
@@ -113,7 +113,11 @@ function buscarMeseroMesaAbierta(hoja, mesa) {
  * accion=estado_mesa&mesa=<num>
  * Le dice al menú si esa mesa ya tiene un pedido abierto hoy y quién la atiende,
  * para no pedirle de nuevo el nombre a otro mesero ni dejar que se lo cambien
- * por error a una mesa que ya tiene dueño.
+ * por error a una mesa que ya tiene dueño. "Abierta" significa que no se ha
+ * liberado (accion=liberar_mesa) -- sigue siendo del mismo mesero aunque ya se
+ * haya cobrado una o más rondas, hasta que alguien libere la mesa a propósito.
+ * Corregido 2026-07-30: antes se consideraba "cerrada" apenas se pagaba, lo que
+ * permitía que un pedido nuevo en esa mesa quedara acreditado a otro mesero.
  */
 function estadoMesa(e) {
   const mesa = e.parameter.mesa || '';
