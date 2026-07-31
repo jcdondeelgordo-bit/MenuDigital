@@ -626,6 +626,8 @@ let carritoVentaRapida = [];
 let entregaInmediataVR = true; // true = "Cobrar y entregar", false = "Cobrar y dejar para recoger"
 let nombreVentaRapida = '';
 let idPedidoVentaRapida = null; // id_pedido ya creado (Pendiente de pago), esperando método de pago
+let itemsVentaRapidaSnapshot = []; // Snapshot del carrito capturado cuando crear_pedido tuvo éxito
+let cobroVentaRapidaEnCurso = false; // Guard contra double-tap en iniciarCobroVentaRapida
 
 function abrirVentaRapida() {
   if (productosVentaRapida.length === 0 && !productosVentaRapidaError) cargarProductosVentaRapida();
@@ -636,6 +638,7 @@ function abrirVentaRapida() {
 function cerrarVentaRapida() {
   document.getElementById('overlay-vr').classList.add('oculto');
   carritoVentaRapida = [];
+  itemsVentaRapidaSnapshot = [];
   document.getElementById('vr-nombre').value = '';
 }
 
@@ -711,6 +714,9 @@ function renderCarritoVR() {
 }
 
 async function iniciarCobroVentaRapida(entregarYa) {
+  // Finding 2: Guard contra double-tap -- si ya hay una llamada en vuelo, ignora esta.
+  if (cobroVentaRapidaEnCurso) return;
+
   if (carritoVentaRapida.length === 0) { alert('Agrega al menos un producto al carrito.'); return; }
   const nombre = document.getElementById('vr-nombre').value.trim();
   if (!entregarYa && !nombre) { alert('Escribe el nombre del cliente para dejar el pedido pendiente de recoger.'); return; }
@@ -719,6 +725,7 @@ async function iniciarCobroVentaRapida(entregarYa) {
   nombreVentaRapida = nombre;
   const total = carritoVentaRapida.reduce((s, i) => s + i.cantidad * i.precio, 0);
 
+  cobroVentaRapidaEnCurso = true;
   try {
     const params = new URLSearchParams({
       accion: 'crear_pedido',
@@ -731,26 +738,37 @@ async function iniciarCobroVentaRapida(entregarYa) {
     const res = await fetch(SCRIPT_URL + '?' + params.toString());
     const data = await res.json();
     if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Respuesta inválida del servidor');
+    // Finding 1: Capturamos snapshot del carrito en este momento exacto,
+    // cuando crear_pedido tuvo éxito. Si el cajero edita el carrito después,
+    // la factura usará este snapshot, no el carrito en vivo.
+    itemsVentaRapidaSnapshot = carritoVentaRapida.map(i => ({...i}));
     idPedidoVentaRapida = data.id_pedido;
     document.getElementById('overlay-cobrar-vr').classList.remove('oculto');
   } catch (e) {
     alert('No se pudo registrar el pedido (' + e.message + '). El carrito no se perdió -- intenta de nuevo.');
+  } finally {
+    cobroVentaRapidaEnCurso = false;
   }
 }
 
 function cerrarModalCobrarVR() {
   document.getElementById('overlay-cobrar-vr').classList.add('oculto');
   idPedidoVentaRapida = null;
+  itemsVentaRapidaSnapshot = [];
 }
 
 async function confirmarCobroVentaRapida(metodo) {
   const idPedido = idPedidoVentaRapida;
   const entregar = entregaInmediataVR;
   const nombre = nombreVentaRapida;
-  const itemsRecibo = carritoVentaRapida.map(i => ({ producto: i.producto, cantidad: i.cantidad, total: i.precio * i.cantidad }));
+  // Finding 1: Construir la factura del snapshot congelado cuando crear_pedido tuvo éxito,
+  // NO del carrito en vivo, que puede haber sido editado mientras la petición estaba en vuelo.
+  const snapshot = itemsVentaRapidaSnapshot;
+  const itemsRecibo = snapshot.map(i => ({ producto: i.producto, cantidad: i.cantidad, total: i.precio * i.cantidad }));
   const total = itemsRecibo.reduce((s, i) => s + i.total, 0);
   document.getElementById('overlay-cobrar-vr').classList.add('oculto');
   idPedidoVentaRapida = null;
+  itemsVentaRapidaSnapshot = [];
   if (!idPedido) return;
 
   try {
