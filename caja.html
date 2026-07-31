@@ -73,24 +73,46 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 .modal-cobrar h3{color:#e8a832;font-size:1.1rem;}
 .btn-metodo{padding:14px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:0.95rem;font-weight:700;cursor:pointer;}
 .btn-cancelar{padding:12px;border-radius:10px;background:transparent;border:none;color:rgba(240,224,176,0.6);font-size:0.85rem;cursor:pointer;}
+
+/* Pantalla de grid (mesas + domicilios) -- rediseño 2026-07-30 */
+.header-marca{display:flex;align-items:center;gap:10px;}
+.logo-caja{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;}
+.pantalla-grid{display:flex;flex-direction:column;gap:14px;max-width:640px;margin:0 auto;}
+.grid-mesas,.grid-domicilios{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.btn-mesa,.btn-domicilio{aspect-ratio:1;border-radius:14px;border:none;font-weight:800;font-size:0.68rem;letter-spacing:0.5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#fff;background:#1c1c1c;}
+.btn-mesa-num{font-size:1.35rem;line-height:1;}
+.btn-mesa.estado-libre{background:#1c1c1c;color:#fff;border:1px solid rgba(255,255,255,0.15);}
+.btn-mesa.estado-ocupada-pendiente{background:linear-gradient(135deg,#a8291c,#e05050);color:#fff;}
+.btn-mesa.estado-ocupada-pagada{background:linear-gradient(135deg,#c8941a,#e8c832);color:#1a0a00;}
+.btn-domicilio.estado-dom-libre{background:linear-gradient(135deg,#155c3f,#2a9968);color:#fff;}
+.btn-domicilio.estado-dom-ocupada-pendiente{background:linear-gradient(135deg,#a8291c,#e05050);color:#fff;}
+.btn-domicilio.estado-dom-ocupada-pagada{background:linear-gradient(135deg,#c8941a,#e8c832);color:#1a0a00;}
+.btn-domicilio[disabled]{opacity:0.45;cursor:default;}
+.linea-divisoria{height:1px;background:rgba(200,132,26,0.3);margin:2px 0;}
+.franja-espera{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px;border:1px dashed rgba(200,132,26,0.4);border-radius:12px;}
+.franja-espera-titulo{font-size:0.78rem;color:#e8c87a;font-weight:700;width:100%;}
+.btn-espera{padding:8px 14px;border-radius:10px;background:rgba(224,80,80,0.25);color:#e8a0a0;border:1px solid rgba(224,80,80,0.4);font-weight:700;cursor:pointer;font-size:0.8rem;}
+.modal-detalle{background:#2a1500;border:1px solid rgba(200,132,26,0.4);border-radius:16px;padding:20px;width:92%;max-width:420px;max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:14px;}
+.modal-detalle h3{color:#e8a832;font-size:1.1rem;}
+.ronda-bloque{display:flex;flex-direction:column;gap:2px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.08);}
+.ronda-header{display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;color:rgba(240,224,176,0.65);margin-bottom:4px;}
+.btn-liberar{padding:10px 16px;border-radius:10px;background:transparent;border:1px solid rgba(224,80,80,0.5);color:#e8a0a0;font-size:0.85rem;font-weight:700;cursor:pointer;}
+.historial-filtros{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px;}
 </style>
 </head>
 <body>
 
 <header>
-  <div>
-    <div class="header-titulo">DONDE EL GORDO</div>
-    <div class="header-sub">CAJA</div>
+  <div class="header-marca">
+    <img class="logo-caja" src="logo gordo.png" alt="Donde el Gordo">
+    <div>
+      <div class="header-titulo">DONDE EL GORDO</div>
+      <div class="header-sub">CAJA</div>
+    </div>
   </div>
   <div class="header-tabs">
-    <div class="grupo-tabs">
-      <button class="btn-tab activa" id="btn-tipo-local" onclick="cambiarVistaTipo('local')">En el local</button>
-      <button class="btn-tab" id="btn-tipo-domicilio" onclick="cambiarVistaTipo('domicilio')">Domicilio</button>
-    </div>
-    <div class="grupo-tabs">
-      <button class="btn-tab activa" id="btn-estado-pendientes" onclick="cambiarVistaEstado('pendientes')">Pendientes</button>
-      <button class="btn-tab" id="btn-estado-pagados" onclick="cambiarVistaEstado('pagados')">Pagados</button>
-    </div>
+    <button class="btn-tab" id="btn-vista-historial" onclick="cambiarVistaPrincipal(vistaPrincipal === 'grid' ? 'historial' : 'grid')">🕒 Historial de hoy</button>
+    <a class="btn-tab" href="index.html" style="text-decoration:none;display:inline-flex;align-items:center;">← MENU</a>
   </div>
 </header>
 
@@ -104,6 +126,10 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
     <button class="btn-metodo" onclick="confirmarCobro('Tarjeta')">💳 Tarjeta</button>
     <button class="btn-cancelar" onclick="cerrarModalCobrar()">Cancelar</button>
   </div>
+</div>
+
+<div class="overlay oculto" id="overlay-detalle">
+  <div class="modal-detalle" id="detalle-contenido"></div>
 </div>
 
 <div class="overlay-division oculto" id="overlay-division">
@@ -197,6 +223,52 @@ let vistaEstado = 'pendientes';
 let pedidoIdParaCobrar = null;
 let usandoDatosMuestra = false;
 const pedidosPagoPendiente = new Set();
+
+// Pantalla de grid (mesas + domicilios) -- rediseño 2026-07-30.
+let vistaPrincipal = 'grid'; // 'grid' | 'historial'
+let mesaAbierta = null;      // número de mesa mostrado en el panel de detalle, o null
+let domicilioAbierto = null; // id_pedido de domicilio mostrado en el panel de detalle, o null
+let cobroModo = 'individual'; // 'individual' (domicilio) | 'mesa' (varias rondas combinadas)
+let mesaParaCobrar = null;
+let domicilioCupos = {}; // id_pedido -> número de cupo (1-5), persistido en localStorage
+
+function cargarCuposDomicilio() {
+  try { domicilioCupos = JSON.parse(localStorage.getItem('degCajaCuposDomicilio') || '{}'); }
+  catch (e) { domicilioCupos = {}; }
+}
+
+function guardarCuposDomicilio() {
+  try { localStorage.setItem('degCajaCuposDomicilio', JSON.stringify(domicilioCupos)); } catch (e) {}
+}
+
+// Cupos "pegajosos": un pedido que ya tenía cupo lo conserva aunque otro se
+// libere antes (no se renumeran). Los nuevos reciben el primer cupo libre;
+// si no hay ninguno, quedan en la franja de espera hasta que se libere uno.
+function actualizarCuposDomicilio() {
+  const activos = pedidos.filter(p => p.tipo === 'domicilio' && p.estado !== 'Liberado');
+  const idsActivos = new Set(activos.map(p => p.id_pedido));
+
+  Object.keys(domicilioCupos).forEach(id => {
+    if (!idsActivos.has(id)) delete domicilioCupos[id];
+  });
+
+  const ocupados = new Set(Object.values(domicilioCupos));
+  activos.slice().sort((a, b) => a.hora < b.hora ? -1 : a.hora > b.hora ? 1 : 0).forEach(p => {
+    if (domicilioCupos[p.id_pedido]) return;
+    for (let slot = 1; slot <= 5; slot++) {
+      if (!ocupados.has(slot)) { domicilioCupos[p.id_pedido] = slot; ocupados.add(slot); break; }
+    }
+  });
+
+  guardarCuposDomicilio();
+}
+
+function estadoMesaColor(numMesa) {
+  const activos = pedidos.filter(p => p.tipo === 'local' && String(p.mesa) === String(numMesa) && p.estado !== 'Liberado');
+  if (activos.length === 0) return 'libre';
+  if (activos.some(p => p.estado === 'Pendiente de pago')) return 'ocupada-pendiente';
+  return 'ocupada-pagada';
+}
 
 // Estado de la vista "Dividir cuenta" (Módulo 4). Todo esto vive solo en memoria
 // del navegador — nunca se guarda en Ventas. Lo único que se persiste es el
@@ -532,7 +604,10 @@ async function cargarPedidos() {
     usandoDatosMuestra = true;
   }
   aplicarPendientes(pedidos);
-  render();
+  actualizarCuposDomicilio();
+  renderPrincipal();
+  if (mesaAbierta !== null) renderDetalleMesa();
+  if (domicilioAbierto !== null) renderDetalleDomicilio();
 }
 
 // Cambios optimistas todavía no confirmados por el servidor. Sin esto, el
@@ -543,6 +618,145 @@ function aplicarPendientes(lista) {
   lista.forEach(p => {
     if (pedidosPagoPendiente.has(p.id_pedido)) p.estado = 'Pagado';
   });
+}
+
+function cerrarDetalle() {
+  mesaAbierta = null;
+  domicilioAbierto = null;
+  document.getElementById('overlay-detalle').classList.add('oculto');
+}
+
+function abrirDetalleMesa(numMesa) {
+  const rondas = pedidos.filter(p => p.tipo === 'local' && String(p.mesa) === String(numMesa) && p.estado !== 'Liberado');
+  if (rondas.length === 0) return; // mesa libre, no hace nada
+
+  domicilioAbierto = null;
+  mesaAbierta = numMesa;
+  renderDetalleMesa();
+  document.getElementById('overlay-detalle').classList.remove('oculto');
+}
+
+function renderDetalleMesa() {
+  const rondas = pedidos.filter(p => p.tipo === 'local' && String(p.mesa) === String(mesaAbierta) && p.estado !== 'Liberado')
+    .sort((a, b) => a.hora < b.hora ? -1 : a.hora > b.hora ? 1 : 0);
+  if (rondas.length === 0) { cerrarDetalle(); return; }
+
+  const pendientes = rondas.filter(p => p.estado === 'Pendiente de pago');
+  const totalPendiente = pendientes.reduce((s, p) => s + p.total, 0);
+  const meseroRonda = rondas.find(p => p.mesero);
+  const mesero = meseroRonda ? meseroRonda.mesero : '';
+
+  const rondasHtml = rondas.map(r => `
+    <div class="ronda-bloque">
+      <div class="ronda-header">
+        <span>${r.hora}</span>
+        <span class="badge-estado ${r.estado === 'Pendiente de pago' ? 'pendiente' : 'pagado'}">${r.estado === 'Pendiente de pago' ? '⏳ Pendiente' : '✅ Pagado'}</span>
+      </div>
+      ${r.items.map(it => `<div class="item-row"><span>${it.cantidad}x ${it.producto}</span><span>${formatoCOP(it.total)}</span></div>`).join('')}
+    </div>
+  `).join('');
+
+  document.getElementById('detalle-contenido').innerHTML = `
+    <h3>🍽️ Mesa ${mesaAbierta}${mesero ? ' — 👤 ' + mesero : ''}</h3>
+    ${rondasHtml}
+    <div class="pedido-total-row"><span>TOTAL PENDIENTE</span><span>${formatoCOP(totalPendiente)}</span></div>
+    <div class="pedido-footer" style="flex-wrap:wrap;gap:8px;">
+      ${pendientes.length > 0 ? `<button class="btn-cobrar" onclick="abrirModalCobrarMesa(${mesaAbierta})">Cobrar ${formatoCOP(totalPendiente)}</button>` : ''}
+      ${rondas.length === 1 && pendientes.length === 1 ? `<button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="abrirDivision('${rondas[0].id_pedido}')">➗ Dividir cuenta</button>` : ''}
+      ${pendientes.length === 0 ? `<button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="reimprimirReciboMesa(${mesaAbierta})">🖨️ Reimprimir recibo</button>` : ''}
+      ${pendientes.length === 0 ? `<button class="btn-liberar" onclick="liberarMesa(${mesaAbierta})">🚪 Liberar mesa</button>` : ''}
+    </div>
+    <button class="btn-cancelar" onclick="cerrarDetalle()">Cerrar</button>
+  `;
+}
+
+// A diferencia de imprimirReciboPorId (que reimprime un solo id_pedido), esto
+// combina TODAS las rondas ya pagadas de la mesa en un solo recibo -- si hubo
+// más de una ronda y se cobraron por separado, un solo id_pedido dejaría por
+// fuera las demás. Si los métodos de pago de cada ronda fueron distintos, se
+// muestra "Varios" en vez de elegir uno arbitrariamente.
+function reimprimirReciboMesa(numMesa) {
+  const rondas = pedidos.filter(p => p.tipo === 'local' && String(p.mesa) === String(numMesa) && p.estado === 'Pagado');
+  if (rondas.length === 0) return;
+  const items = [];
+  rondas.forEach(r => r.items.forEach(it => items.push(it)));
+  const total = rondas.reduce((s, r) => s + r.total, 0);
+  const metodos = [...new Set(rondas.map(r => r.metodo_pago))];
+  const metodoTexto = metodos.length === 1 ? metodos[0] : 'Varios';
+  imprimirRecibo({ tipo: 'local', mesa: numMesa, items: items, total: total, metodo_pago: metodoTexto });
+}
+
+async function liberarMesa(numMesa) {
+  if (!confirm('¿Liberar la mesa ' + numMesa + '? Ya no se verá como ocupada.')) return;
+  const activos = pedidos.filter(p => p.tipo === 'local' && String(p.mesa) === String(numMesa) && p.estado !== 'Liberado');
+  if (activos.length === 0) return;
+
+  const estadosAnteriores = activos.map(p => p.estado);
+  activos.forEach(p => { p.estado = 'Liberado'; });
+  renderPrincipal();
+  cerrarDetalle();
+
+  try {
+    const params = new URLSearchParams({ accion: 'liberar_mesa', mesa: String(numMesa) });
+    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const data = await res.json();
+    if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Respuesta inválida del servidor');
+  } catch (e) {
+    activos.forEach((p, i) => { p.estado = estadosAnteriores[i]; });
+    renderPrincipal();
+    alert('No se pudo liberar la mesa: ' + e.message);
+  }
+}
+
+function abrirDetalleDomicilio(idPedido) {
+  const pedido = pedidos.find(p => p.id_pedido === idPedido && p.tipo === 'domicilio');
+  if (!pedido) return;
+
+  mesaAbierta = null;
+  domicilioAbierto = idPedido;
+  renderDetalleDomicilio();
+  document.getElementById('overlay-detalle').classList.remove('oculto');
+}
+
+function renderDetalleDomicilio() {
+  const pedido = pedidos.find(p => p.id_pedido === domicilioAbierto);
+  if (!pedido || pedido.estado === 'Liberado') { cerrarDetalle(); return; }
+  const cupo = domicilioCupos[pedido.id_pedido];
+
+  document.getElementById('detalle-contenido').innerHTML = `
+    <h3>🛵 Domicilio${cupo ? ' — cupo ' + cupo : ' (en espera de cupo)'}</h3>
+    <div class="pedido-hora">${pedido.hora}</div>
+    ${pedido.items.map(it => `<div class="item-row"><span>${it.cantidad}x ${it.producto}</span><span>${formatoCOP(it.total)}</span></div>`).join('')}
+    <div class="pedido-total-row"><span>TOTAL</span><span>${formatoCOP(pedido.total)}</span></div>
+    <div class="pedido-footer" style="flex-wrap:wrap;gap:8px;">
+      ${pedido.estado === 'Pendiente de pago' ? `<button class="btn-cobrar" onclick="abrirModalCobrar('${pedido.id_pedido}')">Cobrar</button>` : ''}
+      ${pedido.estado === 'Pagado' ? `<button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="imprimirReciboPorId('${pedido.id_pedido}')">🖨️ Reimprimir recibo</button>` : ''}
+      ${pedido.estado === 'Pagado' ? `<button class="btn-liberar" onclick="liberarPedidoDomicilio('${pedido.id_pedido}')">🛵 Marcar entregado</button>` : ''}
+    </div>
+    <button class="btn-cancelar" onclick="cerrarDetalle()">Cerrar</button>
+  `;
+}
+
+async function liberarPedidoDomicilio(idPedido) {
+  if (!confirm('¿Marcar este domicilio como entregado? Se libera el cupo.')) return;
+  const pedido = pedidos.find(p => p.id_pedido === idPedido);
+  if (!pedido) return;
+
+  const estadoAnterior = pedido.estado;
+  pedido.estado = 'Liberado';
+  renderPrincipal();
+  cerrarDetalle();
+
+  try {
+    const params = new URLSearchParams({ accion: 'liberar_pedido', id_pedido: idPedido });
+    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const data = await res.json();
+    if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Respuesta inválida del servidor');
+  } catch (e) {
+    pedido.estado = estadoAnterior;
+    renderPrincipal();
+    alert('No se pudo liberar el pedido: ' + e.message);
+  }
 }
 
 async function abrirModalCobrar(idPedido) {
@@ -558,7 +772,28 @@ async function abrirModalCobrar(idPedido) {
     // Si no se puede verificar (sin conexión), se deja continuar — no bloquear
     // el cobro normal por una falla de red en esta comprobación preventiva.
   }
+  cobroModo = 'individual';
   pedidoIdParaCobrar = idPedido;
+  document.getElementById('overlay-cobrar').classList.remove('oculto');
+}
+
+async function abrirModalCobrarMesa(numMesa) {
+  const pendientes = pedidos.filter(p => p.tipo === 'local' && String(p.mesa) === String(numMesa) && p.estado === 'Pendiente de pago');
+  for (const p of pendientes) {
+    try {
+      const params = new URLSearchParams({ accion: 'listar_pagos_divididos', id_pedido: p.id_pedido });
+      const res = await fetch(SCRIPT_URL + '?' + params.toString());
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.partes) && data.partes.length > 0) {
+        alert('Una de las rondas de esta mesa ya tiene pagos parciales registrados. Usa "Dividir cuenta" para terminar de cobrarla antes de cobrar el resto de la mesa.');
+        return;
+      }
+    } catch (e) {
+      // Si no se puede verificar (sin conexión), se deja continuar para esa ronda.
+    }
+  }
+  cobroModo = 'mesa';
+  mesaParaCobrar = numMesa;
   document.getElementById('overlay-cobrar').classList.remove('oculto');
 }
 
@@ -568,8 +803,10 @@ function cerrarModalCobrar() {
 }
 
 async function confirmarCobro(metodo) {
-  const idPedido = pedidoIdParaCobrar;
   cerrarModalCobrar();
+  if (cobroModo === 'mesa') { await confirmarCobroMesa(metodo); return; }
+
+  const idPedido = pedidoIdParaCobrar;
   if (!idPedido) return;
 
   pedidosPagoPendiente.add(idPedido);
@@ -577,7 +814,7 @@ async function confirmarCobro(metodo) {
   const estadoAnterior = pedido ? pedido.estado : null;
   const metodoPagoAnterior = pedido ? pedido.metodo_pago : '';
   if (pedido) { pedido.estado = 'Pagado'; pedido.metodo_pago = metodo; }
-  render();
+  renderPrincipal();
 
   try {
     const params = new URLSearchParams({ accion: 'marcar_pedido_pagado', id_pedido: idPedido, metodo_pago: metodo });
@@ -591,10 +828,47 @@ async function confirmarCobro(metodo) {
     // cambio optimista para no dejar "Pagado" en pantalla sin que el Sheet
     // se haya actualizado de verdad.
     if (pedido) { pedido.estado = estadoAnterior; pedido.metodo_pago = metodoPagoAnterior; }
-    render();
+    renderPrincipal();
     alert('No se pudo registrar el cobro. Intenta de nuevo.');
   } finally {
     pedidosPagoPendiente.delete(idPedido);
+  }
+}
+
+async function confirmarCobroMesa(metodo) {
+  const numMesa = mesaParaCobrar;
+  if (!numMesa) return;
+  const pendientes = pedidos.filter(p => p.tipo === 'local' && String(p.mesa) === String(numMesa) && p.estado === 'Pendiente de pago');
+  if (pendientes.length === 0) return;
+
+  const idsAfectados = pendientes.map(p => p.id_pedido);
+  idsAfectados.forEach(id => pedidosPagoPendiente.add(id));
+  const estadosAnteriores = pendientes.map(p => ({ id: p.id_pedido, estado: p.estado, metodo: p.metodo_pago }));
+  pendientes.forEach(p => { p.estado = 'Pagado'; p.metodo_pago = metodo; });
+  renderPrincipal();
+  if (mesaAbierta === numMesa) renderDetalleMesa();
+
+  try {
+    const resultados = await Promise.all(idsAfectados.map(id => {
+      const params = new URLSearchParams({ accion: 'marcar_pedido_pagado', id_pedido: id, metodo_pago: metodo });
+      return fetch(SCRIPT_URL + '?' + params.toString()).then(r => r.json());
+    }));
+    if (resultados.some(d => !d || d.ok !== true)) throw new Error('El servidor rechazó al menos uno de los cobros de esta mesa');
+
+    const itemsCombinados = [];
+    pendientes.forEach(p => p.items.forEach(it => itemsCombinados.push(it)));
+    const totalCombinado = pendientes.reduce((s, p) => s + p.total, 0);
+    imprimirRecibo({ tipo: 'local', mesa: numMesa, items: itemsCombinados, total: totalCombinado, metodo_pago: metodo });
+  } catch (e) {
+    estadosAnteriores.forEach(prev => {
+      const p = pedidos.find(x => x.id_pedido === prev.id);
+      if (p) { p.estado = prev.estado; p.metodo_pago = prev.metodo; }
+    });
+    renderPrincipal();
+    if (mesaAbierta === numMesa) renderDetalleMesa();
+    alert('No se pudo registrar el cobro de la mesa. Intenta de nuevo.');
+  } finally {
+    idsAfectados.forEach(id => pedidosPagoPendiente.delete(id));
   }
 }
 
@@ -602,38 +876,99 @@ function cambiarVistaTipo(t) {
   vistaTipo = t;
   document.getElementById('btn-tipo-local').classList.toggle('activa', t === 'local');
   document.getElementById('btn-tipo-domicilio').classList.toggle('activa', t === 'domicilio');
-  render();
+  renderPrincipal();
 }
 
 function cambiarVistaEstado(v) {
   vistaEstado = v;
   document.getElementById('btn-estado-pendientes').classList.toggle('activa', v === 'pendientes');
   document.getElementById('btn-estado-pagados').classList.toggle('activa', v === 'pagados');
-  render();
+  renderPrincipal();
 }
 
-function render() {
-  const lista = pedidos.filter(p =>
-    p.tipo === vistaTipo &&
-    (vistaEstado === 'pendientes' ? p.estado !== 'Pagado' : p.estado === 'Pagado')
-  );
+function renderPrincipal() {
+  if (vistaPrincipal === 'grid') renderGrid(); else renderHistorial();
+}
+
+function cambiarVistaPrincipal(v) {
+  vistaPrincipal = v;
+  document.getElementById('btn-vista-historial').textContent = v === 'grid' ? '🕒 Historial de hoy' : '🏠 Mesas';
+  renderPrincipal();
+}
+
+function renderGrid() {
   const cont = document.getElementById('lista-pedidos');
   const banner = usandoDatosMuestra
     ? '<div class="banner-mock">⚠️ SIN CONEXIÓN — mostrando datos de muestra, no se puede cobrar de verdad</div>'
     : '';
 
+  const mesasHtml = [];
+  for (let n = 1; n <= 20; n++) {
+    const estado = estadoMesaColor(n);
+    mesasHtml.push(`<button class="btn-mesa estado-${estado}" onclick="abrirDetalleMesa(${n})">MESA<span class="btn-mesa-num">${n}</span></button>`);
+  }
+
+  const activosDom = pedidos.filter(p => p.tipo === 'domicilio' && p.estado !== 'Liberado');
+  const cuposHtml = [];
+  for (let slot = 1; slot <= 5; slot++) {
+    const idConEseCupo = Object.keys(domicilioCupos).find(id => domicilioCupos[id] === slot);
+    const pedido = idConEseCupo ? activosDom.find(p => p.id_pedido === idConEseCupo) : null;
+    const estado = !pedido ? 'libre' : (pedido.estado === 'Pendiente de pago' ? 'ocupada-pendiente' : 'ocupada-pagada');
+    const onclick = pedido ? `onclick="abrirDetalleDomicilio('${pedido.id_pedido}')"` : '';
+    cuposHtml.push(`<button class="btn-domicilio estado-dom-${estado}" ${onclick} ${pedido ? '' : 'disabled'}>DOMIC.<span class="btn-mesa-num">${slot}</span></button>`);
+  }
+
+  const enEspera = activosDom.filter(p => !domicilioCupos[p.id_pedido]);
+  const esperaHtml = enEspera.length === 0 ? '' : `
+    <div class="franja-espera">
+      <div class="franja-espera-titulo">En espera de cupo (${enEspera.length})</div>
+      ${enEspera.map(p => `<button class="btn-espera" onclick="abrirDetalleDomicilio('${p.id_pedido}')">${p.hora}</button>`).join('')}
+    </div>`;
+
+  cont.innerHTML = banner + `
+    <div class="pantalla-grid">
+      <div class="grid-mesas">${mesasHtml.join('')}</div>
+      <div class="linea-divisoria"></div>
+      <div class="grid-domicilios">${cuposHtml.join('')}</div>
+      ${esperaHtml}
+    </div>`;
+}
+
+function renderHistorial() {
+  const cont = document.getElementById('lista-pedidos');
+  const banner = usandoDatosMuestra
+    ? '<div class="banner-mock">⚠️ SIN CONEXIÓN — mostrando datos de muestra, no se puede cobrar de verdad</div>'
+    : '';
+
+  const filtrosHtml = `
+    <div class="historial-filtros">
+      <div class="grupo-tabs">
+        <button class="btn-tab ${vistaTipo === 'local' ? 'activa' : ''}" onclick="cambiarVistaTipo('local')">En el local</button>
+        <button class="btn-tab ${vistaTipo === 'domicilio' ? 'activa' : ''}" onclick="cambiarVistaTipo('domicilio')">Domicilio</button>
+      </div>
+      <div class="grupo-tabs">
+        <button class="btn-tab ${vistaEstado === 'pendientes' ? 'activa' : ''}" onclick="cambiarVistaEstado('pendientes')">Pendientes</button>
+        <button class="btn-tab ${vistaEstado === 'pagados' ? 'activa' : ''}" onclick="cambiarVistaEstado('pagados')">Pagados</button>
+      </div>
+    </div>`;
+
+  const lista = pedidos.filter(p =>
+    p.tipo === vistaTipo &&
+    (vistaEstado === 'pendientes' ? p.estado === 'Pendiente de pago' : (p.estado === 'Pagado' || p.estado === 'Liberado'))
+  );
+
   if (lista.length === 0) {
-    cont.innerHTML = banner + `<div class="vacio-msg">No hay pedidos ${vistaEstado === 'pendientes' ? 'pendientes de pago' : 'pagados'} en ${vistaTipo === 'local' ? 'el local' : 'domicilio'} hoy.</div>`;
+    cont.innerHTML = banner + filtrosHtml + `<div class="vacio-msg">No hay pedidos ${vistaEstado === 'pendientes' ? 'pendientes de pago' : 'pagados'} en ${vistaTipo === 'local' ? 'el local' : 'domicilio'} hoy.</div>`;
     return;
   }
 
-  cont.innerHTML = banner + lista.map(p => `
+  cont.innerHTML = banner + filtrosHtml + lista.map(p => `
     <div class="pedido-card">
       <div class="pedido-header">
         <div>
           <div class="pedido-titulo">${p.tipo === 'local' ? '🍽️ Mesa ' + (p.mesa || '—') : '🛵 Domicilio'}</div>
           <div class="pedido-sub">${p.mesero ? '👤 ' + p.mesero : ''}</div>
-          <div class="badge-estado ${p.estado === 'Pagado' ? 'pagado' : 'pendiente'}">${p.estado === 'Pagado' ? '✅ Pagado (' + p.metodo_pago + ')' : '⏳ Pendiente de pago'}</div>
+          <div class="badge-estado ${p.estado === 'Pendiente de pago' ? 'pendiente' : 'pagado'}">${p.estado === 'Pendiente de pago' ? '⏳ Pendiente de pago' : (p.estado === 'Liberado' ? '✅ Pagado (liberado)' : '✅ Pagado (' + p.metodo_pago + ')')}</div>
         </div>
         <div class="pedido-hora">${p.hora}</div>
       </div>
@@ -648,16 +983,13 @@ function render() {
         <span>${formatoCOP(p.total)}</span>
       </div>
       <div class="pedido-footer">
-        ${p.tipo === 'domicilio' ? `<button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="imprimirReciboPorId('${p.id_pedido}')">🖨️ ${p.estado === 'Pagado' ? 'Reimprimir' : 'Imprimir'} recibo</button>` : ''}
-        ${p.tipo === 'local' && p.estado !== 'Pagado' ? `<button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="abrirDivision('${p.id_pedido}')">➗ Dividir cuenta</button>` : ''}
-        ${p.estado === 'Pagado'
-          ? (p.tipo === 'local' ? `<button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="imprimirReciboPorId('${p.id_pedido}')">🖨️ Reimprimir recibo</button>` : '')
-          : `<button class="btn-cobrar" onclick="abrirModalCobrar('${p.id_pedido}')">Cobrar</button>`}
+        <button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="imprimirReciboPorId('${p.id_pedido}')">🖨️ ${p.estado === 'Pendiente de pago' ? 'Imprimir' : 'Reimprimir'} recibo</button>
       </div>
     </div>
   `).join('');
 }
 
+cargarCuposDomicilio();
 setInterval(() => cargarPedidos(), INTERVALO_POLLING_MS);
 cargarPedidos();
 </script>
