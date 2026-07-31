@@ -16,7 +16,7 @@ header{position:sticky;top:0;z-index:20;background:#1a0a00;border-bottom:1px sol
 .btn-vista{padding:10px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:0.9rem;font-weight:600;cursor:pointer;}
 .btn-vista.activa{background:linear-gradient(135deg,#c8841a,#e8a832);color:#1a0a00;border-color:transparent;}
 
-main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+main{padding:18px;max-width:480px;margin:0 auto;}
 
 .vacio-msg{grid-column:1/-1;text-align:center;color:rgba(240,224,176,0.5);padding:60px 0;font-size:1rem;}
 
@@ -48,6 +48,19 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 .pedido-footer{display:flex;justify-content:flex-end;}
 .btn-completo{padding:10px 16px;border-radius:10px;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;color:#1a0a00;font-weight:700;font-size:0.85rem;cursor:pointer;}
 .pedido-completo-msg{font-size:0.85rem;color:#5fd489;font-weight:700;}
+
+/* Vista de botones -- rediseño 2026-07-30 */
+.lista-botones{display:flex;flex-direction:column;gap:10px;max-width:480px;margin:0 auto;}
+.btn-pedido{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(200,132,26,0.25);color:#f0e0b0;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;width:100%;}
+.btn-pedido.completo{opacity:0.55;}
+.btn-pedido.urgente{border-color:#e05050;background:rgba(224,80,80,0.15);animation:pulso-urgente 1.5s ease-in-out infinite;}
+@keyframes pulso-urgente{0%,100%{box-shadow:0 0 0 0 rgba(224,80,80,0.4);}50%{box-shadow:0 0 0 6px rgba(224,80,80,0);}}
+.btn-pedido-hora{color:rgba(240,224,176,0.6);font-size:0.8rem;flex:none;}
+.btn-pedido-etiqueta{flex:1;color:#c8841a;}
+.btn-pedido-min{font-weight:800;flex:none;}
+.btn-pedido-min.ok{color:#e8a832;}
+.btn-pedido-min.urgente{color:#e05050;}
+.btn-regresar{align-self:flex-start;padding:10px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:12px;}
 </style>
 </head>
 <body>
@@ -103,6 +116,8 @@ let vista = 'activos';
 let idsConocidos = new Set();
 let primerCargue = true;
 let audioCtx = null;
+
+let pedidoAbierto = null; // id_pedido mostrado en el detalle, o null = mostrando la lista de botones
 
 // Cambios optimistas todavía no confirmados por el servidor. El polling automático
 // (cada INTERVALO_POLLING_MS) puede traer una foto vieja de Ventas si llega justo
@@ -182,6 +197,7 @@ function detectarNuevos() {
 
 function cambiarVista(v) {
   vista = v;
+  pedidoAbierto = null;
   document.getElementById('btn-vista-activos').classList.toggle('activa', v === 'activos');
   document.getElementById('btn-vista-historial').classList.toggle('activa', v === 'historial');
   render();
@@ -191,6 +207,8 @@ function render() {
   const activos = pedidos.filter(p => !p.completo);
   document.getElementById('contador-activos').textContent = activos.length + (activos.length === 1 ? ' activo' : ' activos');
 
+  if (pedidoAbierto) { renderDetalle(); return; }
+
   const lista = vista === 'activos' ? activos : pedidos.filter(p => p.completo);
   const cont = document.getElementById('lista-pedidos');
 
@@ -199,14 +217,45 @@ function render() {
     return;
   }
 
-  cont.innerHTML = lista.map(p => {
+  cont.innerHTML = '<div class="lista-botones">' + lista.map(p => {
     const min = minutosTranscurridos(p.hora);
     const urgente = !p.completo && min >= MINUTOS_URGENTE;
+    const etiqueta = p.tipo === 'domicilio' ? '🛵 Domicilio' : '🍽️ Mesa ' + (p.mesa || '—');
     return `
+      <button class="btn-pedido${urgente ? ' urgente' : ''}${p.completo ? ' completo' : ''}" onclick="abrirDetallePedido('${p.id_pedido}')">
+        <span class="btn-pedido-hora">${p.hora}</span>
+        <span class="btn-pedido-etiqueta">${etiqueta}</span>
+        <span class="btn-pedido-min ${urgente ? 'urgente' : 'ok'}">${min} min</span>
+      </button>
+    `;
+  }).join('') + '</div>';
+}
+
+function abrirDetallePedido(idPedido) {
+  pedidoAbierto = idPedido;
+  render();
+}
+
+function cerrarDetallePedido() {
+  pedidoAbierto = null;
+  render();
+}
+
+function renderDetalle() {
+  const p = pedidos.find(x => x.id_pedido === pedidoAbierto);
+  const cont = document.getElementById('lista-pedidos');
+  if (!p) { pedidoAbierto = null; render(); return; }
+
+  const min = minutosTranscurridos(p.hora);
+  const urgente = !p.completo && min >= MINUTOS_URGENTE;
+  const etiqueta = p.tipo === 'domicilio' ? '🛵 Domicilio' : '🍽️ Mesa ' + (p.mesa || '—');
+
+  cont.innerHTML = `
+    <button class="btn-regresar" onclick="cerrarDetallePedido()">← Regresar</button>
     <div class="pedido-card${urgente ? ' urgente' : ''}${p.completo ? ' completo' : ''}">
       <div class="pedido-header">
         <div>
-          <div class="pedido-mesa">${p.tipo === 'domicilio' ? '🛵 Domicilio' : '🍽️ Mesa ' + (p.mesa || '—')}</div>
+          <div class="pedido-mesa">${etiqueta}</div>
           <div class="pedido-mesero">${p.tipo === 'domicilio' ? '' : (p.mesero ? '👤 ' + p.mesero : '📱 Autoservicio')}</div>
         </div>
         <div class="pedido-tiempo">
@@ -230,7 +279,6 @@ function render() {
       </div>
     </div>
   `;
-  }).join('');
 }
 
 async function avanzarEstado(fila, estadoActual) {
@@ -261,7 +309,7 @@ async function marcarCompleto(idPedido) {
       p.completo = true;
     }
   });
-  render();
+  cerrarDetallePedido(); // vuelve a la lista de pendientes: el botón de este pedido ya no aparece ahí
 
   try {
     const params = new URLSearchParams({ accion: 'marcar_pedido_completo', id_pedido: idPedido });
