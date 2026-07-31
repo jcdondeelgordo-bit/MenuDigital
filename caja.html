@@ -53,12 +53,24 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 .division-subtotal{display:flex;justify-content:space-between;font-weight:800;color:#e8a832;font-size:1rem;padding-top:8px;border-top:1px solid rgba(200,132,26,0.3);}
 .parte-igual-card{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border:1px solid rgba(200,132,26,0.25);border-radius:10px;}
 
+.overlay-vr{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;z-index:60;padding:24px 12px;}
+.overlay-vr.oculto{display:none;}
+.panel-vr{background:#2a1500;border:1px solid rgba(200,132,26,0.4);border-radius:16px;padding:20px;width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px;}
+.panel-vr h3{color:#e8a832;font-size:1.15rem;}
+.vr-categorias{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;}
+.vr-cat-pill{flex:none;padding:8px 16px;border-radius:20px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.3);color:#f0e0b0;font-size:0.85rem;white-space:nowrap;cursor:pointer;}
+.vr-cat-pill.activa{background:linear-gradient(135deg,#c8841a,#e8a832);color:#1a0a00;font-weight:700;border-color:transparent;}
+.vr-producto-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,0.06);font-size:0.88rem;}
+.vr-carrito-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid rgba(255,255,255,0.06);font-size:0.88rem;}
+.vr-vacio{font-size:0.8rem;color:rgba(240,224,176,0.5);padding:6px 0;}
+
 #overlay-cobrar{z-index:65;}
 #overlay-cobrar-parcial{z-index:70;}
+#overlay-cobrar-vr{z-index:68;}
 
 #recibo-imprimir{display:none;}
 @media print{
-  header, main, .overlay, .overlay-division{display:none;}
+  header, main, .overlay, .overlay-vr, .overlay-division{display:none;}
   #recibo-imprimir{display:block;position:static;width:80mm;padding:4mm;font-family:'Courier New',monospace;font-size:11px;color:#000;background:#fff;}
   .recibo-linea{margin:2px 0;}
   .recibo-centro{text-align:center;}
@@ -99,6 +111,8 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 .ronda-header{display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;color:rgba(240,224,176,0.65);margin-bottom:4px;}
 .btn-liberar{padding:10px 16px;border-radius:10px;background:transparent;border:1px solid rgba(224,80,80,0.5);color:#e8a0a0;font-size:0.85rem;font-weight:700;cursor:pointer;}
 .historial-filtros{grid-column:1/-1;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px;}
+.seccion-recoger{display:flex;flex-direction:column;gap:8px;}
+.btn-recoger{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-radius:12px;background:rgba(200,132,26,0.1);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:0.88rem;font-weight:700;cursor:pointer;text-align:left;width:100%;}
 </style>
 </head>
 <body>
@@ -112,6 +126,7 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
     </div>
   </div>
   <div class="header-tabs">
+    <button class="btn-tab" onclick="abrirVentaRapida()">🧾 Venta Rápida</button>
     <button class="btn-tab" id="btn-vista-historial" onclick="cambiarVistaPrincipal(vistaPrincipal === 'grid' ? 'historial' : 'grid')">🕒 Historial de hoy</button>
     <a class="btn-tab" href="index.html" style="text-decoration:none;display:inline-flex;align-items:center;">← MENU</a>
   </div>
@@ -182,6 +197,36 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
   </div>
 </div>
 
+<div class="overlay-vr oculto" id="overlay-vr">
+  <div class="panel-vr">
+    <h3>🧾 Venta Rápida</h3>
+    <input type="text" class="input-nombre" id="vr-nombre" placeholder="Nombre del cliente (obligatorio si va a recoger después)">
+    <div class="vr-categorias" id="vr-categorias"></div>
+    <div id="vr-productos"></div>
+    <div class="division-seccion">
+      <h4>Carrito</h4>
+      <div id="vr-carrito"></div>
+      <div class="division-subtotal">
+        <span>Total</span>
+        <span id="vr-total">$0</span>
+      </div>
+    </div>
+    <button class="btn-cobrar" onclick="iniciarCobroVentaRapida(true)">Cobrar y entregar</button>
+    <button class="btn-cobrar" onclick="iniciarCobroVentaRapida(false)">Cobrar y dejar para recoger</button>
+    <button class="btn-cancelar" onclick="cerrarVentaRapida()">Cancelar</button>
+  </div>
+</div>
+
+<div class="overlay oculto" id="overlay-cobrar-vr">
+  <div class="modal-cobrar">
+    <h3>¿Cómo pagó el cliente?</h3>
+    <button class="btn-metodo" onclick="confirmarCobroVentaRapida('Efectivo')">💵 Efectivo</button>
+    <button class="btn-metodo" onclick="confirmarCobroVentaRapida('Nequi')">📱 Nequi</button>
+    <button class="btn-metodo" onclick="confirmarCobroVentaRapida('Tarjeta')">💳 Tarjeta</button>
+    <button class="btn-cancelar" onclick="cerrarModalCobrarVR()">Cancelar</button>
+  </div>
+</div>
+
 <div id="recibo-imprimir"></div>
 
 <script>
@@ -230,6 +275,7 @@ const pedidosPagoPendiente = new Set();
 let vistaPrincipal = 'grid'; // 'grid' | 'historial'
 let mesaAbierta = null;      // número de mesa mostrado en el panel de detalle, o null
 let domicilioAbierto = null; // id_pedido de domicilio mostrado en el panel de detalle, o null
+let mostradorAbierto = null; // id_pedido de mostrador (Venta Rápida) mostrado en el panel de detalle, o null
 let cobroModo = 'individual'; // 'individual' (domicilio) | 'mesa' (varias rondas combinadas)
 let mesaParaCobrar = null;
 // Ids de ronda verificados (sin pagos parciales en curso) y mostrados al cajero
@@ -573,6 +619,203 @@ function cobrarParteIgual(numeroParte, monto) {
 
 function formatoCOP(v) { return '$' + Math.round(v).toLocaleString('es-CO'); }
 
+// Venta Rápida: cliente de mostrador sin mesa ni mesero. El carrito vive solo en
+// memoria (a diferencia de menu.html, que lo guarda en localStorage) porque este
+// es un dispositivo compartido de caja, no el teléfono de un cliente.
+let productosVentaRapida = [];
+let productosVentaRapidaError = false;
+let categoriaActivaVR = null;
+let carritoVentaRapida = [];
+let entregaInmediataVR = true; // true = "Cobrar y entregar", false = "Cobrar y dejar para recoger"
+let nombreVentaRapida = '';
+let idPedidoVentaRapida = null; // id_pedido ya creado (Pendiente de pago), esperando método de pago
+let itemsVentaRapidaSnapshot = []; // Snapshot del carrito capturado cuando crear_pedido tuvo éxito
+let cobroVentaRapidaEnCurso = false; // Guard contra double-tap en iniciarCobroVentaRapida
+
+function abrirVentaRapida() {
+  // Finding 3: recargamos el catálogo en cada apertura (no solo si está vacío)
+  // para no servir precios obsoletos si el dueño los edita desde menu.html
+  // mientras la tablet de caja se queda abierta todo el turno.
+  cargarProductosVentaRapida();
+  document.getElementById('overlay-vr').classList.remove('oculto');
+  renderCarritoVR();
+}
+
+function cerrarVentaRapida() {
+  document.getElementById('overlay-vr').classList.add('oculto');
+  carritoVentaRapida = [];
+  itemsVentaRapidaSnapshot = [];
+  idPedidoVentaRapida = null;
+  document.getElementById('vr-nombre').value = '';
+}
+
+async function cargarProductosVentaRapida() {
+  try {
+    const res = await fetch(SCRIPT_URL + '?accion=listar_productos');
+    const data = await res.json();
+    if (!data.ok || !Array.isArray(data.productos) || data.productos.length === 0) throw new Error('respuesta vacía');
+    productosVentaRapida = data.productos;
+    productosVentaRapidaError = false;
+    categoriaActivaVR = productosVentaRapida[0].categoria;
+    renderCategoriasVR();
+    renderProductosVR();
+  } catch (e) {
+    productosVentaRapidaError = true;
+    // Finding 3: si ya había un catálogo cargado de una petición anterior exitosa,
+    // un refetch fallido (hipo de red) no debe borrar la lista que ya funciona --
+    // la dejamos tal cual y solo mostramos el banner de error cuando no hay nada.
+    if (productosVentaRapida.length === 0) {
+      document.getElementById('vr-productos').innerHTML = '<div class="vr-vacio">⚠️ No se pudo cargar el catálogo. <button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);display:inline;" onclick="cargarProductosVentaRapida()">Reintentar</button></div>';
+    }
+  }
+}
+
+function renderCategoriasVR() {
+  const categorias = [...new Set(productosVentaRapida.map(p => p.categoria))];
+  document.getElementById('vr-categorias').innerHTML = categorias.map(c =>
+    `<div class="vr-cat-pill${c === categoriaActivaVR ? ' activa' : ''}" onclick="seleccionarCategoriaVR('${c.replace(/'/g, "\\'")}')">${c}</div>`
+  ).join('');
+}
+
+function seleccionarCategoriaVR(cat) {
+  categoriaActivaVR = cat;
+  renderCategoriasVR();
+  renderProductosVR();
+}
+
+function renderProductosVR() {
+  const lista = productosVentaRapida.filter(p => p.categoria === categoriaActivaVR);
+  document.getElementById('vr-productos').innerHTML = lista.map(p => {
+    const idx = productosVentaRapida.indexOf(p);
+    return `<div class="vr-producto-row">
+      <span>${p.producto} — ${formatoCOP(p.precio)}</span>
+      <button class="btn-stepper" onclick="agregarAlCarritoVR(${idx})">+</button>
+    </div>`;
+  }).join('');
+}
+
+function agregarAlCarritoVR(idx) {
+  const p = productosVentaRapida[idx];
+  const existente = carritoVentaRapida.find(i => i.producto === p.producto && i.categoria === p.categoria);
+  if (existente) { existente.cantidad++; }
+  else { carritoVentaRapida.push({ producto: p.producto, categoria: p.categoria, precio: p.precio, cantidad: 1 }); }
+  renderCarritoVR();
+}
+
+function cambiarCantidadVR(i, delta) {
+  carritoVentaRapida[i].cantidad += delta;
+  if (carritoVentaRapida[i].cantidad <= 0) carritoVentaRapida.splice(i, 1);
+  renderCarritoVR();
+}
+
+function renderCarritoVR() {
+  const cont = document.getElementById('vr-carrito');
+  cont.innerHTML = carritoVentaRapida.length === 0
+    ? '<div class="vr-vacio">Carrito vacío</div>'
+    : carritoVentaRapida.map((item, i) => `
+      <div class="vr-carrito-item">
+        <span>${item.cantidad}x ${item.producto}</span>
+        <div class="stepper-controles">
+          <button class="btn-stepper" onclick="cambiarCantidadVR(${i}, -1)">−</button>
+          <span>${formatoCOP(item.precio * item.cantidad)}</span>
+        </div>
+      </div>
+    `).join('');
+  const total = carritoVentaRapida.reduce((s, i) => s + i.cantidad * i.precio, 0);
+  document.getElementById('vr-total').textContent = formatoCOP(total);
+}
+
+async function iniciarCobroVentaRapida(entregarYa) {
+  // Finding 2: Guard contra double-tap -- si ya hay una llamada en vuelo, ignora esta.
+  if (cobroVentaRapidaEnCurso) return;
+
+  if (carritoVentaRapida.length === 0) { alert('Agrega al menos un producto al carrito.'); return; }
+  const nombre = document.getElementById('vr-nombre').value.trim();
+  if (!entregarYa && !nombre) { alert('Escribe el nombre del cliente para dejar el pedido pendiente de recoger.'); return; }
+
+  entregaInmediataVR = entregarYa;
+  nombreVentaRapida = nombre;
+  const total = carritoVentaRapida.reduce((s, i) => s + i.cantidad * i.precio, 0);
+
+  cobroVentaRapidaEnCurso = true;
+  try {
+    const params = new URLSearchParams({
+      accion: 'crear_pedido',
+      items: JSON.stringify(carritoVentaRapida),
+      total: String(total),
+      tipo: 'mostrador',
+      mesa: nombre,
+      mesero: ''
+    });
+    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const data = await res.json();
+    if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Respuesta inválida del servidor');
+    // Finding 1: Capturamos snapshot del carrito en este momento exacto,
+    // cuando crear_pedido tuvo éxito. Si el cajero edita el carrito después,
+    // la factura usará este snapshot, no el carrito en vivo.
+    itemsVentaRapidaSnapshot = carritoVentaRapida.map(i => ({...i}));
+    idPedidoVentaRapida = data.id_pedido;
+    document.getElementById('overlay-cobrar-vr').classList.remove('oculto');
+  } catch (e) {
+    alert('No se pudo registrar el pedido (' + e.message + '). El carrito no se perdió -- intenta de nuevo.');
+  } finally {
+    cobroVentaRapidaEnCurso = false;
+  }
+}
+
+function cerrarModalCobrarVR() {
+  document.getElementById('overlay-cobrar-vr').classList.add('oculto');
+  idPedidoVentaRapida = null;
+  itemsVentaRapidaSnapshot = [];
+}
+
+async function confirmarCobroVentaRapida(metodo) {
+  const idPedido = idPedidoVentaRapida;
+  const entregar = entregaInmediataVR;
+  const nombre = nombreVentaRapida;
+  // Finding 1: Construir la factura del snapshot congelado cuando crear_pedido tuvo éxito,
+  // NO del carrito en vivo, que puede haber sido editado mientras la petición estaba en vuelo.
+  const snapshot = itemsVentaRapidaSnapshot;
+  const itemsRecibo = snapshot.map(i => ({ producto: i.producto, cantidad: i.cantidad, total: i.precio * i.cantidad }));
+  const total = itemsRecibo.reduce((s, i) => s + i.total, 0);
+  document.getElementById('overlay-cobrar-vr').classList.add('oculto');
+  idPedidoVentaRapida = null;
+  itemsVentaRapidaSnapshot = [];
+  if (!idPedido) return;
+
+  // Mismo mecanismo que confirmarCobro/liberarPedidoDomicilio/marcarMostradorRecogido
+  // (ver aplicarPendientes): protege contra el polling automático de 12s pisando
+  // este cobro con un estado obsoleto si una respuesta llega mientras la petición
+  // sigue en vuelo (hallazgo 2 de la revisión final).
+  pedidosPagoPendiente.add(idPedido);
+  if (entregar) pedidosLiberacionPendiente.add(idPedido);
+
+  try {
+    const params = new URLSearchParams({ accion: 'marcar_pedido_pagado', id_pedido: idPedido, metodo_pago: metodo });
+    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const data = await res.json();
+    if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Respuesta inválida del servidor');
+
+    if (entregar) {
+      // Si el cobro ya quedó registrado pero esta llamada falla, el pedido queda
+      // Pagado tipo mostrador y aparece en "Para recoger" en vez de perderse --
+      // se puede marcar recogido manualmente desde ahí (Task 2), no es bloqueante.
+      const paramsLib = new URLSearchParams({ accion: 'liberar_pedido', id_pedido: idPedido });
+      await fetch(SCRIPT_URL + '?' + paramsLib.toString());
+    }
+
+    imprimirRecibo({ tipo: 'mostrador', mesa: nombre, items: itemsRecibo, total: total, metodo_pago: metodo });
+    carritoVentaRapida = [];
+    cerrarVentaRapida();
+    await cargarPedidos();
+  } catch (e) {
+    alert('No se pudo confirmar el cobro (' + e.message + '). El pedido queda pendiente de pago -- lo puedes cobrar desde el Historial (pestaña Mostrador).');
+  } finally {
+    pedidosPagoPendiente.delete(idPedido);
+    pedidosLiberacionPendiente.delete(idPedido);
+  }
+}
+
 function imprimirRecibo(pedido) {
   const ahora = new Date();
   const cont = document.getElementById('recibo-imprimir');
@@ -585,7 +828,7 @@ function imprimirRecibo(pedido) {
     <div class="recibo-linea recibo-centro">Tel: ${DATOS_LOCAL.telefono}</div>
     <div class="recibo-separador"></div>
     <div class="recibo-linea">${ahora.toLocaleDateString('es-CO')}  ${ahora.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</div>
-    <div class="recibo-linea">${pedido.tipo === 'local' ? 'Mesa ' + (pedido.mesa || '—') : 'Domicilio'}</div>
+    <div class="recibo-linea">${pedido.tipo === 'local' ? 'Mesa ' + (pedido.mesa || '—') : (pedido.tipo === 'mostrador' ? 'Mostrador' + (pedido.mesa ? ': ' + pedido.mesa : '') : 'Domicilio')}</div>
     <div class="recibo-separador"></div>
     ${pedido.items.map(it => `<div class="recibo-item"><span>${it.cantidad}x ${it.producto}</span><span>${formatoCOP(it.total)}</span></div>`).join('')}
     <div class="recibo-separador"></div>
@@ -622,6 +865,7 @@ async function cargarPedidos() {
   renderPrincipal();
   if (mesaAbierta !== null) renderDetalleMesa();
   if (domicilioAbierto !== null) renderDetalleDomicilio();
+  if (mostradorAbierto !== null) renderDetalleMostrador();
 }
 
 // Cambios optimistas todavía no confirmados por el servidor. Sin esto, el
@@ -638,6 +882,7 @@ function aplicarPendientes(lista) {
 function cerrarDetalle() {
   mesaAbierta = null;
   domicilioAbierto = null;
+  mostradorAbierto = null;
   document.getElementById('overlay-detalle').classList.add('oculto');
 }
 
@@ -646,6 +891,7 @@ function abrirDetalleMesa(numMesa) {
   if (rondas.length === 0) return; // mesa libre, no hace nada
 
   domicilioAbierto = null;
+  mostradorAbierto = null;
   mesaAbierta = numMesa;
   renderDetalleMesa();
   document.getElementById('overlay-detalle').classList.remove('oculto');
@@ -732,6 +978,7 @@ function abrirDetalleDomicilio(idPedido) {
   if (!pedido) return;
 
   mesaAbierta = null;
+  mostradorAbierto = null;
   domicilioAbierto = idPedido;
   renderDetalleDomicilio();
   document.getElementById('overlay-detalle').classList.remove('oculto');
@@ -776,6 +1023,59 @@ async function liberarPedidoDomicilio(idPedido) {
     pedido.estado = estadoAnterior;
     renderPrincipal();
     alert('No se pudo liberar el pedido: ' + e.message);
+  } finally {
+    pedidosLiberacionPendiente.delete(idPedido);
+  }
+}
+
+function abrirDetalleMostrador(idPedido) {
+  const pedido = pedidos.find(p => p.id_pedido === idPedido && p.tipo === 'mostrador');
+  if (!pedido) return;
+
+  mesaAbierta = null;
+  domicilioAbierto = null;
+  mostradorAbierto = idPedido;
+  renderDetalleMostrador();
+  document.getElementById('overlay-detalle').classList.remove('oculto');
+}
+
+function renderDetalleMostrador() {
+  const pedido = pedidos.find(p => p.id_pedido === mostradorAbierto);
+  if (!pedido || pedido.estado === 'Liberado') { cerrarDetalle(); return; }
+
+  document.getElementById('detalle-contenido').innerHTML = `
+    <h3>🧾 ${pedido.mesa || 'Sin nombre'}</h3>
+    <div class="pedido-hora">${pedido.hora}</div>
+    ${pedido.items.map(it => `<div class="item-row"><span>${it.cantidad}x ${it.producto}</span><span>${formatoCOP(it.total)}</span></div>`).join('')}
+    <div class="pedido-total-row"><span>TOTAL</span><span>${formatoCOP(pedido.total)}</span></div>
+    <div class="pedido-footer" style="flex-wrap:wrap;gap:8px;">
+      <button class="btn-cancelar" style="border:1px solid rgba(200,132,26,0.35);" onclick="imprimirReciboPorId('${pedido.id_pedido}')">🖨️ Reimprimir recibo</button>
+      <button class="btn-liberar" onclick="marcarMostradorRecogido('${pedido.id_pedido}')">✅ Marcar recogido</button>
+    </div>
+    <button class="btn-cancelar" onclick="cerrarDetalle()">Cerrar</button>
+  `;
+}
+
+async function marcarMostradorRecogido(idPedido) {
+  if (!confirm('¿Marcar este pedido como recogido?')) return;
+  const pedido = pedidos.find(p => p.id_pedido === idPedido);
+  if (!pedido) return;
+
+  pedidosLiberacionPendiente.add(idPedido);
+  const estadoAnterior = pedido.estado;
+  pedido.estado = 'Liberado';
+  renderPrincipal();
+  cerrarDetalle();
+
+  try {
+    const params = new URLSearchParams({ accion: 'liberar_pedido', id_pedido: idPedido });
+    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const data = await res.json();
+    if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Respuesta inválida del servidor');
+  } catch (e) {
+    pedido.estado = estadoAnterior;
+    renderPrincipal();
+    alert('No se pudo marcar el pedido como recogido: ' + e.message);
   } finally {
     pedidosLiberacionPendiente.delete(idPedido);
   }
@@ -962,12 +1262,22 @@ function renderGrid() {
       ${enEspera.map(p => `<button class="btn-espera" onclick="abrirDetalleDomicilio('${p.id_pedido}')">${p.hora}</button>`).join('')}
     </div>`;
 
+  const activosMostrador = pedidos.filter(p => p.tipo === 'mostrador' && p.estado === 'Pagado')
+    .sort((a, b) => a.hora < b.hora ? -1 : a.hora > b.hora ? 1 : 0);
+  const recogerHtml = activosMostrador.length === 0 ? '' : `
+    <div class="linea-divisoria"></div>
+    <div class="seccion-recoger">
+      <div class="franja-espera-titulo">Para recoger (${activosMostrador.length})</div>
+      ${activosMostrador.map(p => `<button class="btn-recoger" onclick="abrirDetalleMostrador('${p.id_pedido}')"><span>${p.mesa || 'Sin nombre'}</span><span>${p.hora}</span><span>${formatoCOP(p.total)}</span></button>`).join('')}
+    </div>`;
+
   cont.innerHTML = banner + `
     <div class="pantalla-grid">
       <div class="grid-mesas">${mesasHtml.join('')}</div>
       <div class="linea-divisoria"></div>
       <div class="grid-domicilios">${cuposHtml.join('')}</div>
       ${esperaHtml}
+      ${recogerHtml}
     </div>`;
 }
 
@@ -982,6 +1292,7 @@ function renderHistorial() {
       <div class="grupo-tabs">
         <button class="btn-tab ${vistaTipo === 'local' ? 'activa' : ''}" onclick="cambiarVistaTipo('local')">En el local</button>
         <button class="btn-tab ${vistaTipo === 'domicilio' ? 'activa' : ''}" onclick="cambiarVistaTipo('domicilio')">Domicilio</button>
+        <button class="btn-tab ${vistaTipo === 'mostrador' ? 'activa' : ''}" onclick="cambiarVistaTipo('mostrador')">Mostrador</button>
       </div>
       <div class="grupo-tabs">
         <button class="btn-tab ${vistaEstado === 'pendientes' ? 'activa' : ''}" onclick="cambiarVistaEstado('pendientes')">Pendientes</button>
@@ -995,7 +1306,8 @@ function renderHistorial() {
   );
 
   if (lista.length === 0) {
-    cont.innerHTML = banner + filtrosHtml + `<div class="vacio-msg">No hay pedidos ${vistaEstado === 'pendientes' ? 'pendientes de pago' : 'pagados'} en ${vistaTipo === 'local' ? 'el local' : 'domicilio'} hoy.</div>`;
+    const etiquetaVacio = vistaTipo === 'local' ? 'el local' : (vistaTipo === 'domicilio' ? 'domicilio' : 'mostrador');
+    cont.innerHTML = banner + filtrosHtml + `<div class="vacio-msg">No hay pedidos ${vistaEstado === 'pendientes' ? 'pendientes de pago' : 'pagados'} en ${etiquetaVacio} hoy.</div>`;
     return;
   }
 
@@ -1003,7 +1315,7 @@ function renderHistorial() {
     <div class="pedido-card">
       <div class="pedido-header">
         <div>
-          <div class="pedido-titulo">${p.tipo === 'local' ? '🍽️ Mesa ' + (p.mesa || '—') : '🛵 Domicilio'}</div>
+          <div class="pedido-titulo">${p.tipo === 'local' ? '🍽️ Mesa ' + (p.mesa || '—') : (p.tipo === 'mostrador' ? '🧾 ' + (p.mesa || 'Mostrador') : '🛵 Domicilio')}</div>
           <div class="pedido-sub">${p.mesero ? '👤 ' + p.mesero : ''}</div>
           <div class="badge-estado ${p.estado === 'Pendiente de pago' ? 'pendiente' : 'pagado'}">${p.estado === 'Pendiente de pago' ? '⏳ Pendiente de pago' : (p.estado === 'Liberado' ? '✅ Pagado (liberado)' : '✅ Pagado (' + p.metodo_pago + ')')}</div>
         </div>

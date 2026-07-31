@@ -220,7 +220,7 @@ function render() {
   cont.innerHTML = '<div class="lista-botones">' + lista.map(p => {
     const min = minutosTranscurridos(p.hora);
     const urgente = !p.completo && min >= MINUTOS_URGENTE;
-    const etiqueta = p.tipo === 'domicilio' ? '🛵 Domicilio' : '🍽️ Mesa ' + (p.mesa || '—');
+    const etiqueta = p.tipo === 'domicilio' ? '🛵 Domicilio' : (p.tipo === 'mostrador' ? '🧾 Mostrador: ' + (p.mesa || '—') : '🍽️ Mesa ' + (p.mesa || '—'));
     return `
       <button class="btn-pedido${urgente ? ' urgente' : ''}${p.completo ? ' completo' : ''}" onclick="abrirDetallePedido('${p.id_pedido}')">
         <span class="btn-pedido-hora">${p.hora}</span>
@@ -248,7 +248,7 @@ function renderDetalle() {
 
   const min = minutosTranscurridos(p.hora);
   const urgente = !p.completo && min >= MINUTOS_URGENTE;
-  const etiqueta = p.tipo === 'domicilio' ? '🛵 Domicilio' : '🍽️ Mesa ' + (p.mesa || '—');
+  const etiqueta = p.tipo === 'domicilio' ? '🛵 Domicilio' : (p.tipo === 'mostrador' ? '🧾 Mostrador: ' + (p.mesa || '—') : '🍽️ Mesa ' + (p.mesa || '—'));
 
   cont.innerHTML = `
     <button class="btn-regresar" onclick="cerrarDetallePedido()">← Regresar</button>
@@ -256,7 +256,7 @@ function renderDetalle() {
       <div class="pedido-header">
         <div>
           <div class="pedido-mesa">${etiqueta}</div>
-          <div class="pedido-mesero">${p.tipo === 'domicilio' ? '' : (p.mesero ? '👤 ' + p.mesero : '📱 Autoservicio')}</div>
+          <div class="pedido-mesero">${p.tipo === 'domicilio' || p.tipo === 'mostrador' ? '' : (p.mesero ? '👤 ' + p.mesero : '📱 Autoservicio')}</div>
         </div>
         <div class="pedido-tiempo">
           <div class="pedido-hora">${p.hora}</div>
