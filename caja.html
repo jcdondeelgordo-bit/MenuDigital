@@ -440,7 +440,11 @@ function subtotalCajaActual() {
 function iniciarCobroCajaItem() {
   const persona = document.getElementById('input-nombre-persona').value.trim();
   const subtotal = subtotalCajaActual();
-  if (!persona) { alert('Escribe el nombre de la persona.'); return; }
+  if (!persona) {
+    alert('Escribe el nombre de la persona.');
+    document.getElementById('input-nombre-persona').focus();
+    return;
+  }
   if (subtotal <= 0) { alert('Selecciona al menos un ítem para esta caja.'); return; }
 
   const detalle = Object.keys(division.cajaActual.seleccion)
@@ -732,7 +736,11 @@ async function iniciarCobroVentaRapida(entregarYa) {
 
   if (carritoVentaRapida.length === 0) { alert('Agrega al menos un producto al carrito.'); return; }
   const nombre = document.getElementById('vr-nombre').value.trim();
-  if (!entregarYa && !nombre) { alert('Escribe el nombre del cliente para dejar el pedido pendiente de recoger.'); return; }
+  if (!entregarYa && !nombre) {
+    alert('Escribe el nombre del cliente para dejar el pedido pendiente de recoger.');
+    document.getElementById('vr-nombre').focus();
+    return;
+  }
 
   entregaInmediataVR = entregarYa;
   nombreVentaRapida = nombre;
