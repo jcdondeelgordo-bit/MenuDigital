@@ -39,10 +39,8 @@ main{padding:16px;max-width:640px;margin:0 auto;}
 .admin-on .precio-edit-btn{display:inline-block;}
 .btn-agregar{flex:none;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;color:#1a0a00;font-size:1.2rem;font-weight:700;cursor:pointer;}
 
-.carrito-flotante{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:608px;background:linear-gradient(135deg,#c8841a,#e8a832);border-radius:16px;padding:14px 18px;display:none;align-items:center;justify-content:space-between;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,0.4);z-index:30;}
+.carrito-flotante{position:fixed;bottom:16px;left:16px;background:linear-gradient(135deg,#c8841a,#e8a832);color:#1a0a00;border:none;border-radius:24px;padding:10px 16px;display:none;align-items:center;gap:6px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,0.4);z-index:30;font-weight:800;font-size:0.85rem;}
 .carrito-flotante.visible{display:flex;}
-.carrito-flotante-info{color:#1a0a00;font-weight:700;}
-.carrito-flotante-total{color:#1a0a00;font-weight:800;font-size:1.05rem;}
 
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:40;}
 .overlay.visible{display:block;}
@@ -103,20 +101,13 @@ main{padding:16px;max-width:640px;margin:0 auto;}
 .oferta-papas-botones{display:flex;gap:10px;}
 .oferta-papas-botones .btn-principal,.oferta-papas-botones .btn-secundario{margin-top:0;}
 
-/* Carrito real: franja + panel deslizable en móvil (por defecto), sidebar fijo en escritorio */
+/* Carrito real: ícono flotante + panel deslizable, mismo comportamiento en todos los tamaños de pantalla */
 .layout{display:block;}
 .contenido{max-width:640px;margin:0 auto;}
-.carrito-sidebar{display:none;}
 @media (min-width:900px){
-  .layout{display:flex;align-items:flex-start;justify-content:center;gap:24px;max-width:1120px;margin:0 auto;padding:16px 16px 40px;}
-  .contenido{flex:1 1 640px;max-width:640px;margin:0;}
+  .layout{display:flex;align-items:flex-start;justify-content:center;max-width:1120px;margin:0 auto;padding:16px 16px 40px;}
+  .contenido{max-width:640px;margin:0;}
   header{position:sticky;}
-  .carrito-flotante{display:none !important;}
-  .carrito-sidebar{display:flex;flex-direction:column;position:sticky;top:16px;flex:0 0 340px;max-height:calc(100vh - 32px);background:#241000;border:1px solid rgba(200,132,26,0.25);border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.35);}
-  .carrito-sidebar-header{padding:16px 18px;border-bottom:1px solid rgba(200,132,26,0.25);}
-  .carrito-sidebar-header h3{color:#c8841a;font-size:1.05rem;}
-  .carrito-sidebar-body{padding:16px 18px;overflow-y:auto;flex:1;}
-  .carrito-sidebar-footer{padding:14px 18px 18px;border-top:1px solid rgba(200,132,26,0.25);}
 }
 </style>
 </head>
@@ -145,22 +136,10 @@ main{padding:16px;max-width:640px;margin:0 auto;}
     </main>
   </div>
 
-  <!-- Carrito real: visible siempre como sidebar en pantallas anchas (escritorio) -->
-  <aside class="carrito-sidebar" id="carrito-sidebar">
-    <div class="carrito-sidebar-header"><h3>🛒 Tu pedido</h3></div>
-    <div class="carrito-sidebar-body" id="carrito-sidebar-body"></div>
-    <div class="carrito-sidebar-footer">
-      <div class="puntos-aviso" id="puntos-aviso-sidebar"></div>
-      <div class="tarjeta-puntos" id="tarjeta-puntos-sidebar"></div>
-      <div class="total-row"><span>Total</span><span id="carrito-sidebar-total">$0</span></div>
-      <button class="btn-principal" onclick="irACheckout()">Hacer pedido</button>
-    </div>
-  </aside>
 </div>
 
 <div class="carrito-flotante" id="carrito-flotante" onclick="abrirCarrito()">
-  <div class="carrito-flotante-info" id="carrito-flotante-info">0 productos</div>
-  <div class="carrito-flotante-total" id="carrito-flotante-total">$0</div>
+  🛒 <span id="carrito-flotante-info">0</span> · <span id="carrito-flotante-total">$0</span>
 </div>
 
 <!-- PANEL CARRITO -->
@@ -654,7 +633,7 @@ function actualizarCarritoFlotante() {
   const flot = document.getElementById('carrito-flotante');
   if (totalItems === 0) { flot.classList.remove('visible'); return; }
   flot.classList.add('visible');
-  document.getElementById('carrito-flotante-info').textContent = totalItems + (totalItems === 1 ? ' producto' : ' productos');
+  document.getElementById('carrito-flotante-info').textContent = totalItems;
   document.getElementById('carrito-flotante-total').textContent = formatoCOP(totalValor);
 }
 
@@ -690,11 +669,11 @@ function renderCarrito() {
   const total = carrito.reduce((s, i) => s + i.cantidad * i.precio, 0);
   const totalTxt = formatoCOP(total);
 
-  ['panel-carrito-body', 'carrito-sidebar-body'].forEach(id => {
+  ['panel-carrito-body'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = html;
   });
-  ['carrito-total', 'carrito-sidebar-total'].forEach(id => {
+  ['carrito-total'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = totalTxt;
   });
@@ -704,7 +683,7 @@ function renderCarrito() {
 
 function renderAvisoPuntos() {
   const texto = '💡 Las compras mayores a $50.000 suman 1 punto en tu tarjeta de fidelidad.';
-  ['puntos-aviso-panel', 'puntos-aviso-sidebar'].forEach(id => {
+  ['puntos-aviso-panel'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = texto;
   });
@@ -725,7 +704,7 @@ function renderTarjetaPuntos() {
     <div class="tarjeta-puntos-grid">${celdas}</div>
     ${puntos >= 12 ? '<div class="tarjeta-puntos-premio">¡Tarjeta completa! 🎉 Pronto: ruleta de premios.</div>' : ''}
   `;
-  ['tarjeta-puntos-panel', 'tarjeta-puntos-sidebar'].forEach(id => {
+  ['tarjeta-puntos-panel'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = html;
   });
