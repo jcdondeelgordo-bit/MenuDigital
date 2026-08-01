@@ -737,7 +737,10 @@ async function iniciarCobroVentaRapida(entregarYa) {
   let nombre = '';
   if (!entregarYa) {
     nombre = (prompt('Nombre del cliente para recoger su pedido:') || '').trim();
-    if (!nombre) return;
+    if (!nombre) {
+      alert('Escribe el nombre del cliente para dejar el pedido pendiente de recoger.');
+      return;
+    }
   }
 
   entregaInmediataVR = entregarYa;
