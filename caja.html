@@ -68,6 +68,9 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 #overlay-cobrar{z-index:65;}
 #overlay-cobrar-parcial{z-index:70;}
 #overlay-cobrar-vr{z-index:68;}
+#overlay-vr-carrito{z-index:63;}
+.vr-carrito-flotante{position:fixed;bottom:16px;left:16px;z-index:61;background:linear-gradient(135deg,#c8841a,#e8a832);color:#1a0a00;border:none;border-radius:24px;padding:10px 16px;font-weight:800;font-size:0.85rem;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,0.4);display:flex;align-items:center;gap:6px;}
+.vr-carrito-flotante.oculto{display:none;}
 
 #recibo-imprimir{display:none;}
 @media print{
@@ -203,17 +206,25 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
     <h3>🧾 Venta Rápida</h3>
     <div class="vr-categorias" id="vr-categorias"></div>
     <div id="vr-productos"></div>
-    <div class="division-seccion">
-      <h4>Carrito</h4>
-      <div id="vr-carrito"></div>
-      <div class="division-subtotal">
-        <span>Total</span>
-        <span id="vr-total">$0</span>
-      </div>
+    <button class="btn-cancelar" onclick="cerrarVentaRapida()">Cancelar</button>
+  </div>
+</div>
+
+<button class="vr-carrito-flotante oculto" id="vr-carrito-flotante" onclick="abrirCarritoPanelVR()">
+  🛒 <span id="vr-flotante-badge">0</span> · <span id="vr-flotante-total">$0</span>
+</button>
+
+<div class="overlay-vr oculto" id="overlay-vr-carrito">
+  <div class="panel-vr">
+    <h3>🛒 Carrito</h3>
+    <div id="vr-carrito"></div>
+    <div class="division-subtotal">
+      <span>Total</span>
+      <span id="vr-total">$0</span>
     </div>
     <button class="btn-cobrar" onclick="iniciarCobroVentaRapida(true)">Cobrar y entregar</button>
     <button class="btn-cobrar" onclick="iniciarCobroVentaRapida(false)">Cobrar y dejar para recoger</button>
-    <button class="btn-cancelar" onclick="cerrarVentaRapida()">Cancelar</button>
+    <button class="btn-cancelar" onclick="cerrarCarritoPanelVR()">Cerrar</button>
   </div>
 </div>
 
@@ -645,8 +656,17 @@ function abrirVentaRapida() {
   renderCarritoVR();
 }
 
+function abrirCarritoPanelVR() {
+  document.getElementById('overlay-vr-carrito').classList.remove('oculto');
+}
+function cerrarCarritoPanelVR() {
+  document.getElementById('overlay-vr-carrito').classList.add('oculto');
+}
+
 function cerrarVentaRapida() {
   document.getElementById('overlay-vr').classList.add('oculto');
+  document.getElementById('overlay-vr-carrito').classList.add('oculto');
+  document.getElementById('vr-carrito-flotante').classList.add('oculto');
   carritoVentaRapida = [];
   itemsVentaRapidaSnapshot = [];
   idPedidoVentaRapida = null;
@@ -724,8 +744,19 @@ function renderCarritoVR() {
         </div>
       </div>
     `).join('');
+  const totalItems = carritoVentaRapida.reduce((s, i) => s + i.cantidad, 0);
   const total = carritoVentaRapida.reduce((s, i) => s + i.cantidad * i.precio, 0);
   document.getElementById('vr-total').textContent = formatoCOP(total);
+
+  const flot = document.getElementById('vr-carrito-flotante');
+  if (totalItems === 0) {
+    flot.classList.add('oculto');
+    cerrarCarritoPanelVR();
+  } else {
+    flot.classList.remove('oculto');
+  }
+  document.getElementById('vr-flotante-badge').textContent = totalItems;
+  document.getElementById('vr-flotante-total').textContent = formatoCOP(total);
 }
 
 async function iniciarCobroVentaRapida(entregarYa) {
