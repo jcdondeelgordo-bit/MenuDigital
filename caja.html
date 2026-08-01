@@ -201,7 +201,6 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 <div class="overlay-vr oculto" id="overlay-vr">
   <div class="panel-vr">
     <h3>🧾 Venta Rápida</h3>
-    <input type="text" class="input-nombre" id="vr-nombre" placeholder="Nombre del cliente (obligatorio si va a recoger después)">
     <div class="vr-categorias" id="vr-categorias"></div>
     <div id="vr-productos"></div>
     <div class="division-seccion">
@@ -651,7 +650,6 @@ function cerrarVentaRapida() {
   carritoVentaRapida = [];
   itemsVentaRapidaSnapshot = [];
   idPedidoVentaRapida = null;
-  document.getElementById('vr-nombre').value = '';
 }
 
 async function cargarProductosVentaRapida() {
@@ -735,11 +733,11 @@ async function iniciarCobroVentaRapida(entregarYa) {
   if (cobroVentaRapidaEnCurso) return;
 
   if (carritoVentaRapida.length === 0) { alert('Agrega al menos un producto al carrito.'); return; }
-  const nombre = document.getElementById('vr-nombre').value.trim();
-  if (!entregarYa && !nombre) {
-    alert('Escribe el nombre del cliente para dejar el pedido pendiente de recoger.');
-    document.getElementById('vr-nombre').focus();
-    return;
+
+  let nombre = '';
+  if (!entregarYa) {
+    nombre = (prompt('Nombre del cliente para recoger su pedido:') || '').trim();
+    if (!nombre) return;
   }
 
   entregaInmediataVR = entregarYa;
