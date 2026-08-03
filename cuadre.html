@@ -4,30 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Donde el Gordo - Cuadre de Caja</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Segoe UI',sans-serif;background:#1a0a00;color:#fff;min-height:100vh;}
+body{font-family:'Segoe UI',sans-serif;background:#1a0f07;color:#fff;min-height:100vh;}
 
-header{position:sticky;top:0;z-index:20;background:#1a0a00;border-bottom:1px solid rgba(200,132,26,0.3);padding:14px 18px;}
-.header-titulo{font-size:1.2rem;font-weight:800;color:#c8841a;letter-spacing:1px;}
-.header-sub{font-size:0.72rem;color:#e8c87a;letter-spacing:2px;}
-.header-fecha{font-size:0.78rem;color:rgba(240,224,176,0.7);margin-top:4px;}
+header{position:sticky;top:0;z-index:20;background:#1a0f07;border-bottom:1px solid rgba(202,161,83,0.3);padding:14px 18px;}
+.header-titulo{font-family:'Poppins',sans-serif;font-size:1.2rem;font-weight:800;color:#caa153;letter-spacing:1px;}
+.header-sub{font-size:0.72rem;color:#e6d3ac;letter-spacing:2px;}
+.header-fecha{font-size:0.78rem;color:rgba(201,184,154,0.7);margin-top:4px;}
 
 .tabs{display:flex;gap:8px;padding:14px 18px 0;flex-wrap:wrap;}
-.btn-tab{padding:10px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:0.85rem;font-weight:600;cursor:pointer;}
-.btn-tab.activa{background:linear-gradient(135deg,#c8841a,#e8a832);color:#1a0a00;border-color:transparent;}
+.btn-tab{padding:10px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(202,161,83,0.35);color:#f3e6d0;font-size:0.85rem;font-weight:600;cursor:pointer;}
+.btn-tab.activa{background:#e0a53f;color:#1a0f07;border-color:transparent;}
 
 main{padding:18px;max-width:560px;margin:0 auto;}
 .vista{display:none;flex-direction:column;gap:14px;}
 .vista.activa{display:flex;}
 
-.card{background:rgba(255,255,255,0.05);border:1px solid rgba(200,132,26,0.25);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;}
-.card h3{color:#c8841a;font-size:1rem;}
-label{font-size:0.82rem;color:rgba(240,224,176,0.85);display:block;margin-bottom:4px;}
-input,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(200,132,26,0.35);background:rgba(255,255,255,0.06);color:#fff;font-size:0.95rem;}
-.btn-primario{padding:14px;border-radius:10px;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;color:#1a0a00;font-weight:800;font-size:0.95rem;cursor:pointer;}
+.card{background:rgba(255,255,255,0.05);border:1px solid rgba(202,161,83,0.25);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;}
+.card h3{font-family:'Poppins',sans-serif;color:#caa153;font-size:1rem;}
+label{font-size:0.82rem;color:rgba(201,184,154,0.85);display:block;margin-bottom:4px;}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(202,161,83,0.35);background:rgba(255,255,255,0.06);color:#fff;font-size:0.95rem;}
+.btn-primario{padding:14px;border-radius:10px;background:#e0a53f;border:none;color:#1a0f07;font-weight:800;font-size:0.95rem;cursor:pointer;}
 .fila-dato{display:flex;justify-content:space-between;font-size:0.9rem;padding:6px 0;border-top:1px solid rgba(255,255,255,0.06);}
-.fila-dato.total{font-weight:800;color:#e8a832;border-top:1px solid rgba(200,132,26,0.3);padding-top:10px;}
+.fila-dato.total{font-weight:800;color:#e0a53f;border-top:1px solid rgba(202,161,83,0.3);padding-top:10px;}
 
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;z-index:100;display:none;}
 .toast.ok{background:rgba(70,180,100,0.9);color:#fff;}
