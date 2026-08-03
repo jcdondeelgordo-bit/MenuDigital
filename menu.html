@@ -47,7 +47,7 @@ main{padding:16px;max-width:640px;margin:0 auto;}
 
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:40;}
 .overlay.visible{display:block;}
-.panel{position:fixed;left:0;right:0;bottom:0;max-height:85vh;background:#241000;border-radius:20px 20px 0 0;z-index:50;display:none;flex-direction:column;box-shadow:0 -8px 30px rgba(0,0,0,0.5);}
+.panel{position:fixed;left:0;right:0;bottom:0;max-height:85vh;background:#241408;border-radius:20px 20px 0 0;z-index:50;display:none;flex-direction:column;box-shadow:0 -8px 30px rgba(0,0,0,0.5);}
 .panel.visible{display:flex;}
 .panel-header{padding:16px 18px;border-bottom:1px solid rgba(202,161,83,0.25);display:flex;justify-content:space-between;align-items:center;}
 .panel-header h3{font-family:'Poppins',sans-serif;color:#caa153;font-size:1.05rem;}
@@ -97,7 +97,7 @@ main{padding:16px;max-width:640px;margin:0 auto;}
 .tarjeta-puntos-premio{margin-top:6px;font-size:0.75rem;color:#e0a53f;font-weight:700;}
 
 .oferta-papas{text-align:center;padding:6px 4px 10px;}
-.oferta-papas-img{width:120px;height:120px;margin:0 auto 16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(232,168,50,0.35),rgba(202,161,83,0.1));display:flex;align-items:center;justify-content:center;font-size:4.2rem;box-shadow:0 6px 20px rgba(202,161,83,0.25);}
+.oferta-papas-img{width:120px;height:120px;margin:0 auto 16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(224,165,63,0.35),rgba(202,161,83,0.1));display:flex;align-items:center;justify-content:center;font-size:4.2rem;box-shadow:0 6px 20px rgba(202,161,83,0.25);}
 .oferta-papas-texto{font-size:1.02rem;color:#f3e6d0;line-height:1.55;margin-bottom:10px;}
 .oferta-papas-texto strong{color:#e0a53f;}
 .oferta-papas-precio{font-size:1.3rem;font-weight:800;color:#e0a53f;}
@@ -554,12 +554,14 @@ function renderCategorias() {
     categoriaActiva = categorias[0];
   }
   const cont = document.getElementById('categorias');
+  const scrollActual = cont.scrollLeft;
   cont.innerHTML = categorias.map(c => {
     const col = COLORES_CATEGORIA[c] || { bg: '#caa153', border: '#e6c07a' };
     const activa = c === categoriaActiva;
-    const texto = (c === 'Hamburguesas') ? '#1a0f07' : '#f3e6d0';
+    const texto = (col.bg === '#caa153') ? '#1a0f07' : '#f3e6d0';
     return `<div class="cat-pill${activa ? ' activa' : ''}" data-cat="${c}" style="background:${col.bg};border-color:${col.border};color:${texto};" onclick="seleccionarCategoria('${c.replace(/'/g,"\\'")}')">${ICONOS_CATEGORIA[c] || '🍴'} ${c}</div>`;
   }).join('');
+  cont.scrollLeft = scrollActual;
 }
 
 function seleccionarCategoria(cat) {
