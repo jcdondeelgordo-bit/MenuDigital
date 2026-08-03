@@ -6,53 +6,53 @@
 <title>Donde el Gordo - Bienvenida</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Segoe UI',sans-serif;background:#1a0a00;color:#fff;min-height:100vh;overflow-x:hidden;}
+body{font-family:'Segoe UI',sans-serif;background:#120a04;color:#fff;min-height:100vh;overflow-x:hidden;}
 
-#pantalla-intro{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at center,#2d1200 0%,#1a0a00 70%);padding:20px;text-align:center;}
+#pantalla-intro{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at center,#241407 0%,#120a04 70%);padding:20px;text-align:center;}
 
 .logo-container{position:relative;width:210px;height:210px;margin-bottom:22px;}
-.logo-ring{position:absolute;inset:-8px;border-radius:50%;border:3px solid #c8841a;animation:girar 8s linear infinite;background:transparent;}
-.logo-ring::before{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid rgba(200,132,26,0.3);}
+.logo-ring{position:absolute;inset:-8px;border-radius:50%;border:3px solid #caa153;animation:girar 8s linear infinite;background:transparent;}
+.logo-ring::before{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid rgba(202,161,83,0.3);}
 @keyframes girar{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-.logo-img{width:100%;height:100%;border-radius:50%;object-fit:cover;box-shadow:0 0 40px rgba(200,132,26,0.5);}
+.logo-img{width:100%;height:100%;border-radius:50%;object-fit:cover;box-shadow:0 0 40px rgba(202,161,83,0.5);}
 
-.badge{display:inline-block;background:rgba(200,132,26,0.15);border:1px solid rgba(200,132,26,0.4);border-radius:20px;padding:4px 14px;font-size:0.78rem;color:#c8841a;letter-spacing:2px;margin-bottom:14px;}
-.titulo{font-size:2rem;font-weight:800;color:#c8841a;letter-spacing:2px;text-shadow:0 2px 10px rgba(200,132,26,0.5);margin-bottom:4px;}
-.subtitulo{font-size:0.95rem;color:#e8c87a;letter-spacing:4px;margin-bottom:24px;}
-.separador{width:60px;height:2px;background:linear-gradient(to right,transparent,#c8841a,transparent);margin:0 auto 22px;}
+.badge{display:inline-block;background:rgba(202,161,83,0.15);border:1px solid rgba(202,161,83,0.4);border-radius:20px;padding:4px 14px;font-size:0.78rem;color:#caa153;letter-spacing:2px;margin-bottom:14px;}
+.titulo{font-family:'Poppins',sans-serif;font-size:2rem;font-weight:800;color:#caa153;letter-spacing:2px;text-shadow:0 2px 10px rgba(202,161,83,0.5);margin-bottom:4px;}
+.subtitulo{font-size:0.95rem;color:#e6d3ac;letter-spacing:4px;margin-bottom:24px;}
+.separador{width:60px;height:2px;background:linear-gradient(to right,transparent,#caa153,transparent);margin:0 auto 22px;}
 
-.saludo-texto{font-size:1.05rem;color:#f0e0b0;line-height:1.75;max-width:360px;margin-bottom:24px;min-height:80px;}
-.nombre-cliente{color:#e8a832;font-weight:700;}
+.saludo-texto{font-size:1.05rem;color:#f3e6d0;line-height:1.75;max-width:360px;margin-bottom:24px;min-height:80px;}
+.nombre-cliente{color:#e0a53f;font-weight:700;}
 
 #bloque-registro{display:none;width:100%;max-width:360px;}
 .campo-grupo{margin-bottom:14px;text-align:left;}
-.campo-grupo label{display:block;font-size:0.83rem;color:#c8841a;margin-bottom:5px;letter-spacing:1px;}
-.campo-grupo input{width:100%;padding:13px 15px;background:rgba(255,255,255,0.07);border:1px solid rgba(200,132,26,0.4);border-radius:10px;color:#fff;font-size:0.97rem;outline:none;transition:border-color 0.3s;}
-.campo-grupo input:focus{border-color:#c8841a;background:rgba(255,255,255,0.1);}
+.campo-grupo label{display:block;font-size:0.83rem;color:#caa153;margin-bottom:5px;letter-spacing:1px;}
+.campo-grupo input{width:100%;padding:13px 15px;background:rgba(255,255,255,0.07);border:1px solid rgba(202,161,83,0.4);border-radius:10px;color:#fff;font-size:0.97rem;outline:none;transition:border-color 0.3s;}
+.campo-grupo input:focus{border-color:#caa153;background:rgba(255,255,255,0.1);}
 .campo-grupo input::placeholder{color:rgba(255,255,255,0.3);}
 
-.btn-principal{width:100%;padding:15px;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;border-radius:12px;color:#1a0a00;font-size:1.02rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all 0.3s;margin-top:6px;}
-.btn-principal:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(200,132,26,0.5);}
-.btn-saltar{background:transparent;border:1px solid rgba(200,132,26,0.3);color:rgba(255,255,255,0.45);font-size:0.83rem;padding:10px;border-radius:8px;cursor:pointer;margin-top:10px;width:100%;transition:all 0.3s;}
-.btn-saltar:hover{color:#c8841a;border-color:#c8841a;}
+.btn-principal{width:100%;padding:15px;background:#e0a53f;border:none;border-radius:12px;color:#120a04;font-size:1.02rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all 0.3s;margin-top:6px;}
+.btn-principal:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(202,161,83,0.5);}
+.btn-saltar{background:transparent;border:1px solid rgba(202,161,83,0.3);color:rgba(255,255,255,0.45);font-size:0.83rem;padding:10px;border-radius:8px;cursor:pointer;margin-top:10px;width:100%;transition:all 0.3s;}
+.btn-saltar:hover{color:#caa153;border-color:#caa153;}
 
-.spinner{display:none;width:32px;height:32px;border:3px solid rgba(200,132,26,0.2);border-top-color:#c8841a;border-radius:50%;animation:spin 0.8s linear infinite;margin:16px auto;}
+.spinner{display:none;width:32px;height:32px;border:3px solid rgba(202,161,83,0.2);border-top-color:#caa153;border-radius:50%;animation:spin 0.8s linear infinite;margin:16px auto;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-#pantalla-sugerencias{display:none;min-height:100vh;background:radial-gradient(ellipse at top,#2d1200 0%,#1a0a00 70%);padding:20px;}
+#pantalla-sugerencias{display:none;min-height:100vh;background:radial-gradient(ellipse at top,#241407 0%,#120a04 70%);padding:20px;}
 .sug-header{text-align:center;padding:30px 0 18px;}
-.sug-header h2{font-size:1.35rem;color:#c8841a;margin-bottom:8px;}
-.sug-header p{color:#f0e0b0;font-size:0.93rem;line-height:1.5;max-width:400px;margin:0 auto;}
+.sug-header h2{font-family:'Poppins',sans-serif;font-size:1.35rem;color:#caa153;margin-bottom:8px;}
+.sug-header p{color:#f3e6d0;font-size:0.93rem;line-height:1.5;max-width:400px;margin:0 auto;}
 
 .videos-grid{display:flex;flex-direction:column;gap:14px;margin:18px auto;max-width:480px;}
-.video-card{background:rgba(255,255,255,0.05);border-radius:14px;overflow:hidden;border:1px solid rgba(200,132,26,0.2);}
+.video-card{background:rgba(255,255,255,0.05);border-radius:14px;overflow:hidden;border:1px solid rgba(202,161,83,0.2);}
 .video-card video{width:100%;height:210px;object-fit:cover;display:block;}
 .video-info{padding:11px 15px;}
-.video-info h3{color:#c8841a;font-size:0.97rem;margin-bottom:3px;}
-.video-info p{color:#f0e0b0;font-size:0.83rem;line-height:1.4;}
+.video-info h3{font-family:'Poppins',sans-serif;color:#caa153;font-size:0.97rem;margin-bottom:3px;}
+.video-info p{color:#f3e6d0;font-size:0.83rem;line-height:1.4;}
 
-.btn-ir-menu{display:block;width:100%;max-width:480px;margin:22px auto 40px;padding:17px;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;border-radius:13px;color:#1a0a00;font-size:1.08rem;font-weight:800;letter-spacing:1px;cursor:pointer;text-align:center;text-decoration:none;transition:all 0.3s;box-shadow:0 4px 20px rgba(200,132,26,0.4);}
-.btn-ir-menu:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(200,132,26,0.6);}
+.btn-ir-menu{display:block;width:100%;max-width:480px;margin:22px auto 40px;padding:17px;background:#e0a53f;border:none;border-radius:13px;color:#120a04;font-size:1.08rem;font-weight:800;letter-spacing:1px;cursor:pointer;text-align:center;text-decoration:none;transition:all 0.3s;box-shadow:0 4px 20px rgba(202,161,83,0.4);}
+.btn-ir-menu:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(202,161,83,0.6);}
 </style>
 </head>
 <body>
@@ -175,7 +175,7 @@ async function buscarCliente(tel) {
 }
 
 function mostrarAsistente() {
-  setHtml('texto-saludo', 'Hola, soy su asistente virtual. 🤖<br><br>Permítame llevarle por el <em>fascinante, delicioso y cautivador</em> mundo gastronómico de<br><strong style="color:#c8841a">Donde el Gordo</strong>.<br><br>¿Con quién tengo el placer?');
+  setHtml('texto-saludo', 'Hola, soy su asistente virtual. 🤖<br><br>Permítame llevarle por el <em>fascinante, delicioso y cautivador</em> mundo gastronómico de<br><strong style="color:#caa153">Donde el Gordo</strong>.<br><br>¿Con quién tengo el placer?');
   document.getElementById('bloque-registro').style.display = 'block';
 }
 
