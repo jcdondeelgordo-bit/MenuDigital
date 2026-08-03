@@ -440,6 +440,20 @@ const ICONOS_CATEGORIA = {
   'Picadas':'🍢','Especiales':'✨','Adicionales':'➕','Bebidas':'🥤'
 };
 
+const ORDEN_CATEGORIAS = ['Platos','Picadas','Hamburguesas','Pizzas','Perros','Papas','Especiales','Adicionales','Bebidas'];
+
+const COLORES_CATEGORIA = {
+  'Platos':       { bg: '#a9642f', border: '#c8813f' },
+  'Picadas':      { bg: '#8a2a48', border: '#a94263' },
+  'Hamburguesas': { bg: '#caa153', border: '#e6c07a' },
+  'Pizzas':       { bg: '#7a5323', border: '#96703c' },
+  'Perros':       { bg: '#8a5a2b', border: '#a97142' },
+  'Papas':        { bg: '#6b1530', border: '#8a2a48' },
+  'Especiales':   { bg: '#5c3a1e', border: '#7a5323' },
+  'Adicionales':  { bg: '#6b4a2a', border: '#87613a' },
+  'Bebidas':      { bg: '#4a3319', border: '#6b4a2a' }
+};
+
 let PRODUCTOS = [];
 let carrito = JSON.parse(localStorage.getItem('zfood_carrito') || '[]');
 let categoriaActiva = null;
@@ -524,19 +538,30 @@ function renderMeseroOptions() {
 }
 
 function renderCategorias() {
-  const categorias = [...new Set(PRODUCTOS.map(p => p.categoria))];
-  categoriaActiva = categorias[0];
+  const presentes = [...new Set(PRODUCTOS.map(p => p.categoria))];
+  const categorias = presentes.slice().sort((a, b) => {
+    const ia = ORDEN_CATEGORIAS.indexOf(a);
+    const ib = ORDEN_CATEGORIAS.indexOf(b);
+    if (ia === -1 && ib === -1) return 0;
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+  if (!categoriaActiva || !categorias.includes(categoriaActiva)) {
+    categoriaActiva = categorias[0];
+  }
   const cont = document.getElementById('categorias');
-  cont.innerHTML = categorias.map(c =>
-    `<div class="cat-pill${c === categoriaActiva ? ' activa' : ''}" data-cat="${c}" onclick="seleccionarCategoria('${c.replace(/'/g,"\\'")}')">${ICONOS_CATEGORIA[c] || '🍴'} ${c}</div>`
-  ).join('');
+  cont.innerHTML = categorias.map(c => {
+    const col = COLORES_CATEGORIA[c] || { bg: '#caa153', border: '#e6c07a' };
+    const activa = c === categoriaActiva;
+    const texto = (c === 'Hamburguesas' && activa) ? '#1a0f07' : '#f3e6d0';
+    return `<div class="cat-pill${activa ? ' activa' : ''}" data-cat="${c}" style="background:${col.bg};border-color:${col.border};color:${texto};" onclick="seleccionarCategoria('${c.replace(/'/g,"\\'")}')">${ICONOS_CATEGORIA[c] || '🍴'} ${c}</div>`;
+  }).join('');
 }
 
 function seleccionarCategoria(cat) {
   categoriaActiva = cat;
-  document.querySelectorAll('.cat-pill').forEach(el => {
-    el.classList.toggle('activa', el.dataset.cat === cat);
-  });
+  renderCategorias();
   renderProductos();
 }
 
