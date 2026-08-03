@@ -4,63 +4,64 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Donde el Gordo - Cocina</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
-body{font-family:'Segoe UI',sans-serif;background:#1a0a00;color:#fff;min-height:100vh;}
+body{font-family:'Inter',sans-serif;background:radial-gradient(1200px 800px at 20% -10%,#241407 0%,#170d06 55%,#120a04 100%);color:#f3e6d0;min-height:100vh;}
 
-header{position:sticky;top:0;z-index:20;background:#1a0a00;border-bottom:1px solid rgba(200,132,26,0.3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
-.header-titulo{font-size:1.2rem;font-weight:800;color:#c8841a;letter-spacing:1px;}
-.header-sub{font-size:0.72rem;color:#e8c87a;letter-spacing:2px;}
+header{position:sticky;top:0;z-index:20;background:#170d06;border-bottom:1px solid rgba(202,161,83,0.3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.header-titulo{font-family:'Poppins',sans-serif;font-size:1.2rem;font-weight:800;color:#caa153;letter-spacing:1px;}
+.header-sub{font-size:0.72rem;color:#e6d3ac;letter-spacing:2px;}
 .header-derecha{display:flex;align-items:center;gap:12px;}
-.contador-activos{background:rgba(200,132,26,0.15);border:1px solid rgba(200,132,26,0.4);color:#e8a832;padding:6px 14px;border-radius:20px;font-weight:700;font-size:0.9rem;}
-.btn-vista{padding:10px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:0.9rem;font-weight:600;cursor:pointer;}
-.btn-vista.activa{background:linear-gradient(135deg,#c8841a,#e8a832);color:#1a0a00;border-color:transparent;}
+.contador-activos{background:rgba(202,161,83,0.15);border:1px solid rgba(202,161,83,0.4);color:#e0a53f;padding:6px 14px;border-radius:20px;font-weight:700;font-size:0.9rem;}
+.btn-vista{padding:10px 18px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(202,161,83,0.35);color:#f3e6d0;font-size:0.9rem;font-weight:600;cursor:pointer;}
+.btn-vista.activa{background:#e0a53f;color:#1a0f07;border-color:transparent;}
 
 main{padding:18px;max-width:480px;margin:0 auto;}
 
-.vacio-msg{grid-column:1/-1;text-align:center;color:rgba(240,224,176,0.5);padding:60px 0;font-size:1rem;}
+.vacio-msg{grid-column:1/-1;text-align:center;color:rgba(201,184,154,0.5);padding:60px 0;font-size:1rem;}
 
-.pedido-card{background:rgba(255,255,255,0.05);border:1px solid rgba(200,132,26,0.25);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:border-color 0.3s, box-shadow 0.3s;}
+.pedido-card{background:rgba(255,255,255,0.05);border:1px solid rgba(202,161,83,0.25);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:border-color 0.3s, box-shadow 0.3s;}
 .pedido-card.urgente{border-color:#e05050;box-shadow:0 0 0 1px rgba(224,80,80,0.4);}
 .pedido-card.nuevo{animation:flash 1.2s ease-in-out 2;}
-@keyframes flash{0%,100%{background:rgba(255,255,255,0.05);}50%{background:rgba(200,132,26,0.25);}}
+@keyframes flash{0%,100%{background:rgba(255,255,255,0.05);}50%{background:rgba(202,161,83,0.25);}}
 .pedido-card.completo{opacity:0.55;}
 
 .pedido-header{display:flex;justify-content:space-between;align-items:flex-start;}
-.pedido-mesa{font-weight:800;font-size:1.05rem;color:#c8841a;}
-.pedido-mesero{font-size:0.8rem;color:rgba(240,224,176,0.75);margin-top:2px;}
+.pedido-mesa{font-family:'Poppins',sans-serif;font-weight:800;font-size:1.05rem;color:#caa153;}
+.pedido-mesero{font-size:0.8rem;color:rgba(201,184,154,0.75);margin-top:2px;}
 .pedido-tiempo{text-align:right;}
-.pedido-hora{font-size:0.78rem;color:rgba(240,224,176,0.6);}
+.pedido-hora{font-size:0.78rem;color:rgba(201,184,154,0.6);}
 .pedido-transcurrido{font-weight:800;font-size:1.05rem;}
-.pedido-transcurrido.ok{color:#e8a832;}
+.pedido-transcurrido.ok{color:#e0a53f;}
 .pedido-transcurrido.urgente{color:#e05050;}
 
 .item-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,0.06);}
 .item-info{flex:1;min-width:0;}
 .item-nombre{font-weight:700;font-size:0.93rem;}
-.item-obs{font-size:0.78rem;color:rgba(240,224,176,0.65);margin-top:2px;}
+.item-obs{font-size:0.78rem;color:rgba(201,184,154,0.65);margin-top:2px;}
 .item-estado-btn{flex:none;padding:8px 12px;border-radius:10px;border:none;font-size:0.8rem;font-weight:700;cursor:pointer;min-width:110px;text-align:center;}
 .item-estado-btn.est-pendiente{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);}
-.item-estado-btn.est-en_preparacion{background:rgba(200,132,26,0.3);color:#e8a832;}
+.item-estado-btn.est-en_preparacion{background:rgba(202,161,83,0.3);color:#e0a53f;}
 .item-estado-btn.est-listo{background:rgba(90,140,220,0.3);color:#7db2f0;}
 .item-estado-btn.est-entregado{background:rgba(70,180,100,0.25);color:#5fd489;}
 
 .pedido-footer{display:flex;justify-content:flex-end;}
-.btn-completo{padding:10px 16px;border-radius:10px;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;color:#1a0a00;font-weight:700;font-size:0.85rem;cursor:pointer;}
+.btn-completo{padding:10px 16px;border-radius:10px;background:#e0a53f;border:none;color:#1a0f07;font-weight:700;font-size:0.85rem;cursor:pointer;}
 .pedido-completo-msg{font-size:0.85rem;color:#5fd489;font-weight:700;}
 
 /* Vista de botones -- rediseño 2026-07-30 */
 .lista-botones{display:flex;flex-direction:column;gap:10px;max-width:480px;margin:0 auto;}
-.btn-pedido{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(200,132,26,0.25);color:#f0e0b0;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;width:100%;}
+.btn-pedido{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(202,161,83,0.25);color:#f3e6d0;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;width:100%;}
 .btn-pedido.completo{opacity:0.55;}
 .btn-pedido.urgente{border-color:#e05050;background:rgba(224,80,80,0.15);animation:pulso-urgente 1.5s ease-in-out infinite;}
 @keyframes pulso-urgente{0%,100%{box-shadow:0 0 0 0 rgba(224,80,80,0.4);}50%{box-shadow:0 0 0 6px rgba(224,80,80,0);}}
-.btn-pedido-hora{color:rgba(240,224,176,0.6);font-size:0.8rem;flex:none;}
-.btn-pedido-etiqueta{flex:1;color:#c8841a;}
+.btn-pedido-hora{color:rgba(201,184,154,0.6);font-size:0.8rem;flex:none;}
+.btn-pedido-etiqueta{flex:1;color:#caa153;}
 .btn-pedido-min{font-weight:800;flex:none;}
-.btn-pedido-min.ok{color:#e8a832;}
+.btn-pedido-min.ok{color:#e0a53f;}
 .btn-pedido-min.urgente{color:#e05050;}
-.btn-regresar{align-self:flex-start;padding:10px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,132,26,0.35);color:#f0e0b0;font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:12px;}
+.btn-regresar{align-self:flex-start;padding:10px 16px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(202,161,83,0.35);color:#f3e6d0;font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:12px;}
 </style>
 </head>
 <body>
