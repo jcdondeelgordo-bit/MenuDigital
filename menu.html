@@ -554,7 +554,7 @@ function renderCategorias() {
   cont.innerHTML = categorias.map(c => {
     const col = COLORES_CATEGORIA[c] || { bg: '#caa153', border: '#e6c07a' };
     const activa = c === categoriaActiva;
-    const texto = (c === 'Hamburguesas' && activa) ? '#1a0f07' : '#f3e6d0';
+    const texto = (c === 'Hamburguesas') ? '#1a0f07' : '#f3e6d0';
     return `<div class="cat-pill${activa ? ' activa' : ''}" data-cat="${c}" style="background:${col.bg};border-color:${col.border};color:${texto};" onclick="seleccionarCategoria('${c.replace(/'/g,"\\'")}')">${ICONOS_CATEGORIA[c] || '🍴'} ${c}</div>`;
   }).join('');
 }
