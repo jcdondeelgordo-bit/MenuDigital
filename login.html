@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ingresar — Donde el Gordo</title>
+<style>
+  body{font-family:'Inter',sans-serif;background:radial-gradient(1200px 800px at 20% -10%,#241407 0%,#170d06 55%,#120a04 100%);color:#f3e6d0;min-height:100vh;display:flex;align-items:center;justify-content:center;margin:0;}
+  .panel{background:#170d06;border:1px solid rgba(202,161,83,0.3);border-radius:16px;padding:32px;width:100%;max-width:340px;box-sizing:border-box;}
+  h1{font-size:1.1rem;color:#caa153;margin:0 0 20px;text-align:center;letter-spacing:1px;}
+  .rol-tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .rol-tab{flex:1;padding:10px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(202,161,83,0.3);color:#f3e6d0;font-weight:600;cursor:pointer;text-align:center;user-select:none;}
+  .rol-tab.activa{background:#e0a53f;color:#1a0f07;border-color:transparent;}
+  input{width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid rgba(202,161,83,0.3);background:rgba(255,255,255,0.05);color:#f3e6d0;font-size:1rem;margin-bottom:12px;}
+  button.entrar{width:100%;padding:12px;border-radius:10px;background:#e0a53f;border:none;color:#1a0f07;font-weight:800;font-size:1rem;cursor:pointer;}
+  button.entrar:disabled{opacity:0.6;cursor:default;}
+  .msg{font-size:0.85rem;color:#e8a0a0;margin-top:10px;text-align:center;min-height:1.2em;}
+</style>
+</head>
+<body>
+<div class="panel">
+  <h1>DONDE EL GORDO</h1>
+  <div class="rol-tabs">
+    <div class="rol-tab activa" id="tab-cajero">Cajero</div>
+    <div class="rol-tab" id="tab-admin">Admin</div>
+  </div>
+  <input type="password" id="clave" placeholder="Clave" autocomplete="current-password">
+  <button class="entrar" id="btn-entrar">Entrar</button>
+  <div class="msg" id="msg"></div>
+</div>
+<script>
+let rolElegido = 'cajero';
+function elegirRol(r) {
+  rolElegido = r;
+  document.getElementById('tab-cajero').classList.toggle('activa', r === 'cajero');
+  document.getElementById('tab-admin').classList.toggle('activa', r === 'admin');
+}
+document.getElementById('tab-cajero').addEventListener('click', () => elegirRol('cajero'));
+document.getElementById('tab-admin').addEventListener('click', () => elegirRol('admin'));
+
+async function entrar() {
+  const btn = document.getElementById('btn-entrar');
+  const msg = document.getElementById('msg');
+  const clave = document.getElementById('clave').value;
+  if (!clave) { msg.textContent = 'Escribe la clave.'; return; }
+  btn.disabled = true;
+  msg.textContent = '';
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rol: rolElegido, clave })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const volver = new URLSearchParams(window.location.search).get('volver');
+      window.location.href = volver || '/index.html';
+    } else {
+      msg.textContent = 'Clave incorrecta.';
+      btn.disabled = false;
+    }
+  } catch (e) {
+    msg.textContent = 'No se pudo conectar. Intenta de nuevo.';
+    btn.disabled = false;
+  }
+}
+document.getElementById('btn-entrar').addEventListener('click', entrar);
+document.getElementById('clave').addEventListener('keydown', (e) => { if (e.key === 'Enter') entrar(); });
+</script>
+</body>
+</html>
