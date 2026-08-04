@@ -89,6 +89,36 @@ async function runTests() {
     // The backend may return 200, 400, 500, or other status — we just verify it's not a permission rejection
   });
 
+  // Test 2a: cajero_o_admin action with cajero cookie should pass through to backend
+  await test('Test 2a: listar_pedidos_caja with cajero cookie → NOT 403', async () => {
+    const request = await createRequestWithCookie(`${baseUrl}?accion=listar_pedidos_caja`, 'cajero');
+    const response = await handler(request);
+
+    assert.notEqual(response.status, 403, `Expected NOT 403, got ${response.status}`);
+    // The backend may return 200, 400, 500, or other status — we just verify it's not a permission rejection
+  });
+
+  // Test 2b: cajero_o_admin action with admin cookie should pass through to backend
+  await test('Test 2b: listar_pedidos_caja with admin cookie → NOT 403', async () => {
+    const request = await createRequestWithCookie(`${baseUrl}?accion=listar_pedidos_caja`, 'admin');
+    const response = await handler(request);
+
+    assert.notEqual(response.status, 403, `Expected NOT 403, got ${response.status}`);
+    // The backend may return 200, 400, 500, or other status — we just verify it's not a permission rejection
+  });
+
+  // Test 2c: cajero_o_admin action without cookie should return 403
+  await test('Test 2c: listar_pedidos_caja without cookie → 403 unauthorized', async () => {
+    const request = createRequest(`${baseUrl}?accion=listar_pedidos_caja`);
+    const response = await handler(request);
+
+    assert.equal(response.status, 403, `Expected 403, got ${response.status}`);
+
+    const body = await response.json();
+    assert.equal(body.ok, false, 'Expected ok:false');
+    assert.equal(body.error, 'no autorizado', `Expected error 'no autorizado', got '${body.error}'`);
+  });
+
   // Test 1d: actualizar_precio with cajero cookie (wrong role) should return 403
   await test('Test 1d: actualizar_precio with cajero cookie (wrong role) → 403', async () => {
     const request = await createRequestWithCookie(`${baseUrl}?accion=actualizar_precio&producto=Sencilla&precio=15000`, 'cajero');

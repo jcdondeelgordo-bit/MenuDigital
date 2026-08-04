@@ -55,7 +55,13 @@ export default async function handler(request) {
   if (!tienePermiso(requerido, session ? session.rol : null)) {
     return new Response(JSON.stringify({ ok: false, error: 'no autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
   }
-  const upstream = await fetch(SCRIPT_URL + '?' + url.searchParams.toString());
-  const cuerpo = await upstream.text();
+  let upstream;
+  let cuerpo;
+  try {
+    upstream = await fetch(SCRIPT_URL + '?' + url.searchParams.toString());
+    cuerpo = await upstream.text();
+  } catch (e) {
+    return new Response(JSON.stringify({ ok: false, error: 'no se pudo conectar con el backend' }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+  }
   return new Response(cuerpo, { status: upstream.status, headers: { 'Content-Type': 'application/json' } });
 }
