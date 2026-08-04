@@ -303,7 +303,8 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      margin-bottom: 24px;
+      margin: 0 auto 24px;
+      max-width: 640px;
     }
     .product-card {
       padding: 16px;
@@ -311,6 +312,8 @@
       border-left: 3px solid rgba(255, 255, 255, 0.1);
       transition: var(--transition);
     }
+    .product-card:nth-child(odd) { background: rgba(255, 255, 255, 0.035); }
+    .product-card:nth-child(even) { background: rgba(0, 0, 0, 0.16); }
     .product-card.filled {
       border-left-color: var(--area-color);
       background: rgba(255, 255, 255, 0.05);

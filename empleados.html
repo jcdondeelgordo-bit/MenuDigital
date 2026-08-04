@@ -14,7 +14,10 @@ input, button { font-size:1rem; padding:10px; border-radius:8px; border:1px soli
 button { background:#e0a53f; color:#1a0f07; border:none; cursor:pointer; font-weight:bold; }
 button:disabled { opacity:0.5; cursor:not-allowed; }
 table { width:100%; border-collapse: collapse; margin-top:16px; }
-td, th { padding:8px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:left; font-size:0.9rem; }
+td, th { padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:left; font-size:0.9rem; }
+table { max-width:640px; }
+tbody tr:nth-child(odd) { background:rgba(255,255,255,0.035); }
+tbody tr:nth-child(even) { background:rgba(0,0,0,0.16); }
 .estado-si { color:#5fd489; font-weight:bold; }
 .estado-no { color:#b6a180; }
 .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#241408; border:1px solid rgba(202,161,83,0.3); color:#f3e6d0; padding:10px 20px; border-radius:8px; display:none; }

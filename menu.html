@@ -31,7 +31,10 @@ main{padding:16px;max-width:640px;margin:0 auto;}
 .seccion-titulo{font-family:'Poppins',sans-serif;font-size:1.05rem;color:#caa153;font-weight:700;margin:18px 0 10px;display:flex;align-items:center;gap:8px;}
 #seccion-recomendados{display:none;}
 
-.producto-card{display:flex;gap:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(202,161,83,0.2);border-radius:14px;padding:12px;margin-bottom:10px;align-items:center;}
+.producto-card{display:flex;gap:12px;border:1px solid rgba(202,161,83,0.14);border-radius:0;padding:12px;margin:0;align-items:center;}
+#lista-productos,#lista-recomendados{border-radius:14px;overflow:hidden;border:1px solid rgba(202,161,83,0.2);}
+.producto-card:nth-child(odd){background:rgba(255,255,255,0.045);}
+.producto-card:nth-child(even){background:rgba(0,0,0,0.16);}
 .producto-icono{flex:none;width:52px;height:52px;border-radius:12px;background:rgba(202,161,83,0.15);display:flex;align-items:center;justify-content:center;font-size:1.6rem;}
 .producto-info{flex:1;min-width:0;}
 .producto-nombre{font-weight:700;font-size:0.97rem;color:#fff;}
