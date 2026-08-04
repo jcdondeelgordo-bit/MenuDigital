@@ -6,31 +6,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Inventario · Donde el Gordo</title>
   
-  <!-- Google Fonts: Plus Jakarta Sans for premium typography -->
+  <!-- Google Fonts: Inter, Poppins for golden identity -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
   
   <style>
     :root {
-      --bg: #090a0f;
-      --card-bg: rgba(255, 255, 255, 0.03);
-      --card-border: rgba(255, 255, 255, 0.06);
-      --card-border-focus: rgba(255, 255, 255, 0.15);
-      --text: #f3f4f6;
-      --text-muted: #9ca3af;
-      --primary: #ff4b5c;
-      --primary-glow: rgba(255, 75, 92, 0.15);
-      
+      --bg: radial-gradient(1200px 800px at 20% -10%, #241407 0%, #170d06 55%, #120a04 100%);
+      --card-bg: rgba(255, 255, 255, 0.04);
+      --card-border: rgba(202, 161, 83, 0.18);
+      --card-border-focus: rgba(202, 161, 83, 0.4);
+      --text: #f3e6d0;
+      --text-muted: #b6a180;
+      --primary: #e0a53f;
+      --primary-glow: rgba(224, 165, 63, 0.18);
+
       /* Colors per Area */
-      --pizza: #ff4b5c;
-      --cocina: #ffa000;
-      --parrilla: #ff7600;
-      --nevera: #00d2ff;
-      --ingresos: #10b981;
-      --ventas: #a855f7;
-      --reporte: #f59e0b;
-      
+      --pizza: #7a5323;
+      --cocina: #a9642f;
+      --parrilla: #5c3a1e;
+      --nevera: #4a3319;
+      --ingresos: #caa153;
+      --ventas: #6b4a2a;
+      --reporte: #8a2a48;
+
       --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
       --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -43,9 +43,9 @@
     }
 
     body {
-      background-color: var(--bg);
+      background: var(--bg);
       color: var(--text);
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
       min-height: 100vh;
       overflow-x: hidden;
       padding-bottom: 90px; /* space for bottom nav */
@@ -102,7 +102,8 @@
       font-weight: 800;
       letter-spacing: -0.5px;
       text-transform: uppercase;
-      background: linear-gradient(135deg, #fff 30%, #ff4b5c 100%);
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f3e6d0 30%, #e0a53f 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -245,7 +246,7 @@
       position: sticky;
       top: 0;
       z-index: 50;
-      background: var(--bg);
+      background: #170d06;
     }
     .btn-back {
       width: 40px;

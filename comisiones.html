@@ -4,54 +4,55 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Donde el Gordo - Comisiones</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Segoe UI',sans-serif;background:#1a0a00;color:#fff;min-height:100vh;padding-bottom:60px;}
+body{font-family:'Inter',sans-serif;background:radial-gradient(1200px 800px at 20% -10%,#241407 0%,#170d06 55%,#120a04 100%);color:#f3e6d0;min-height:100vh;padding-bottom:60px;}
 
-header{background:#1a0a00;border-bottom:1px solid rgba(200,132,26,0.3);padding:16px 20px;}
-.header-titulo{font-size:1.2rem;font-weight:800;color:#c8841a;letter-spacing:1px;}
-.header-sub{font-size:0.72rem;color:#e8c87a;letter-spacing:2px;}
+header{background:#170d06;border-bottom:1px solid rgba(202,161,83,0.3);padding:16px 20px;}
+.header-titulo{font-family:'Poppins',sans-serif;font-size:1.2rem;font-weight:800;color:#caa153;letter-spacing:1px;}
+.header-sub{font-size:0.72rem;color:#e6d3ac;letter-spacing:2px;}
 
 main{max-width:760px;margin:0 auto;padding:20px;}
 
-.seccion{background:rgba(255,255,255,0.05);border:1px solid rgba(200,132,26,0.25);border-radius:16px;padding:20px;margin-bottom:20px;}
-.seccion h2{color:#c8841a;font-size:1.05rem;margin-bottom:14px;}
+.seccion{background:rgba(255,255,255,0.05);border:1px solid rgba(202,161,83,0.25);border-radius:16px;padding:20px;margin-bottom:20px;}
+.seccion h2{font-family:'Poppins',sans-serif;color:#caa153;font-size:1.05rem;margin-bottom:14px;}
 
 .campo-grupo{margin-bottom:14px;}
-.campo-grupo label{display:block;font-size:0.8rem;color:#c8841a;margin-bottom:5px;}
-.campo-grupo input{width:100%;padding:11px 13px;background:rgba(255,255,255,0.07);border:1px solid rgba(200,132,26,0.4);border-radius:10px;color:#fff;font-size:0.93rem;outline:none;}
+.campo-grupo label{display:block;font-size:0.8rem;color:#caa153;margin-bottom:5px;}
+.campo-grupo input{width:100%;padding:11px 13px;background:rgba(255,255,255,0.07);border:1px solid rgba(202,161,83,0.4);border-radius:10px;color:#fff;font-size:0.93rem;outline:none;}
 .campo-fila{display:flex;gap:10px;}
 .campo-fila>div{flex:1;}
 
-.nota{font-size:0.78rem;color:rgba(240,224,176,0.65);margin-top:-6px;margin-bottom:14px;line-height:1.4;}
+.nota{font-size:0.78rem;color:rgba(201,184,154,0.65);margin-top:-6px;margin-bottom:14px;line-height:1.4;}
 
 .posiciones-lista{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
 .posicion-row{display:flex;align-items:center;gap:10px;}
-.posicion-label{flex:none;width:90px;font-size:0.85rem;color:rgba(240,224,176,0.8);}
+.posicion-label{flex:none;width:90px;font-size:0.85rem;color:rgba(201,184,154,0.8);}
 .posicion-row input{flex:1;}
 .btn-quitar-pos{flex:none;background:transparent;border:none;color:rgba(255,100,100,0.7);font-size:1.2rem;cursor:pointer;padding:0 8px;}
-.btn-agregar-pos{background:transparent;border:1px dashed rgba(200,132,26,0.4);color:#e8a832;padding:8px 14px;border-radius:8px;font-size:0.85rem;cursor:pointer;}
+.btn-agregar-pos{background:transparent;border:1px dashed rgba(202,161,83,0.4);color:#e0a53f;padding:8px 14px;border-radius:8px;font-size:0.85rem;cursor:pointer;}
 
-.btn-principal{padding:13px 22px;background:linear-gradient(135deg,#c8841a,#e8a832);border:none;border-radius:10px;color:#1a0a00;font-size:0.95rem;font-weight:700;cursor:pointer;}
-.btn-secundario{padding:13px 22px;background:transparent;border:1px solid rgba(200,132,26,0.4);border-radius:10px;color:#f0e0b0;font-size:0.95rem;cursor:pointer;}
+.btn-principal{padding:13px 22px;background:#e0a53f;border:none;border-radius:10px;color:#1a0f07;font-size:0.95rem;font-weight:700;cursor:pointer;}
+.btn-secundario{padding:13px 22px;background:transparent;border:1px solid rgba(202,161,83,0.4);border-radius:10px;color:#f3e6d0;font-size:0.95rem;cursor:pointer;}
 .msg{margin-top:12px;font-size:0.85rem;padding:10px 12px;border-radius:8px;}
 .msg.ok{background:rgba(70,180,100,0.15);color:#5fd489;}
 .msg.error{background:rgba(224,80,80,0.15);color:#e88;}
 
 table{width:100%;border-collapse:collapse;margin-top:14px;}
 th,td{text-align:left;padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:0.88rem;}
-th{color:#c8841a;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;}
+th{color:#caa153;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;}
 td.num{text-align:right;font-weight:700;}
-tr.top-rank td{color:#e8a832;}
-.badge-pos{display:inline-block;background:rgba(200,132,26,0.2);color:#e8a832;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:700;}
-.badge-prop{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(240,224,176,0.7);padding:2px 8px;border-radius:10px;font-size:0.75rem;}
+tr.top-rank td{color:#e0a53f;}
+.badge-pos{display:inline-block;background:rgba(202,161,83,0.2);color:#e0a53f;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:700;}
+.badge-prop{display:inline-block;background:rgba(255,255,255,0.08);color:rgba(201,184,154,0.7);padding:2px 8px;border-radius:10px;font-size:0.75rem;}
 
-.total-row td{font-weight:800;color:#fff;border-top:2px solid rgba(200,132,26,0.3);}
+.total-row td{font-weight:800;color:#fff;border-top:2px solid rgba(202,161,83,0.3);}
 
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:50;}
 .overlay.oculto{display:none;}
-.login-box{background:#241000;border:1px solid rgba(200,132,26,0.3);border-radius:16px;padding:24px;width:90%;max-width:340px;}
-.login-box h3{color:#c8841a;margin-bottom:14px;}
+.login-box{background:#241408;border:1px solid rgba(202,161,83,0.3);border-radius:16px;padding:24px;width:90%;max-width:340px;}
+.login-box h3{font-family:'Poppins',sans-serif;color:#caa153;margin-bottom:14px;}
 </style>
 </head>
 <body>
@@ -92,7 +93,7 @@ tr.top-rank td{color:#e8a832;}
     </div>
     <div class="nota">Piso mínimo: $500.000 COP. Puede subir según ventas de la quincena o en festividades — tú decides cuánto cada vez.</div>
 
-    <label style="display:block;font-size:0.8rem;color:#c8841a;margin-bottom:8px;">Posiciones premiadas del ranking (% del monto total para cada una)</label>
+    <label style="display:block;font-size:0.8rem;color:#caa153;margin-bottom:8px;">Posiciones premiadas del ranking (% del monto total para cada una)</label>
     <div class="posiciones-lista" id="posiciones-lista"></div>
     <button class="btn-agregar-pos" onclick="agregarPosicion()">+ Agregar posición</button>
     <div class="nota" style="margin-top:10px;">El resto del bono (lo que no se asigna aquí) se reparte entre los demás meseros, proporcional a su venta individual.</div>

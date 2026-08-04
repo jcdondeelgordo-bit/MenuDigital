@@ -4,18 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Empleados - Donde el Gordo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
 <style>
-  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background:#111; color:#eee; margin:0; padding:24px; }
-  h1 { font-size: 1.4rem; }
-  .panel { max-width: 480px; margin: 60px auto; background:#1c1c1c; padding:24px; border-radius:12px; }
-  input, button { font-size:1rem; padding:10px; border-radius:8px; border:1px solid #444; background:#222; color:#eee; width:100%; box-sizing:border-box; margin-bottom:10px; }
-  button { background:#e0552b; border:none; cursor:pointer; font-weight:bold; }
-  button:disabled { opacity:0.5; cursor:not-allowed; }
-  table { width:100%; border-collapse: collapse; margin-top:16px; }
-  td, th { padding:8px; border-bottom:1px solid #333; text-align:left; font-size:0.9rem; }
-  .estado-si { color:#4caf50; font-weight:bold; }
-  .estado-no { color:#888; }
-  .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 20px; border-radius:8px; display:none; }
+body { font-family:'Inter',sans-serif; background:radial-gradient(1200px 800px at 20% -10%,#241407 0%,#170d06 55%,#120a04 100%); color:#f3e6d0; margin:0; padding:24px; }
+h1 { font-family:'Poppins',sans-serif; font-size: 1.4rem; color:#caa153; }
+h2 { font-family:'Poppins',sans-serif; color:#caa153; }
+.panel { max-width: 480px; margin: 60px auto; background:#241408; border:1px solid rgba(202,161,83,0.25); padding:24px; border-radius:12px; }
+input, button { font-size:1rem; padding:10px; border-radius:8px; border:1px solid rgba(202,161,83,0.35); background:rgba(255,255,255,0.06); color:#f3e6d0; width:100%; box-sizing:border-box; margin-bottom:10px; }
+button { background:#e0a53f; color:#1a0f07; border:none; cursor:pointer; font-weight:bold; }
+button:disabled { opacity:0.5; cursor:not-allowed; }
+table { width:100%; border-collapse: collapse; margin-top:16px; }
+td, th { padding:8px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:left; font-size:0.9rem; }
+.estado-si { color:#5fd489; font-weight:bold; }
+.estado-no { color:#b6a180; }
+.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#241408; border:1px solid rgba(202,161,83,0.3); color:#f3e6d0; padding:10px 20px; border-radius:8px; display:none; }
 </style>
 </head>
 <body>
