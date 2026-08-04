@@ -82,15 +82,9 @@ Fuente de verdad: la función `/api/backend` rechaza cualquier acción no listad
 | `actualizar_estado_item`, `marcar_pedido_completo` | cajero o admin |
 | `calcular_comisiones`, `guardar_configuracion_bono` | admin |
 
-**Backend Inventario** (`SCRIPT_URL_INVENTARIO`):
-| Acción | Rol requerido |
-|---|---|
-| `get_productos`, `listar_empleados`, `verificar_envio` | pública |
-| `get_data`, `reporte_insumos`, `listar_insumos`, `resumen_dia_caja`, `listar_registros_dia_caja`, `sugerir_base_apertura` | cajero o admin (lectura) |
-| `guardar_ingreso`, `guardar_inventario_completo`, `guardar_ventas` | cajero o admin |
-| `guardar_empleado`, `listar_empleados_admin` | cajero o admin |
-| `verificar_admin` | pública |
-| `abrir_caja`, `cerrar_caja`, `registrar_gasto_caja`, `registrar_pago_empleado_caja`, `registrar_recogida_caja`, `registrar_dano` | cajero (admin = solo lectura vía `resumen_dia_caja`/`listar_registros_dia_caja`) |
+**Backend Inventario — SIN proxy, ver nota abajo.** `inventario.html`, `empleados.html` y `cuadre.html` no usan `fetch()` como el resto: leen por JSONP (`<script src="...&callback=...">`) y escriben con un formulario oculto enviado a un iframe + verificación por polling (`verificar_envio`). Adaptar un proxy a ese mecanismo es una superficie de cambio mucho más delicada, justo en la parte del sistema donde ya está confirmado que hay "cero margen de tolerancia" a errores (ver `ESTADO.md`, hallazgos de faltantes/sobrantes). Decisión explícita del dueño (2026-08-04): **estos 3 archivos solo se protegen a nivel de página** (el `middleware.js` exige sesión Cajero o Admin para entrar, igual que las demás), **sin tocar sus llamadas al backend** — el `SCRIPT_URL_INVENTARIO` sigue tal cual en su código, pero ya no es alcanzable por nadie sin loguearse primero a la página que lo usa.
+
+**Consecuencia de este trade-off:** dentro de estos 3 archivos ya no hay forma de distinguir "Admin solo lectura" vs "Cajero completo" a nivel de acción individual (no hay proxy que lo revise) — ambos roles, una vez logueados, tienen el mismo acceso completo dentro de la página. Esto afecta puntualmente a `cuadre.html`, donde la matriz de la Sección 2 dice "Admin = solo lectura": ese límite queda solo como una posible restricción visual del lado del cliente (ocultar/deshabilitar botones para Admin), no como un candado real — se acepta porque Admin es personal de confianza que ya pasó el login, no un desconocido con el link. Si en el futuro se quiere un candado real ahí también, hay que construir el proxy JSONP/iframe (fuera de alcance de esta ronda).
 
 ## Manejo de errores y casos borde
 
