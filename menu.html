@@ -1017,7 +1017,7 @@ async function enviarDomicilio() {
   const fechaNacTxt = mesNac ? `${diaNac ? diaNac + ' de ' : ''}${NOMBRES_MES[parseInt(mesNac, 10) - 1]}${anioNac ? ' de ' + anioNac : ''}` : '';
 
   const msgLineas = [
-    `🛵 *Pedido a domicilio - Donde el Gordo*`,
+    `\u{1F6F5} *Pedido a domicilio - Donde el Gordo*`,
     ``,
     `Nombre: ${nombre}`,
     `Celular: ${celular}`,
@@ -1039,6 +1039,14 @@ async function enviarDomicilio() {
   try {
     localStorage.setItem('degCliente', JSON.stringify({nombre, tel: celular, cumple: cumpleISO}));
   } catch (e) {}
+  // Aviso en pantalla porque el pop-up de WhatsApp puede ser bloqueado por el
+  // navegador o el cliente puede no tener WhatsApp instalado -- sin esto, el
+  // panel de Domicilio simplemente se cerraba sin ninguna señal de que el
+  // pedido se armó (hallazgo de pruebas 2026-08-04).
+  document.getElementById('confirmacion-contenido').innerHTML =
+    `<div class="confirmacion-icono">📲</div><h3>¡Pedido armado!</h3><p>Se abrió WhatsApp con tu pedido listo — confirma el envío ahí para completarlo. Si no se abrió, revisa que tu navegador no haya bloqueado la ventana.</p>`;
+  document.getElementById('overlay-confirmacion').classList.add('visible');
+  document.getElementById('panel-confirmacion').classList.add('visible');
   await registrarVentaEnSheet('domicilio', total);
   await registrarClienteDesdeMenu(nombre, celular, cumpleISO, direccion);
   carrito = [];
