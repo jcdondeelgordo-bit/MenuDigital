@@ -33,7 +33,7 @@ input,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(20
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;z-index:100;display:none;}
 .toast.ok{background:rgba(70,180,100,0.9);color:#fff;}
 .toast.error{background:rgba(224,80,80,0.9);color:#fff;}
-body.deg-rol-admin .btn-primario { display: none !important; }
+body:not(.deg-rol-cajero) .btn-primario { display: none !important; }
 </style>
 </head>
 <body>
@@ -45,7 +45,7 @@ body.deg-rol-admin .btn-primario { display: none !important; }
       const res = await fetch('/api/session');
       const data = await res.json();
       ROL_SESION_DEG = data.rol;
-      if (ROL_SESION_DEG === 'admin') document.body.classList.add('deg-rol-admin');
+      if (ROL_SESION_DEG === 'cajero') document.body.classList.add('deg-rol-cajero');
     } catch (e) {}
   }
   async function cerrarSesionDeg() {

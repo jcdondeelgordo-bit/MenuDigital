@@ -97,7 +97,7 @@ function cookieAttrs(request, maxAgeSeconds) {
   return [
     'Path=/',
     'HttpOnly',
-    'SameSite=Lax',
+    'SameSite=Strict',
     `Max-Age=${maxAgeSeconds}`,
     isHttps ? 'Secure' : '' // Secure se omite en desarrollo local (http) para que la cookie si se guarde
   ].filter(Boolean).join('; ');

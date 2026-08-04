@@ -1157,6 +1157,13 @@ async function validarAdmin() {
     const res = await fetch(SCRIPT_URL + '?accion=verificar_admin&clave=' + encodeURIComponent(pass));
     const data = await res.json();
     if (data.ok && data.valido) {
+      const sesionRes = await fetch('/api/session');
+      const sesionData = await sesionRes.json();
+      if (sesionData.rol !== 'admin') {
+        alert('Para editar precios primero debes iniciar sesión como Admin.');
+        window.location.href = '/login.html?volver=' + encodeURIComponent('/menu.html');
+        return;
+      }
       adminActivo = true;
       adminClave = pass; // se reenvía en cada edición de precio para que el script la valide de nuevo
       cerrarAdmin();
@@ -1194,7 +1201,7 @@ async function editarPrecio(idx) {
       throw new Error('respuesta no ok');
     }
   } catch (e) {
-    alert('No se pudo guardar el precio — la acción "actualizar_precio" todavía no está desplegada en Apps Script.');
+    alert('No se pudo actualizar el precio — puede que tu sesión de Admin haya expirado o no hayas iniciado sesión. Ve a /login.html e inicia sesión como Admin.');
   }
 }
 

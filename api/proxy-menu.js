@@ -43,17 +43,17 @@ function tienePermiso(requerido, rolSesion) {
 
 export default async function handler(request) {
   if (!SCRIPT_URL) {
-    return new Response(JSON.stringify({ ok: false, error: 'SCRIPT_URL_MENU no configurado en el servidor' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ ok: false, error: 'SCRIPT_URL_MENU no configurado en el servidor' }), { status: 500, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   }
   const url = new URL(request.url);
   const accion = url.searchParams.get('accion');
   const requerido = PERMISOS[accion];
   if (!requerido) {
-    return new Response(JSON.stringify({ ok: false, error: 'accion desconocida' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ ok: false, error: 'accion desconocida' }), { status: 400, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   }
   const session = await getSessionFromRequest(request);
   if (!tienePermiso(requerido, session ? session.rol : null)) {
-    return new Response(JSON.stringify({ ok: false, error: 'no autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ ok: false, error: 'no autorizado' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   }
   let upstream;
   let cuerpo;
@@ -61,7 +61,7 @@ export default async function handler(request) {
     upstream = await fetch(SCRIPT_URL + '?' + url.searchParams.toString());
     cuerpo = await upstream.text();
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: 'no se pudo conectar con el backend' }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ ok: false, error: 'no se pudo conectar con el backend' }), { status: 502, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   }
-  return new Response(cuerpo, { status: upstream.status, headers: { 'Content-Type': 'application/json' } });
+  return new Response(cuerpo, { status: upstream.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 }

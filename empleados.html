@@ -32,7 +32,7 @@ tbody tr:nth-child(even) { background:rgba(0,0,0,0.16); }
       const res = await fetch('/api/session');
       const data = await res.json();
       ROL_SESION_DEG = data.rol;
-      if (ROL_SESION_DEG === 'admin') document.body.classList.add('deg-rol-admin');
+      if (ROL_SESION_DEG === 'cajero') document.body.classList.add('deg-rol-cajero');
     } catch (e) {}
   }
   async function cerrarSesionDeg() {
