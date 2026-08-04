@@ -38,8 +38,15 @@ function elegirRol(r) {
 document.getElementById('tab-cajero').addEventListener('click', () => elegirRol('cajero'));
 document.getElementById('tab-admin').addEventListener('click', () => elegirRol('admin'));
 
+function volverSeguro() {
+  const v = new URLSearchParams(window.location.search).get('volver');
+  if (v && v.startsWith('/') && !v.startsWith('//')) return v;
+  return '/index.html';
+}
+
 async function entrar() {
   const btn = document.getElementById('btn-entrar');
+  if (btn.disabled) return;
   const msg = document.getElementById('msg');
   const clave = document.getElementById('clave').value;
   if (!clave) { msg.textContent = 'Escribe la clave.'; return; }
@@ -53,8 +60,7 @@ async function entrar() {
     });
     const data = await res.json();
     if (data.ok) {
-      const volver = new URLSearchParams(window.location.search).get('volver');
-      window.location.href = volver || '/index.html';
+      window.location.href = volverSeguro();
     } else {
       msg.textContent = 'Clave incorrecta.';
       btn.disabled = false;
