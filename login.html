@@ -40,7 +40,11 @@ document.getElementById('tab-admin').addEventListener('click', () => elegirRol('
 
 function volverSeguro() {
   const v = new URLSearchParams(window.location.search).get('volver');
-  if (v && v.startsWith('/') && !v.startsWith('//')) return v;
+  if (!v) return '/index.html';
+  try {
+    const resuelta = new URL(v, window.location.origin);
+    if (resuelta.origin === window.location.origin) return resuelta.pathname + resuelta.search + resuelta.hash;
+  } catch (e) {}
   return '/index.html';
 }
 
