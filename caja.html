@@ -136,9 +136,30 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 .historial-filtros{grid-column:1/-1;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px;}
 .seccion-recoger{display:flex;flex-direction:column;gap:8px;}
 .btn-recoger{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-radius:12px;background:rgba(202,161,83,0.1);border:1px solid rgba(202,161,83,0.35);color:#f3e6d0;font-size:0.88rem;font-weight:700;cursor:pointer;text-align:left;width:100%;}
+body.deg-rol-admin .btn-cobrar,
+body.deg-rol-admin .btn-liberar,
+body.deg-rol-admin .btn-metodo,
+body.deg-rol-admin #btn-venta-rapida { display: none !important; }
 </style>
 </head>
 <body>
+<button id="btn-cerrar-sesion" onclick="cerrarSesionDeg()" style="position:fixed;top:8px;right:8px;z-index:999;padding:6px 12px;border-radius:20px;background:rgba(0,0,0,0.4);border:1px solid rgba(202,161,83,0.4);color:#f3e6d0;font-size:0.72rem;cursor:pointer;">Cerrar sesión</button>
+<script>
+  let ROL_SESION_DEG = null;
+  async function cargarSesionDeg() {
+    try {
+      const res = await fetch('/api/session');
+      const data = await res.json();
+      ROL_SESION_DEG = data.rol;
+      if (ROL_SESION_DEG === 'admin') document.body.classList.add('deg-rol-admin');
+    } catch (e) {}
+  }
+  async function cerrarSesionDeg() {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+  }
+  cargarSesionDeg();
+</script>
 
 <header>
   <div class="header-marca">
@@ -149,7 +170,7 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
     </div>
   </div>
   <div class="header-tabs">
-    <button class="btn-tab" onclick="abrirVentaRapida()">Venta Rápida</button>
+    <button class="btn-tab" id="btn-venta-rapida" onclick="abrirVentaRapida()">Venta Rápida</button>
     <a class="btn-tab" href="menu.html" style="text-decoration:none;display:inline-flex;align-items:center;">Menú Cliente</a>
     <button class="btn-tab activa" onclick="cambiarVistaPrincipal('grid')">Mesas</button>
     <a class="btn-tab" href="cocina.html" style="text-decoration:none;display:inline-flex;align-items:center;">Cocina</a>

@@ -24,6 +24,23 @@ tbody tr:nth-child(even) { background:rgba(0,0,0,0.16); }
 </style>
 </head>
 <body>
+<button id="btn-cerrar-sesion" onclick="cerrarSesionDeg()" style="position:fixed;top:8px;right:8px;z-index:999;padding:6px 12px;border-radius:20px;background:rgba(0,0,0,0.4);border:1px solid rgba(202,161,83,0.4);color:#f3e6d0;font-size:0.72rem;cursor:pointer;">Cerrar sesión</button>
+<script>
+  let ROL_SESION_DEG = null;
+  async function cargarSesionDeg() {
+    try {
+      const res = await fetch('/api/session');
+      const data = await res.json();
+      ROL_SESION_DEG = data.rol;
+      if (ROL_SESION_DEG === 'admin') document.body.classList.add('deg-rol-admin');
+    } catch (e) {}
+  }
+  async function cerrarSesionDeg() {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+  }
+  cargarSesionDeg();
+</script>
 
 <div class="panel" id="panelClave">
   <h1>🔒 Empleados — Donde el Gordo</h1>
