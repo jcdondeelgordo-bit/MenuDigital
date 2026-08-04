@@ -65,6 +65,23 @@ main{padding:18px;max-width:480px;margin:0 auto;}
 </style>
 </head>
 <body>
+<button id="btn-cerrar-sesion" onclick="cerrarSesionDeg()" style="position:fixed;top:8px;right:8px;z-index:999;padding:6px 12px;border-radius:20px;background:rgba(0,0,0,0.4);border:1px solid rgba(202,161,83,0.4);color:#f3e6d0;font-size:0.72rem;cursor:pointer;">Cerrar sesión</button>
+<script>
+  let ROL_SESION_DEG = null;
+  async function cargarSesionDeg() {
+    try {
+      const res = await fetch('/api/session');
+      const data = await res.json();
+      ROL_SESION_DEG = data.rol;
+      if (ROL_SESION_DEG === 'cajero') document.body.classList.add('deg-rol-cajero');
+    } catch (e) {}
+  }
+  async function cerrarSesionDeg() {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+  }
+  cargarSesionDeg();
+</script>
 
 <header>
   <div>
@@ -81,7 +98,7 @@ main{padding:18px;max-width:480px;margin:0 auto;}
 <main id="lista-pedidos"></main>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlYXsASFJpzw9arECb79_CLb3l5w-4cithWANH57ydFHbC2-788aFJddvWIxOjOyEr/exec';
+const SCRIPT_URL = '/api/proxy-menu';
 const ESTADOS_COCINA = ['Pendiente', 'En preparación', 'Listo', 'Entregado'];
 const INTERVALO_POLLING_MS = 12000;
 const MINUTOS_URGENTE = 15;

@@ -33,9 +33,27 @@ input,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(20
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;z-index:100;display:none;}
 .toast.ok{background:rgba(70,180,100,0.9);color:#fff;}
 .toast.error{background:rgba(224,80,80,0.9);color:#fff;}
+body:not(.deg-rol-cajero) .btn-primario { display: none !important; }
 </style>
 </head>
 <body>
+<button id="btn-cerrar-sesion" onclick="cerrarSesionDeg()" style="position:fixed;top:8px;right:8px;z-index:999;padding:6px 12px;border-radius:20px;background:rgba(0,0,0,0.4);border:1px solid rgba(202,161,83,0.4);color:#f3e6d0;font-size:0.72rem;cursor:pointer;">Cerrar sesión</button>
+<script>
+  let ROL_SESION_DEG = null;
+  async function cargarSesionDeg() {
+    try {
+      const res = await fetch('/api/session');
+      const data = await res.json();
+      ROL_SESION_DEG = data.rol;
+      if (ROL_SESION_DEG === 'cajero') document.body.classList.add('deg-rol-cajero');
+    } catch (e) {}
+  }
+  async function cerrarSesionDeg() {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+  }
+  cargarSesionDeg();
+</script>
 
 <header>
   <div class="header-titulo">DONDE EL GORDO</div>
