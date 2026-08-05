@@ -62,13 +62,15 @@ function main() {
 
   let excluidos = 0;
   let remapeados = 0;
+  let fusionados = 0;
   inventarioFilas.forEach(f => {
     const fecha = excelSerialToISO(f['FECHA']);
     let insumo = (f['INSUMO'] || '').toString().trim();
     if (INSUMOS_EXCLUIDOS.has(insumo)) { excluidos++; return; }
     if (MAPEO_INSUMOS[insumo]) { insumo = MAPEO_INSUMOS[insumo]; remapeados++; }
     if (!dias[fecha]) throw new Error(`Fecha de Inventario fuera de julio: ${fecha}`);
-    dias[fecha].inventario.push({
+
+    const nuevo = {
       insumo,
       gastosDelDia: Number(f['GASTOS DEL DIA']) || 0,
       habiaAyer: Number(f['HABIA AYER']) || 0,
@@ -76,11 +78,28 @@ function main() {
       jc: Number(f['J/C']) || 0,
       debeHaber: Number(f['DEBE HABER']) || 0,
       existeReal: Number(f['EXISTE REAL']) || 0
-    });
+    };
+    // El remapeo (ej. COLA Y POLA 330 -> COLA Y POLA LATA) puede hacer que dos filas del
+    // mismo día terminen apuntando al mismo insumo final (el archivo trae ambas por
+    // separado). Se fusionan sumando, en vez de dejar dos filas duplicadas para el mismo
+    // insumo/fecha (eso pisaría una a la otra en el Sheet, "última fila gana").
+    const existente = dias[fecha].inventario.find(i => i.insumo === insumo);
+    if (existente) {
+      fusionados++;
+      existente.gastosDelDia += nuevo.gastosDelDia;
+      existente.habiaAyer += nuevo.habiaAyer;
+      existente.ingreso += nuevo.ingreso;
+      existente.jc += nuevo.jc;
+      existente.debeHaber += nuevo.debeHaber;
+      existente.existeReal += nuevo.existeReal;
+    } else {
+      dias[fecha].inventario.push(nuevo);
+    }
   });
 
   console.log(`Insumos excluidos (PIZZAS): ${excluidos} filas`);
   console.log(`Insumos remapeados (QUESO/COLA Y POLA 330): ${remapeados} filas`);
+  console.log(`Insumos fusionados por quedar duplicados tras el remapeo: ${fusionados} filas`);
 
   writeFileSync(new URL('./datos-julio.json', import.meta.url), JSON.stringify(dias, null, 2));
   console.log('Escrito datos-julio.json con', fechasVentas.length, 'días.');
