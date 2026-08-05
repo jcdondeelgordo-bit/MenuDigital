@@ -56,14 +56,24 @@ Inventario vía las acciones de su Apps Script, y comparar el reporte que calcul
   sistema.
 - El resto de insumos y productos cruzan 1:1 por nombre/código sin ajuste.
 
-### Cambio de backend necesario
+### Cambio de backend necesario — corrección tras releer el `Code.gs` real
 
-`Gastos_JC` (105 filas en el archivo, incluye valores negativos = ajustes/devoluciones) hoy es
-100% manual — no tiene acción de Apps Script ni pantalla. Se agrega una acción nueva
-`guardar_gastos_jc(fecha, items[{producto, cantidad, autorizadoPor, motivo}])` al mismo `Code.gs` de
-Inventario, con el mismo patrón que `guardar_ventas`/`guardar_ingreso` (borra-y-reescribe las filas
-de esa fecha en `Gastos_JC` antes de insertar, para poder reintentar sin duplicar). Aprobado por el
-usuario.
+**Actualización 2026-08-05, antes de planear la ejecución:** al releer el archivo real
+`E:\Descargas\MENU\DONDE EL GORDO\Code.gs` (que ya incorpora el Módulo 11 — Cuadre de Caja,
+desplegado después de que se armó el espejo de referencia usado para diseñar esto) se confirmó que
+**no hace falta agregar ninguna acción nueva**. Ya existe `registrar_dano(fecha, nombre, cantidad,
+registradoPor, motivo, tipo)`, que escribe directo en `Gastos_JC` (mismas 6 columnas que necesitamos:
+`Fecha, Producto, Cantidad, Autorizado_Por, Motivo, Tipo`) y que `generarReporteInsumos` ya sabe leer:
+con `tipo='Insumo'` resta la cantidad directo del insumo indicado (por nombre, resuelto igual que el
+resto del cruce), sin pasar por receta — que es exactamente el caso de los 105 registros de `J/C` del
+archivo, ya que en la hoja `Inventario` del archivo cada valor de J/C está asociado a un **insumo**
+(columna INSUMO), no a un producto del menú.
+
+Se descarta entonces el plan original de agregar `guardar_gastos_jc` al `Code.gs` — la carga de
+Gastos_JC se hace con la acción `registrar_dano` ya desplegada, una llamada por cada fila (fecha,
+insumo) con valor J/C distinto de cero, con `tipo='Insumo'`. **Cero cambios de backend para el
+Entregable 1** — se elimina el riesgo de editar/republicar el Apps Script en producción antes de
+cargar.
 
 ### Secuencia de carga (por día, 1 al 31 de julio)
 
@@ -78,8 +88,8 @@ usuario.
      acción **suma** en vez de reemplazar — se envía cada día una sola vez.
    - `guardar_inventario_completo` con `turno=CIERRE`: items desde la columna EXISTE REAL de la hoja
      `Inventario` del archivo, fechado ese mismo día.
-   - `guardar_gastos_jc` (acción nueva): items desde la columna J/C de la hoja `Inventario` del
-     archivo, para los días que tengan algún valor.
+   - `registrar_dano` (ya existente, `tipo='Insumo'`): una llamada por cada fila de la columna J/C
+     de la hoja `Inventario` del archivo con valor distinto de cero.
 3. Antes del día 1 de julio, se envía un `guardar_inventario_completo` adicional fechado 30 de junio
    con `turno=CIERRE`, usando los valores de HABIA AYER del 1 de julio del archivo — así el primer
    día del mes tiene de dónde arrastrar su "había ayer" sin depender de datos que no existen.
@@ -111,12 +121,18 @@ o de prueba fechados hoy (5 de agosto de 2026), no con el volumen histórico de 
 
 ### Cómo se ejecuta
 
-No hay navegador disponible en este entorno (confirmado, mismo patrón que el resto del proyecto). Se
-prueba el backend real llamando directamente los mismos endpoints que usa la app (`crear_pedido`,
-`marcar_pedido_pagado`, `liberar_pedido`) vía curl, con un caso de Domicilio y un caso de Venta
-Rápida (cobrar y entregar, y cobrar y dejar para recoger). Después, el usuario confirma visualmente
-en `caja.html`/`cocina.html` en el sitio publicado que los pedidos aparecen correctamente (sección
-Domicilio, sección "Para recoger", comanda de cocina con la etiqueta correcta).
+No hay navegador disponible en este entorno (confirmado, mismo patrón que el resto del proyecto).
+
+**Actualización 2026-08-05:** al revisar `api/proxy-menu.js` (único camino de producción hacia el
+Apps Script del Menú Digital desde que se blindó el `SCRIPT_URL`, ver `PERMISOS` en ese archivo) se
+confirmó que `crear_pedido` es público, pero `marcar_pedido_pagado` y `liberar_pedido` exigen una
+sesión de cajero (clave real, guardada como variable de entorno en Vercel) — no es información que
+deba pedirse por chat. Se ajusta el reparto de trabajo: se crean los pedidos de prueba (uno
+Domicilio, uno Venta Rápida) por curl contra `https://donde-el-gordo.vercel.app/api/proxy-menu`
+(acción pública, fechados hoy), y el usuario entra a `caja.html` con su clave real para cobrar y
+liberar/entregar cada uno. Al final, se confirma junto con el usuario que los pedidos aparecen
+correctamente (sección Domicilio, sección "Para recoger", comanda de cocina con la etiqueta
+correcta).
 
 ## Fuera de alcance
 
