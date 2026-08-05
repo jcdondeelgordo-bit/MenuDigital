@@ -6,17 +6,43 @@ const DRY_RUN = process.argv.includes('--dry-run');
 const soloArg = process.argv.find(a => a.startsWith('--solo='));
 const SOLO_FECHA = soloArg ? soloArg.split('=')[1] : null;
 
+function esperar(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+// El endpoint de Apps Script es intermitente bajo esta carga (a veces devuelve una
+// pagina HTML de error transitoria, o corta la conexion) sin que sea un problema real
+// de los datos -- parece un limite de ráfaga, no un fallo aleatorio (falla seguido en
+// tandas rapidas, funciona bien en llamadas aisladas). Se reintenta con más margen y
+// se deja un respiro fijo entre CADA llamada, no solo en los reintentos.
+async function conReintentos(fn, intentos = 6) {
+  let ultimoError;
+  for (let i = 0; i < intentos; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      ultimoError = e;
+      if (i < intentos - 1) await esperar(2000 * (i + 1));
+    }
+  }
+  throw ultimoError;
+}
+
 async function llamarGet(params) {
-  const u = new URL(SCRIPT_URL);
-  Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
-  const r = await fetch(u);
-  return r.json();
+  return conReintentos(async () => {
+    const u = new URL(SCRIPT_URL);
+    Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
+    const r = await fetch(u);
+    const texto = await r.text();
+    return JSON.parse(texto);
+  });
 }
 
 async function llamarPost(payload) {
-  const body = new URLSearchParams({ payload: JSON.stringify(payload) });
-  const r = await fetch(SCRIPT_URL, { method: 'POST', body });
-  return r.json();
+  return conReintentos(async () => {
+    const body = new URLSearchParams({ payload: JSON.stringify(payload) });
+    const r = await fetch(SCRIPT_URL, { method: 'POST', body });
+    const texto = await r.text();
+    return JSON.parse(texto);
+  });
 }
 
 async function yaEnviado(idEnvio) {
@@ -31,11 +57,13 @@ async function enviar(payload, { idempotente } = {}) {
   }
   if (idempotente && payload.idEnvio && await yaEnviado(payload.idEnvio)) {
     console.log('  ya enviado antes, se salta:', payload.idEnvio);
+    await esperar(700);
     return;
   }
   const resp = await llamarPost(payload);
   if (!resp.ok) throw new Error(`${payload.action} (${payload.fecha}) falló: ${resp.error}`);
   console.log('  OK:', payload.action, payload.fecha, payload.idEnvio || '');
+  await esperar(700);
 }
 
 function indexarInsumos(insumos) {
@@ -75,10 +103,20 @@ async function main() {
   console.log('--- 2026-06-30 (semilla de "había ayer" para el 1 de julio) ---');
   await enviar(construirCierre('2026-06-30', dias['2026-07-01'].inventario, 'habiaAyer'), { idempotente: true });
 
+  const diasConError = [];
   for (const fecha of fechas) {
-    await cargarDia(fecha, dias[fecha], catalogos);
+    try {
+      await cargarDia(fecha, dias[fecha], catalogos);
+    } catch (e) {
+      console.error(`  FALLÓ ${fecha} tras agotar reintentos: ${e.message} — sigue con el resto, reintentar este día al final.`);
+      diasConError.push(fecha);
+    }
   }
   console.log('Carga completa:', fechas.length, 'días + semilla del 30 de junio.');
+  if (diasConError.length > 0) {
+    console.log('Días que fallaron y hay que reintentar:', diasConError.join(', '));
+    process.exitCode = 1;
+  }
 }
 
 main().catch(e => { console.error('ERROR:', e.message); process.exit(1); });
