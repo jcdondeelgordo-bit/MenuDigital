@@ -10,3 +10,5 @@ scripts/carga-julio-2026/node_modules/
 scripts/carga-julio-2026/datos-julio.json
 scripts/carga-julio-2026/catalogos.json
 scripts/carga-julio-2026/resultado-validacion.json
+scripts/carga-julio-2026/recetas-raw.json
+scripts/carga-julio-2026/productos-raw.json
