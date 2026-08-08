@@ -34,6 +34,18 @@ input,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(20
 .toast.ok{background:rgba(70,180,100,0.9);color:#fff;}
 .toast.error{background:rgba(224,80,80,0.9);color:#fff;}
 body:not(.deg-rol-cajero) .btn-primario { display: none !important; }
+
+#cortex-imprimir{display:none;}
+@media print{
+  header, .tabs, main{display:none;}
+  #cortex-imprimir{display:block;position:static;width:80mm;padding:4mm;font-family:'Courier New',monospace;font-size:11px;color:#000;background:#fff;}
+  .cortex-linea{margin:2px 0;}
+  .cortex-centro{text-align:center;}
+  .cortex-negrita{font-weight:700;}
+  .cortex-separador{border-top:1px dashed #000;margin:6px 0;}
+  .cortex-item{display:flex;justify-content:space-between;}
+  @page{size:80mm auto;margin:0;}
+}
 </style>
 </head>
 <body>
@@ -69,6 +81,7 @@ body:not(.deg-rol-cajero) .btn-primario { display: none !important; }
   <button class="btn-tab activa" id="btn-pestana-apertura" onclick="cambiarPestana('apertura')">Abrir caja</button>
   <button class="btn-tab" id="btn-pestana-dia" onclick="cambiarPestana('dia')">Durante el día</button>
   <button class="btn-tab" id="btn-pestana-cierre" onclick="cambiarPestana('cierre')">Cerrar caja</button>
+  <button class="btn-tab" id="btn-pestana-cortex" onclick="cambiarPestana('cortex')">Corte X</button>
 </div>
 
 <main>
@@ -165,8 +178,22 @@ body:not(.deg-rol-cajero) .btn-primario { display: none !important; }
       <button class="btn-primario" onclick="confirmarCierre()">Cerrar caja</button>
     </div>
   </div>
+  <div class="vista" id="vista-cortex">
+    <div class="card">
+      <h3>Corte X — venta acumulada de hoy</h3>
+      <div>
+        <label for="select-cortex-generado-por">¿Quién genera este corte?</label>
+        <select id="select-cortex-generado-por"><option value="">Cargando...</option></select>
+        <input type="text" id="input-cortex-generado-por-libre" placeholder="Escribe tu nombre" style="display:none;margin-top:8px;">
+      </div>
+      <button class="btn-primario" onclick="generarCorteX()">📋 Generar Corte X</button>
+      <div id="resultado-cortex"></div>
+      <button class="btn-primario" id="btn-imprimir-cortex" style="display:none;" onclick="imprimirCorteX()">🖨️ Imprimir / Guardar como PDF</button>
+    </div>
+  </div>
 </main>
 
+<div id="cortex-imprimir"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -200,7 +227,7 @@ function mostrarToast(msg, tipo) {
 }
 
 function cambiarPestana(nombre) {
-  ['apertura', 'dia', 'cierre'].forEach(n => {
+  ['apertura', 'dia', 'cierre', 'cortex'].forEach(n => {
     document.getElementById('vista-' + n).classList.toggle('activa', n === nombre);
     document.getElementById('btn-pestana-' + n).classList.toggle('activa', n === nombre);
   });
@@ -312,10 +339,20 @@ let CATALOGO_INSUMOS = [];
 function cargarEmpleadosSelect() {
   jsonpGet('action=listar_empleados', function (res) {
     const empleados = (res && res.ok && Array.isArray(res.empleados)) ? res.empleados : [];
-    const el = document.getElementById('select-pago-empleado');
-    el.innerHTML = empleados.length
+    const elPago = document.getElementById('select-pago-empleado');
+    elPago.innerHTML = empleados.length
       ? empleados.map(e => `<option value="${e.nombre.replace(/"/g, '&quot;')}">${e.nombre}</option>`).join('')
       : '<option value="">-- No hay empleados registrados --</option>';
+
+    const elCortex = document.getElementById('select-cortex-generado-por');
+    const inputLibre = document.getElementById('input-cortex-generado-por-libre');
+    if (empleados.length) {
+      elCortex.innerHTML = '<option value="">-- Selecciona --</option>' + empleados.map(e => `<option value="${e.nombre.replace(/"/g, '&quot;')}">${e.nombre}</option>`).join('');
+      inputLibre.style.display = 'none';
+    } else {
+      elCortex.innerHTML = '<option value="">-- Sin catálogo --</option>';
+      inputLibre.style.display = 'block';
+    }
   });
 }
 
@@ -465,6 +502,81 @@ function confirmarCierre() {
     mostrarToast('Caja cerrada. Efectivo contado: ' + formatoCOP(contado), 'ok');
     cargarResumenCierre();
   });
+}
+
+let ULTIMO_CORTE_X = null;
+
+function nombreCortexSeleccionado() {
+  const select = document.getElementById('select-cortex-generado-por').value;
+  if (select) return select;
+  return document.getElementById('input-cortex-generado-por-libre').value.trim();
+}
+
+function generarCorteX() {
+  const nombre = nombreCortexSeleccionado();
+  if (!nombre) { mostrarToast('Selecciona o escribe quién genera el corte', 'error'); return; }
+
+  document.getElementById('resultado-cortex').innerHTML = '<div class="fila-dato">Calculando...</div>';
+  document.getElementById('btn-imprimir-cortex').style.display = 'none';
+
+  jsonpGet('action=generar_corte_x&fecha=' + fechaHoy() + '&generadoPor=' + encodeURIComponent(nombre), function (res) {
+    if (!res || !res.ok) {
+      document.getElementById('resultado-cortex').innerHTML = '<div class="fila-dato">No se pudo generar el corte. Intenta de nuevo.</div>';
+      return;
+    }
+    ULTIMO_CORTE_X = res.data;
+    renderCorteX(res.data);
+    document.getElementById('btn-imprimir-cortex').style.display = 'block';
+  });
+}
+
+function renderCorteX(data) {
+  const el = document.getElementById('resultado-cortex');
+  let aviso = '';
+  if (data.ventasLeidas === false) {
+    aviso = '<div class="fila-dato" style="color:#e05050;font-weight:700;">⚠️ No se pudieron leer las ventas del Menú — este corte no es confiable, vuelve a intentar.</div>';
+  }
+  const horaLocal = new Date(data.hora).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  const productos = Object.keys(data.porProducto).sort((a, b) => data.porProducto[b].total - data.porProducto[a].total);
+  const filasProducto = productos.length
+    ? productos.map(p => `<div class="fila-dato"><span>${data.porProducto[p].cantidad}x ${p}</span><span>${formatoCOP(data.porProducto[p].total)}</span></div>`).join('')
+    : '<div class="fila-dato">Sin ventas pagadas todavía hoy.</div>';
+  el.innerHTML = aviso + `
+    <div class="fila-dato"><span>Generado por</span><span>${data.generadoPor}</span></div>
+    <div class="fila-dato"><span>Hora del corte</span><span>${horaLocal}</span></div>
+    <div class="cortex-separador-visual" style="border-top:1px solid rgba(255,255,255,0.06);margin:8px 0;"></div>
+    ${filasProducto}
+    <div class="fila-dato total"><span>TOTAL VENDIDO</span><span>${formatoCOP(data.totalVenta)}</span></div>
+    <div class="fila-dato"><span>Efectivo</span><span>${formatoCOP(data.porMetodo.Efectivo)}</span></div>
+    <div class="fila-dato"><span>Nequi</span><span>${formatoCOP(data.porMetodo.Nequi)}</span></div>
+    <div class="fila-dato"><span>Tarjeta</span><span>${formatoCOP(data.porMetodo.Tarjeta)}</span></div>
+    ${Object.keys(data.porCanal).map(c => `<div class="fila-dato"><span>${c}</span><span>${formatoCOP(data.porCanal[c])}</span></div>`).join('')}
+  `;
+}
+
+function imprimirCorteX() {
+  if (!ULTIMO_CORTE_X) return;
+  const data = ULTIMO_CORTE_X;
+  const horaLocal = new Date(data.hora).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  const productos = Object.keys(data.porProducto).sort((a, b) => data.porProducto[b].total - data.porProducto[a].total);
+  const cont = document.getElementById('cortex-imprimir');
+  cont.innerHTML = `
+    <div class="cortex-linea cortex-centro cortex-negrita">DONDE EL GORDO</div>
+    <div class="cortex-linea cortex-centro">CORTE X</div>
+    <div class="cortex-separador"></div>
+    <div class="cortex-linea">${data.fecha}  ${horaLocal}</div>
+    <div class="cortex-linea">Generado por: ${data.generadoPor}</div>
+    <div class="cortex-separador"></div>
+    ${productos.map(p => `<div class="cortex-item"><span>${data.porProducto[p].cantidad}x ${p}</span><span>${formatoCOP(data.porProducto[p].total)}</span></div>`).join('')}
+    <div class="cortex-separador"></div>
+    <div class="cortex-item cortex-negrita"><span>TOTAL</span><span>${formatoCOP(data.totalVenta)}</span></div>
+    <div class="cortex-item"><span>Efectivo</span><span>${formatoCOP(data.porMetodo.Efectivo)}</span></div>
+    <div class="cortex-item"><span>Nequi</span><span>${formatoCOP(data.porMetodo.Nequi)}</span></div>
+    <div class="cortex-item"><span>Tarjeta</span><span>${formatoCOP(data.porMetodo.Tarjeta)}</span></div>
+    <div class="cortex-separador"></div>
+    ${Object.keys(data.porCanal).map(c => `<div class="cortex-item"><span>${c}</span><span>${formatoCOP(data.porCanal[c])}</span></div>`).join('')}
+  `;
+  window.print();
 }
 </script>
 </body>
