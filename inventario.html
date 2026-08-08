@@ -1030,7 +1030,7 @@
       { producto: "PULPA FRUTA", areas: ["cocina"], presentacion: "", gramaje: 0, unidades: 1 },
       { producto: "YUCA", areas: ["cocina"], presentacion: "", gramaje: 0, unidades: 1 },
       { producto: "LOMO DE CERDO", areas: ["cocina"], presentacion: "", gramaje: 0, unidades: 1 },
-      { producto: "PAPA RIPIO", areas: ["cocina"], presentacion: "", gramaje: 0, unidades: 1 },
+      { producto: "PAPA RIPIO", areas: ["cocina"], presentacion: "PAQUETE", gramaje: 1000, unidades: 0 },
       { producto: "QUESO TAJADO", areas: ["cocina", "parrilla"], presentacion: "PAQUETE", gramaje: 2400, unidades: 0 },
       { producto: "PEPEREONY", areas: ["pizza", "cocina"], presentacion: "PAQUETE", gramaje: 500, unidades: 0 },
       { producto: "LECHE", areas: ["cocina"], presentacion: "BOLSA", gramaje: 900, unidades: 0 },
@@ -2215,6 +2215,7 @@
       if (!document.getElementById('inputFechaReporte').value) {
         document.getElementById('inputFechaReporte').value = new Date().toISOString().split('T')[0];
       }
+      generarReporte();
     }
 
     function generarReporte() {
