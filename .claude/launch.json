@@ -1,0 +1,22 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "notas-blog-dev",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "npm --prefix \"E:/Proyectos ZFood GyP/notas-blog/.claude/worktrees/notas-blog-implementation\" run dev"],
+      "port": 3000
+    },
+    {
+      "name": "notas-blog-attach",
+      "url": "http://localhost:3000",
+      "port": 3000
+    },
+    {
+      "name": "zfood-static",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8791"],
+      "port": 8791
+    }
+  ]
+}

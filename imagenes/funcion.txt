@@ -1,0 +1,53 @@
+function listarPedidosCaja() {
+  const hoja = SpreadsheetApp.getActive().getSheetByName('Ventas');
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idx = {
+    fecha encabezados.indexOf('Fecha'),
+    hora encabezados.indexOf('Hora'),
+    producto encabezados.indexOf('Producto'),
+    cantidad encabezados.indexOf('Cantidad'),
+    total encabezados.indexOf('Total'),
+    estado encabezados.indexOf('Estado'),
+    tipoPedido encabezados.indexOf('Tipo_Pedido'),
+    idPedido encabezados.indexOf('ID_Pedido'),
+    mesa encabezados.indexOf('Mesa'),
+    mesero encabezados.indexOf('Mesero'),
+    metodoPago encabezados.indexOf('Metodo_Pago')
+  };
+
+  const tz = Session.getScriptTimeZone();
+  const hoy = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const pedidosPorId = {};
+
+  for (let i = 1; i  datos.length; i++) {
+    const fila = datos[i];
+    const fecha = Utilities.formatDate(new Date(fila[idx.fecha]), tz, 'yyyy-MM-dd');
+    if (fecha !== hoy) continue;
+
+    const idPedido = fila[idx.idPedido];
+    if (!pedidosPorId[idPedido]) {
+      pedidosPorId[idPedido] = {
+        id_pedido idPedido,
+        hora Utilities.formatDate(new Date(fila[idx.hora]), tz, 'HHmm'),
+        tipo fila[idx.tipoPedido],
+        mesa fila[idx.mesa]  '',
+        mesero fila[idx.mesero]  '',
+        estado fila[idx.estado],
+        metodo_pago fila[idx.metodoPago]  '',
+        items [],
+        total 0
+      };
+    }
+    pedidosPorId[idPedido].items.push({
+      producto fila[idx.producto],
+      cantidad fila[idx.cantidad],
+      total Number(fila[idx.total])
+    });
+    pedidosPorId[idPedido].total += Number(fila[idx.total]);
+  }
+
+  const pedidos = Object.keys(pedidosPorId).map(function (id) { return pedidosPorId[id]; });
+  return ContentService.createTextOutput(JSON.stringify({ ok true, pedidos pedidos }))
+    .setMimeType(ContentService.MimeType.JSON);
+}

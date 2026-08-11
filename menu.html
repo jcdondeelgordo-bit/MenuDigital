@@ -35,7 +35,9 @@ main{padding:16px;max-width:640px;margin:0 auto;}
 #lista-productos,#lista-recomendados{border-radius:14px;overflow:hidden;border:1px solid rgba(202,161,83,0.2);}
 .producto-card:nth-child(odd){background:rgba(255,255,255,0.045);}
 .producto-card:nth-child(even){background:rgba(0,0,0,0.16);}
-.producto-icono{flex:none;width:52px;height:52px;border-radius:12px;background:rgba(202,161,83,0.15);display:flex;align-items:center;justify-content:center;font-size:1.6rem;}
+.producto-media{flex:none;width:68px;height:68px;border-radius:50%;background:rgba(202,161,83,0.15);border:2px solid rgba(202,161,83,0.35);box-shadow:0 4px 14px rgba(0,0,0,0.4);overflow:hidden;position:relative;transition:border-color 0.2s;}
+.producto-media img{width:100%;height:100%;object-fit:cover;display:block;}
+.producto-emoji{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.7rem;}
 .producto-info{flex:1;min-width:0;}
 .producto-nombre{font-weight:700;font-size:0.97rem;color:#fff;}
 .producto-desc{font-size:0.78rem;color:rgba(201,184,154,0.7);line-height:1.35;margin-top:2px;}
@@ -356,7 +358,8 @@ const SCRIPT_URL = '/api/proxy-menu';
 // el real antes de publicar/lanzar a producción.
 const WHATSAPP_NEGOCIO = '573143523103';
 
-// Datos reales extraídos de la hoja Productos (BD_ZFood_GyP_DondeElGordo.xlsx) el 2026-07-14.
+// Datos reales extraídos de la hoja Productos (BD_ZFood_GyP_DondeElGordo.xlsx) el 2026-07-14
+// (Picadas actualizadas a 40/55/70/90 el 2026-08-11 por indicación del usuario).
 // Se usan como respaldo local mientras las acciones de Apps Script (listar_productos, etc.)
 // no están desplegadas. Si SCRIPT_URL responde con datos válidos, esos tienen prioridad.
 const MOCK_PRODUCTOS = [
@@ -397,10 +400,10 @@ const MOCK_PRODUCTOS = [
 {"categoria":"Platos","producto":"Lomo de Cerdo","descripcion":"Lomo de cerdo a la plancha.","precio":31000},
 {"categoria":"Platos","producto":"Mazorcada","descripcion":"Mazorca especial de la casa.","precio":24000},
 {"categoria":"Platos","producto":"Chorizo Cuncia","descripcion":"Chorizo cuncia a la plancha.","precio":7000},
-{"categoria":"Picadas","producto":"Picada Personal 38","descripcion":"Carne, pollo, chorizo, plátano, papa a la francesa y ensalada.","precio":38000},
-{"categoria":"Picadas","producto":"Picada $50.000","descripcion":"Carne, pollo, chorizo, plátano, papa a la francesa y ensalada.","precio":50000},
-{"categoria":"Picadas","producto":"Picada $65.000","descripcion":"Carne, pollo, chorizo, plátano, papa a la francesa y ensalada — familiar.","precio":65000},
-{"categoria":"Picadas","producto":"Picada $80.000","descripcion":"Carne, pollo, chorizo, plátano, papa a la francesa y ensalada — jumbo.","precio":80000},
+{"categoria":"Picadas","producto":"Picada 40","descripcion":"Carne, pollo, chorizo, plátano, papa a la francesa y ensalada — personal.","precio":40000},
+{"categoria":"Picadas","producto":"Picada 55","descripcion":"Carne, pollo, chorizo, plátano, papa a la francesa y ensalada.","precio":55000},
+{"categoria":"Picadas","producto":"Picada 70","descripcion":"Carne, pollo, chorizo, plátano, papa a la francesa y ensalada — familiar.","precio":70000},
+{"categoria":"Picadas","producto":"Picada 90","descripcion":"Carne, pollo, chorizo, plátano, papa a la francesa y ensalada — jumbo.","precio":90000},
 {"categoria":"Especiales","producto":"Salchipapa Especial","descripcion":"Salchipapa con ingredientes especiales de la casa.","precio":26000},
 {"categoria":"Especiales","producto":"Patacona Especial","descripcion":"Patacona con ingredientes especiales de la casa.","precio":28000},
 {"categoria":"Adicionales","producto":"Porción Patacón","descripcion":"Porción de patacón.","precio":5000},
@@ -459,6 +462,76 @@ const COLORES_CATEGORIA = {
   'Adicionales':  { bg: '#6b4a2a', border: '#87613a' },
   'Bebidas':      { bg: '#4a3319', border: '#6b4a2a' }
 };
+
+// Fotos de producto: cada archivo en imagenes/ se asocia a uno o más nombres
+// EXACTOS (normalizados) tal como aparecen en la hoja de Productos. Es una
+// lista blanca a propósito -- nada de coincidencia "contiene" (eso llegó a
+// ponerle a "Pollo" la foto de "Doble Pollo" por accidente).
+const ARCHIVOS_IMAGEN_PRODUCTO = {
+  'Churrasco.png': ['Churrasco'],
+  'Mini Churrasco.png': ['Mini Churrasco'],
+  'Hamburguesa doble pollo.png': ['Doble Pollo'],
+  'Hamburguesa triple carne.png': ['Triple Carne'],
+  'Hamburguesa Sencilla.jfif': ['Sencilla'],
+  'Hamburguesa de Pollo.jfif': ['Pollo'],
+  'Hamburguesa  Doble carne.jfif': ['Doble Carne'],
+  'Hamburguesa Mixta.jfif': ['Mixta'],
+  'Costillitas BBQ.png': ['Costillitas BBQ'],
+  'Pechuga a la planca.png': ['Pechuga', 'Pechuga Gratinada'],
+  'Pechuga en salsa de champiñones.png': ['Pechuga en Salsa Champiñones'],
+  'Carne Encebollada.png': ['Carne Encebollada'],
+  'CHORIPERRO.png': ['Choriperro'],
+  'SALCHIPAPA.png': ['Salchipapa', 'Salchipapa Mini', 'Salchipapa Especial'],
+  'Choripapa.png': ['Choripapa'],
+  'Suiza.png': ['Suiza', 'Porción Suiza'],
+  'Papas a la francesa.png': ['Porción Papa Francesa'],
+  'Pizza Hawallana.png': ['Pizza Hawaiana'],
+  'Pizza Colombiana.jfif': ['Pizza Colombiana'],
+  'Pizza de Carnes.png': ['Pizza Carnes'],
+  'Pizza De la casa.jfif': ['Pizza de la Casa'],
+  'Pizza Mexicana.jfif': ['Pizza Mexicana'],
+  'Pizza Peperony.jfif': ['Pizza Pepperoni'],
+  'Pizza Perro.jfif': ['Pizza Perro'],
+  'Pizza Pollo Champiñones.jfif': ['Pizza Champiñones'],
+  'Pizza Ranchera.jfif': ['Pizza Ranchera'],
+  'PATACONA.png': ['Patacona Especial'],
+  'Huevos de codorniz.png': ['Huevos de Codorniz'],
+  'Picada 40.png': ['Picada 40'],
+  'Picadas 55.png': ['Picada 55'],
+  'PICADA 70.png': ['Picada 70'],
+  'PICADA 90.png': ['Picada 90'],
+  'Gaseosa 350.png': ['Gaseosa 350 ml'],
+  'GASEOSA 500.png': ['Gaseosa 500 ml'],
+  'GASEOSA 1.5.png': ['Gaseosa 1.5L'],
+  'GASEOSA 3L.png': ['Gaseosa 3.0L'],
+  'GASEOSA 400.png': ['Coca Cola 400ml'],
+  'JUGO HIT 500.png': ['Jugo Hit 500ml'],
+  'JUGO HIT 1.5.JPG': ['Jugo Hit 1.5L'],
+  'GATORADE.png': ['Gatorade'],
+  'TEE.JPG': ['Tee'],
+  'COLA Y POLA.JPG': ['Cola y Pola 1.5'],
+  'AGUA GAS.JPG': ['Agua con Gas'],
+  'AGUA SIN GAS.JPG': ['Agua sin Gas'],
+  'CERVEZA POKER.JPG': ['Cerveza Poker'],
+  'CORONA.JPG': ['Corona'],
+  'SPEEDMAX.JPG': ['Speed']
+};
+
+function normalizarTexto(s) {
+  return (s || '').toString().normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+const INDICE_IMAGENES = {};
+Object.keys(ARCHIVOS_IMAGEN_PRODUCTO).forEach(archivo => {
+  const ruta = 'imagenes/' + encodeURIComponent(archivo);
+  ARCHIVOS_IMAGEN_PRODUCTO[archivo].forEach(alias => {
+    INDICE_IMAGENES[normalizarTexto(alias)] = ruta;
+  });
+});
+
+function imagenParaProducto(p) {
+  return INDICE_IMAGENES[normalizarTexto(p.producto)] || null;
+}
 
 let PRODUCTOS = [];
 let carrito = JSON.parse(localStorage.getItem('zfood_carrito') || '[]');
@@ -590,8 +663,14 @@ function renderProductos() {
 
 function renderCard(p) {
   const idx = PRODUCTOS.indexOf(p);
+  const col = COLORES_CATEGORIA[p.categoria] || { bg: '#caa153', border: '#e6c07a' };
+  const foto = imagenParaProducto(p);
+  const anillo = foto ? col.border : 'rgba(202,161,83,0.35)';
   return `<div class="producto-card${adminActivo ? ' admin-on' : ''}">
-    <div class="producto-icono">${ICONOS_CATEGORIA[p.categoria] || '🍴'}</div>
+    <div class="producto-media" style="border-color:${anillo};">
+      ${foto ? `<img src="${foto}" alt="${p.producto.replace(/"/g,'&quot;')}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">` : ''}
+      <span class="producto-emoji"${foto ? ' style="display:none;"' : ''}>${ICONOS_CATEGORIA[p.categoria] || '🍴'}</span>
+    </div>
     <div class="producto-info">
       <div class="producto-nombre">${p.producto}</div>
       ${p.descripcion ? `<div class="producto-desc">${p.descripcion}</div>` : ''}
