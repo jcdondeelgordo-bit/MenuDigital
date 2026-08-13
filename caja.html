@@ -771,13 +771,15 @@ const COLORES_CATEGORIA_VR = {
 
 function renderCategoriasVR() {
   const categorias = [...new Set(productosVentaRapida.map(p => p.categoria))];
-  document.getElementById('vr-categorias').innerHTML = categorias.map(c => {
+  const cont = document.getElementById('vr-categorias');
+  const scrollActual = cont.scrollLeft;
+  cont.innerHTML = categorias.map(c => {
     const col = COLORES_CATEGORIA_VR[c] || { bg: '#caa153', border: '#e6c07a' };
     const activa = c === categoriaActivaVR;
     const texto = (col.bg === '#caa153') ? '#1a0f07' : '#f3e6d0';
     return `<div class="vr-cat-pill${activa ? ' activa' : ''}" style="background:${col.bg};border-color:${col.border};color:${texto};" onclick="seleccionarCategoriaVR('${c.replace(/'/g, "\\'")}')">${c}</div>`;
   }).join('');
-
+  cont.scrollLeft = scrollActual;
 }
 
 function seleccionarCategoriaVR(cat) {

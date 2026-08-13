@@ -1,5 +1,6 @@
 .claude/worktrees/
 .superpowers/
+design_handoff_ui_consistencia/
 node_modules/
 .vercel
 .env.local

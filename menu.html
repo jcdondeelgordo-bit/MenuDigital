@@ -353,10 +353,8 @@ main{padding:16px;max-width:640px;margin:0 auto;}
 
 <script>
 const SCRIPT_URL = '/api/proxy-menu';
-// TEMPORAL — número personal del usuario para probar el flujo de domicilio sin
-// molestar a la pizzería. Número real del negocio: 573167027833. Volver a poner
-// el real antes de publicar/lanzar a producción.
-const WHATSAPP_NEGOCIO = '573143523103';
+// Número de WhatsApp del negocio para recibir los pedidos de domicilio.
+const WHATSAPP_NEGOCIO = '573167027833';
 
 // Datos reales extraídos de la hoja Productos (BD_ZFood_GyP_DondeElGordo.xlsx) el 2026-07-14
 // (Picadas actualizadas a 40/55/70/90 el 2026-08-11 por indicación del usuario).
@@ -504,7 +502,7 @@ const ARCHIVOS_IMAGEN_PRODUCTO = {
   'Pizza Ranchera.jfif': ['Pizza Ranchera'],
   'PATACONA.png': ['Patacona Especial'],
   'Huevos de codorniz.png': ['Huevos de Codorniz'],
-  'Picada 40.png': ['Picada 40'],
+  'Picada 40.png': ['Picada 40', 'Picada Personal 40'],
   'Picadas 55.png': ['Picada 55'],
   'PICADA 70.png': ['Picada 70'],
   'PICADA 90.png': ['Picada 90'],
