@@ -1,11 +1,30 @@
+// ============================================================================
+// MÓDULO CLIENTES — hoja "Clientes": buscar/actualizar/registrar cliente + puntos
+// ============================================================================
+// Instrucciones:
+// 1. Agrega la columna "Puntos" al final de la hoja "Clientes" en el Sheet real
+//    (numérica, vacía = 0). Las columnas ya existentes no cambian.
+// 2. Pega las 4 funciones de este archivo (buscarCliente, actualizarCliente,
+//    registrarCliente, registrarPunto) en el proyecto de Apps Script del Menú.
+// 3. Agrega esta rama nueva a tu doGet(e), junto a las 3 que ya tienes:
+//        else if (accion === 'registrar_punto') { return registrarPunto(e); }
+// 4. IMPORTANTE: antes de publicar, busca con Ctrl+F cada uno de los 4 nombres de
+//    función y confirma que aparece una sola vez en el editor real — este mismo
+//    archivo tenía las 3 primeras duplicadas (una copia vieja sin soporte de
+//    Direccion, que ganaba en silencio por ser la última declarada) hasta que se
+//    corrigió el 2026-08-15; revisar que esa duplicación no exista también en el
+//    editor real antes de pegar esta versión.
+//
 /**
  * Funciones de la hoja "Clientes", usadas por bienvenida.html Y por el checkout de
- * Domicilio de menu.html (registrarClienteDesdeMenu). Columnas de Clientes: Fecha
- * Ingreso, Telefono, Nombre, Cumpleanos, Visitas, Direccion (sin tildes/eñe, confirmado
- * por el usuario 2026-07-21; columna Direccion agregada 2026-07-22).
+ * Domicilio/mesa de menu.html (registrarClienteDesdeMenu, registrarPunto). Columnas de
+ * Clientes: Fecha Ingreso, Telefono, Nombre, Cumpleanos, Visitas, Direccion (sin
+ * tildes/eñe, confirmado por el usuario 2026-07-21; columna Direccion agregada
+ * 2026-07-22), Puntos (agregada 2026-08-15, ver módulo 6 -- fidelización).
  *
- * Requiere que la hoja Clientes tenga una columna con encabezado exacto "Direccion".
- * Si no existe, el código simplemente no guarda la dirección (no rompe nada).
+ * Requiere que la hoja Clientes tenga columnas con encabezado exacto "Direccion" y
+ * "Puntos". Si no existen, el código simplemente no guarda ese dato puntual (no rompe
+ * el resto del registro de cliente).
  */
 
 function buscarCliente(e) {
@@ -17,6 +36,7 @@ function buscarCliente(e) {
   const idxNombre = encabezados.indexOf('Nombre');
   const idxVisitas = encabezados.indexOf('Visitas');
   const idxDireccion = encabezados.indexOf('Direccion');
+  const idxPuntos = encabezados.indexOf('Puntos');
 
   for (let i = 1; i < datos.length; i++) {
     if (String(datos[i][idxTelefono]) === String(telefono)) {
@@ -26,7 +46,8 @@ function buscarCliente(e) {
         cliente: {
           nombre: datos[i][idxNombre],
           visitas: Number(datos[i][idxVisitas]) || 1,
-          direccion: idxDireccion > -1 ? (datos[i][idxDireccion] || '') : ''
+          direccion: idxDireccion > -1 ? (datos[i][idxDireccion] || '') : '',
+          puntos: idxPuntos > -1 ? (Number(datos[i][idxPuntos]) || 0) : 0
         }
       })).setMimeType(ContentService.MimeType.JSON);
     }
@@ -84,6 +105,7 @@ function registrarCliente(e) {
   const idxCumpleanos = encabezados.indexOf('Cumpleanos');
   const idxVisitas = encabezados.indexOf('Visitas');
   const idxDireccion = encabezados.indexOf('Direccion');
+  const idxPuntos = encabezados.indexOf('Puntos');
 
   for (let i = 1; i < datos.length; i++) {
     if (String(datos[i][idxTelefono]) === String(telefono)) {
@@ -99,101 +121,69 @@ function registrarCliente(e) {
   fila[idxCumpleanos] = cumpleanos;
   fila[idxVisitas] = 1;
   if (idxDireccion > -1) fila[idxDireccion] = direccion;
+  if (idxPuntos > -1) fila[idxPuntos] = 0;
   hoja.appendRow(fila);
 
   return ContentService.createTextOutput(JSON.stringify({ok: true, yaExistia: false}))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-
-
-
-
-
-
-
-
-function buscarCliente(e) {
-  const telefono = e.parameter.telefono || '';
-  const hoja = SpreadsheetApp.getActive().getSheetByName('Clientes');
-  const datos = hoja.getDataRange().getValues();
-  const encabezados = datos[0];
-  const idxTelefono = encabezados.indexOf('Telefono');
-  const idxNombre = encabezados.indexOf('Nombre');
-  const idxVisitas = encabezados.indexOf('Visitas');
-
-  for (let i = 1; i < datos.length; i++) {
-    if (String(datos[i][idxTelefono]) === String(telefono)) {
-      return ContentService.createTextOutput(JSON.stringify({
-        ok: true,
-        existe: true,
-        cliente: {
-          nombre: datos[i][idxNombre],
-          visitas: Number(datos[i][idxVisitas]) || 1
-        }
-      })).setMimeType(ContentService.MimeType.JSON);
-    }
-  }
-  return ContentService.createTextOutput(JSON.stringify({ok: true, existe: false}))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
 /**
- * accion=actualizar_cliente&telefono=...
- * Suma 1 a "Visitas" cada vez que un cliente ya registrado vuelve a abrir bienvenida.html.
+ * accion=registrar_punto&telefono=...&total=...&nombre=... (nombre opcional)
+ * Único punto de entrada que otorga puntos de fidelidad -- reemplaza el contador de
+ * localStorage que vivía en menu.html (sumarPuntoSiAplica), que se reseteaba solo y no
+ * distinguía clientes reales. Rechaza si el total no supera $50.000 o si no hay
+ * teléfono (sin identidad de cliente no hay a quién sumarle el punto). Si el cliente
+ * no existe todavía en "Clientes", lo crea con Puntos=1 (mismo criterio que
+ * registrarCliente, pero arrancando ya con su primer punto en vez de 0). Si ya existe,
+ * le suma 1 a lo que ya tenía -- nunca lo resetea a 1 solo porque llegó un punto nuevo
+ * (a diferencia del contador viejo, que reiniciaba el ciclo cada 12).
  */
-function actualizarCliente(e) {
+function registrarPunto(e) {
   const telefono = e.parameter.telefono || '';
-  const hoja = SpreadsheetApp.getActive().getSheetByName('Clientes');
-  const datos = hoja.getDataRange().getValues();
-  const encabezados = datos[0];
-  const idxTelefono = encabezados.indexOf('Telefono');
-  const idxVisitas = encabezados.indexOf('Visitas');
-
-  for (let i = 1; i < datos.length; i++) {
-    if (String(datos[i][idxTelefono]) === String(telefono)) {
-      const visitasActuales = Number(datos[i][idxVisitas]) || 0;
-      hoja.getRange(i + 1, idxVisitas + 1).setValue(visitasActuales + 1);
-      break;
-    }
-  }
-  return ContentService.createTextOutput(JSON.stringify({ok: true}))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-/**
- * accion=registrar_cliente&telefono=...&nombre=...&cumpleanos=...&canal=...
- * Crea un cliente nuevo en "Clientes" la primera vez que alguien lo usa.
- */
-function registrarCliente(e) {
-  const telefono = e.parameter.telefono || '';
+  const total = Number(e.parameter.total || 0);
   const nombre = e.parameter.nombre || '';
-  const cumpleanos = e.parameter.cumpleanos || '';
+
+  if (!telefono || total < 50000) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'No aplica punto (falta teléfono o el total no supera $50.000)' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 
   const hoja = SpreadsheetApp.getActive().getSheetByName('Clientes');
   const datos = hoja.getDataRange().getValues();
   const encabezados = datos[0];
-  const idxFecha = encabezados.indexOf('Fecha Ingreso');
   const idxTelefono = encabezados.indexOf('Telefono');
-  const idxNombre = encabezados.indexOf('Nombre');
-  const idxCumpleanos = encabezados.indexOf('Cumpleanos');
-  const idxVisitas = encabezados.indexOf('Visitas');
+  const idxPuntos = encabezados.indexOf('Puntos');
+
+  if (idxPuntos === -1) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'La hoja Clientes todavía no tiene la columna Puntos' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 
   for (let i = 1; i < datos.length; i++) {
     if (String(datos[i][idxTelefono]) === String(telefono)) {
-      return ContentService.createTextOutput(JSON.stringify({ok: true, yaExistia: true}))
+      const puntosActuales = Number(datos[i][idxPuntos]) || 0;
+      const nuevoPuntos = puntosActuales >= 12 ? 1 : puntosActuales + 1;
+      hoja.getRange(i + 1, idxPuntos + 1).setValue(nuevoPuntos);
+      return ContentService.createTextOutput(JSON.stringify({ ok: true, puntos: nuevoPuntos }))
         .setMimeType(ContentService.MimeType.JSON);
     }
   }
 
+  // Cliente nuevo (nunca pasó por registrar_cliente) -- se crea aquí mismo con su
+  // primer punto, para no perder el punto si el flujo que llamó a esto no hizo
+  // primero un registrar_cliente por separado.
+  const idxFecha = encabezados.indexOf('Fecha Ingreso');
+  const idxNombre = encabezados.indexOf('Nombre');
+  const idxVisitas = encabezados.indexOf('Visitas');
   const fila = new Array(encabezados.length).fill('');
   fila[idxFecha] = new Date();
   fila[idxTelefono] = telefono;
-  fila[idxNombre] = nombre;
-  fila[idxCumpleanos] = cumpleanos;
-  fila[idxVisitas] = 1;
+  if (idxNombre > -1) fila[idxNombre] = nombre;
+  if (idxVisitas > -1) fila[idxVisitas] = 1;
+  fila[idxPuntos] = 1;
   hoja.appendRow(fila);
 
-  return ContentService.createTextOutput(JSON.stringify({ok: true, yaExistia: false}))
+  return ContentService.createTextOutput(JSON.stringify({ ok: true, puntos: 1 }))
     .setMimeType(ContentService.MimeType.JSON);
 }

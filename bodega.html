@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Donde el Gordo - Bodega</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+input,select,textarea{-webkit-user-select:text;user-select:text;}
+body{font-family:'Inter',sans-serif;background:radial-gradient(1200px 800px at 20% -10%,#241407 0%,#170d06 55%,#120a04 100%);color:#f3e6d0;min-height:100vh;}
+
+header{position:sticky;top:0;z-index:20;background:#170d06;border-bottom:1px solid rgba(202,161,83,0.3);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;row-gap:14px;}
+.header-titulo{font-family:'Poppins',sans-serif;font-size:1.2rem;font-weight:800;color:#caa153;letter-spacing:1px;white-space:nowrap;}
+.header-sub{font-size:0.72rem;color:#e6d3ac;letter-spacing:2px;}
+.header-marca{display:flex;align-items:center;gap:10px;flex:none;}
+.logo-bodega{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;}
+.header-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.btn-tab{padding:12px 18px;border-radius:24px;background:rgba(255,255,255,0.06);border:1px solid rgba(202,161,83,0.4);color:#f3e6d0;font-size:0.85rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;}
+.btn-tab.activa{background:#e0a53f;color:#1a0f07;border-color:transparent;}
+
+main{padding:18px;max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:20px;}
+.panel{background:rgba(255,255,255,0.05);border:1px solid rgba(202,161,83,0.25);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;}
+.panel h2{font-family:'Poppins',sans-serif;color:#caa153;font-size:1.05rem;}
+.panel-sub{font-size:0.78rem;color:rgba(201,184,154,0.7);margin-top:-6px;}
+.campo{display:flex;flex-direction:column;gap:4px;}
+.campo label{font-size:0.78rem;color:#e6d3ac;}
+.campo input,.campo select{padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(202,161,83,0.35);color:#fff;font-size:0.9rem;}
+.fila-campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;}
+.btn-principal{padding:12px 18px;border-radius:10px;background:#e0a53f;border:none;color:#1a0f07;font-weight:700;font-size:0.9rem;cursor:pointer;align-self:flex-start;}
+.btn-principal:disabled{opacity:0.5;cursor:not-allowed;}
+.btn-secundario{padding:10px 14px;border-radius:10px;background:transparent;border:1px solid rgba(202,161,83,0.4);color:#f3e6d0;font-size:0.82rem;cursor:pointer;}
+
+.tabla-wrap{overflow-x:auto;}
+table.bodega-tabla{width:100%;border-collapse:collapse;font-size:0.85rem;}
+table.bodega-tabla th{text-align:left;padding:8px 10px;color:#caa153;border-bottom:1px solid rgba(202,161,83,0.3);white-space:nowrap;}
+table.bodega-tabla td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.06);white-space:nowrap;}
+.lote-vencido{background:rgba(224,80,80,0.18);}
+.lote-critico{background:rgba(224,80,80,0.1);}
+.lote-proximo{background:rgba(224,165,63,0.12);}
+.badge-vencimiento{padding:3px 8px;border-radius:20px;font-size:0.72rem;font-weight:700;}
+.badge-vencimiento.vencido{background:rgba(224,80,80,0.3);color:#ffb3b3;}
+.badge-vencimiento.critico{background:rgba(224,80,80,0.22);color:#ffb3b3;}
+.badge-vencimiento.proximo{background:rgba(224,165,63,0.25);color:#e0a53f;}
+.badge-vencimiento.ok{background:rgba(90,190,140,0.18);color:#8fd4b0;}
+.vacio-msg{text-align:center;color:rgba(201,184,154,0.5);padding:24px 0;font-size:0.9rem;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#241408;border:1px solid rgba(202,161,83,0.5);color:#f3e6d0;padding:12px 18px;border-radius:10px;font-size:0.85rem;z-index:999;display:none;max-width:90%;text-align:center;}
+.toast.error{border-color:#e05050;color:#ffb3b3;}
+</style>
+</head>
+<body>
+<button id="btn-cerrar-sesion" onclick="cerrarSesionDeg()" style="position:fixed;top:8px;right:8px;z-index:999;padding:6px 12px;border-radius:20px;background:rgba(0,0,0,0.4);border:1px solid rgba(202,161,83,0.4);color:#f3e6d0;font-size:0.72rem;cursor:pointer;">Cerrar sesión</button>
+<script>
+  let ROL_SESION_DEG = null;
+  async function cargarSesionDeg() {
+    try {
+      const res = await fetch('/api/session');
+      const data = await res.json();
+      ROL_SESION_DEG = data.rol;
+    } catch (e) {}
+  }
+  async function cerrarSesionDeg() {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+  }
+  cargarSesionDeg();
+</script>
+
+<header>
+  <div class="header-marca">
+    <img class="logo-bodega" src="logo.png" alt="Donde el Gordo">
+    <div>
+      <div class="header-titulo">DONDE EL GORDO</div>
+      <div class="header-sub">BODEGA</div>
+    </div>
+  </div>
+  <div class="header-tabs">
+    <a class="btn-tab" href="caja.html">Caja</a>
+    <a class="btn-tab" href="inventario.html">Inventario local</a>
+    <a class="btn-tab activa" href="bodega.html">Bodega</a>
+    <a class="btn-tab" href="index.html">← MENU</a>
+  </div>
+</header>
+
+<main>
+  <div class="panel">
+    <h2>📥 Ingreso a bodega</h2>
+    <div class="panel-sub">Registra lo que llega de proveedor, con su fecha de vencimiento. Cada ingreso es un lote independiente, aunque sea el mismo producto que ya había en bodega.</div>
+    <div class="fila-campos">
+      <div class="campo"><label>Producto</label><input type="text" id="ing-producto" list="lista-productos-bodega" placeholder="Ej: Pechuga de pollo"></div>
+      <div class="campo"><label>Cantidad</label><input type="number" id="ing-cantidad" min="0" step="0.01" placeholder="0"></div>
+      <div class="campo"><label>Unidad</label><input type="text" id="ing-unidad" placeholder="kg, unidad, caja..."></div>
+      <div class="campo"><label>Fecha de vencimiento</label><input type="date" id="ing-vencimiento"></div>
+      <div class="campo"><label>Proveedor (opcional)</label><input type="text" id="ing-proveedor" placeholder="Nombre del proveedor"></div>
+    </div>
+    <button class="btn-principal" id="btn-guardar-ingreso" onclick="guardarIngresoBodega()">Guardar ingreso a bodega</button>
+  </div>
+
+  <div class="panel">
+    <h2>📤 Salida de bodega → Local</h2>
+    <div class="panel-sub">Esto es lo mismo que hoy se llama "ingreso al local": saca de bodega lo que se lleva al local para usarse, descontando primero del lote que vence más pronto, y queda registrado en Inventario igual que siempre.</div>
+    <div class="fila-campos">
+      <div class="campo"><label>Producto</label><input type="text" id="sal-producto" list="lista-productos-bodega" placeholder="Ej: Pechuga de pollo"></div>
+      <div class="campo"><label>Cantidad</label><input type="number" id="sal-cantidad" min="0" step="0.01" placeholder="0"></div>
+      <div class="campo"><label>Unidad</label><input type="text" id="sal-unidad" placeholder="kg, unidad, caja..."></div>
+    </div>
+    <button class="btn-principal" id="btn-guardar-salida" onclick="guardarSalidaBodega()">Sacar de bodega al local</button>
+  </div>
+
+  <div class="panel">
+    <h2>📦 Existencias en bodega</h2>
+    <div class="panel-sub">Ordenado por lo que vence más pronto primero. 🔴 Vencido o vence en 2 días o menos · 🟠 Vence en 7 días o menos.</div>
+    <button class="btn-secundario" style="align-self:flex-end;" onclick="cargarBodega()">🔄 Actualizar</button>
+    <div class="tabla-wrap" id="bodega-tabla-cont"><div class="vacio-msg">Cargando...</div></div>
+  </div>
+</main>
+
+<datalist id="lista-productos-bodega"></datalist>
+<div class="toast" id="toast"></div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzo45isSgsJoCJxyvBl81Eb9fMAMwsB3GS5IRwV9QxTgk7NLfj8BiE8j5CgeP6dWgb6/exec';
+
+function showToast(msg, tipo) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (tipo === 'error' ? ' error' : '');
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+// Mismo patrón JSONP que ya usa inventario.html (Apps Script no siempre responde con
+// CORS habilitado para fetch/XHR entre orígenes distintos -- un <script src> no lo necesita).
+function jsonpGet(action, params, callbackNombre, onOk, onError) {
+  const url = new URL(SCRIPT_URL);
+  url.searchParams.set('action', action);
+  Object.keys(params || {}).forEach(k => url.searchParams.set(k, params[k]));
+  url.searchParams.set('callback', callbackNombre);
+  window[callbackNombre] = function (respuesta) {
+    delete window[callbackNombre];
+    script.remove();
+    if (respuesta && respuesta.ok) onOk(respuesta); else onError(respuesta);
+  };
+  const script = document.createElement('script');
+  script.src = url.toString();
+  script.onerror = () => { delete window[callbackNombre]; script.remove(); onError(null); };
+  document.body.appendChild(script);
+}
+
+// Mismo patrón de formulario oculto + iframe que ya usa inventario.html para
+// esquivar el mismo límite de CORS al escribir (doPost).
+function postToGoogleSheets(payload, onSuccess, onError) {
+  const idEnvio = payload.idEnvio;
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = SCRIPT_URL;
+  const iframeName = `iframe_${Date.now()}`;
+  const iframe = document.createElement('iframe');
+  iframe.name = iframeName;
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+  form.target = iframeName;
+  form.style.display = 'none';
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = 'payload';
+  input.value = JSON.stringify(payload);
+  form.appendChild(input);
+  document.body.appendChild(form);
+  form.submit();
+  document.body.removeChild(form);
+
+  setTimeout(() => {
+    verificarEnvio(idEnvio, 0, () => {
+      document.body.removeChild(iframe);
+      onSuccess();
+    }, () => {
+      document.body.removeChild(iframe);
+      onError();
+    });
+  }, 1500);
+}
+
+function verificarEnvio(idEnvio, intento, onOk, onFail) {
+  const cbNombre = `jsonpVerifyBodega_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  jsonpGet('verificar_envio', { id: idEnvio }, cbNombre, (r) => {
+    if (r && r.confirmado) { onOk(); return; }
+    if (intento >= 6) { onFail(); return; }
+    setTimeout(() => verificarEnvio(idEnvio, intento + 1, onOk, onFail), 1500);
+  }, () => {
+    if (intento >= 6) { onFail(); return; }
+    setTimeout(() => verificarEnvio(idEnvio, intento + 1, onOk, onFail), 1500);
+  });
+}
+
+function cargarProductosBodega() {
+  jsonpGet('get_productos', {}, 'onProductosBodegaLoaded', (r) => {
+    const cont = document.getElementById('lista-productos-bodega');
+    cont.innerHTML = (r.data || []).map(p => `<option value="${p.nombre}">`).join('');
+  }, () => {});
+}
+
+function badgeVencimiento(dias) {
+  if (dias === null) return { clase: '', texto: '' };
+  if (dias < 0) return { clase: 'vencido', texto: `Vencido hace ${-dias}d` };
+  if (dias <= 2) return { clase: 'critico', texto: `Vence en ${dias}d` };
+  if (dias <= 7) return { clase: 'proximo', texto: `Vence en ${dias}d` };
+  return { clase: 'ok', texto: `Vence en ${dias}d` };
+}
+
+function cargarBodega() {
+  const cont = document.getElementById('bodega-tabla-cont');
+  cont.innerHTML = '<div class="vacio-msg">Cargando...</div>';
+  jsonpGet('listar_bodega', {}, 'onBodegaLoaded', (r) => {
+    const lotes = r.data || [];
+    if (lotes.length === 0) {
+      cont.innerHTML = '<div class="vacio-msg">No hay lotes con saldo en bodega.</div>';
+      return;
+    }
+    const filas = lotes.map(l => {
+      const b = badgeVencimiento(l.diasParaVencer);
+      const filaClase = b.clase === 'vencido' ? 'lote-vencido' : (b.clase === 'critico' ? 'lote-critico' : (b.clase === 'proximo' ? 'lote-proximo' : ''));
+      return `<tr class="${filaClase}">
+        <td>${l.producto}</td>
+        <td>${l.disponible} ${l.unidad}</td>
+        <td>${l.fechaVencimiento || '—'}</td>
+        <td>${b.texto ? `<span class="badge-vencimiento ${b.clase}">${b.texto}</span>` : '—'}</td>
+        <td>${l.proveedor || '—'}</td>
+        <td>${l.fechaIngreso}</td>
+      </tr>`;
+    }).join('');
+    cont.innerHTML = `<table class="bodega-tabla">
+      <tr><th>Producto</th><th>Disponible</th><th>Vence</th><th>Alerta</th><th>Proveedor</th><th>Ingresó</th></tr>
+      ${filas}
+    </table>`;
+  }, () => {
+    cont.innerHTML = '<div class="vacio-msg">⚠️ No se pudo cargar la bodega. <button class="btn-secundario" onclick="cargarBodega()">Reintentar</button></div>';
+  });
+}
+
+function fechaHoyISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function guardarIngresoBodega() {
+  const nombre = document.getElementById('ing-producto').value.trim();
+  const cantidad = parseFloat(document.getElementById('ing-cantidad').value);
+  const unidad = document.getElementById('ing-unidad').value.trim();
+  const vencimiento = document.getElementById('ing-vencimiento').value;
+  const proveedor = document.getElementById('ing-proveedor').value.trim();
+
+  if (!nombre || !cantidad || cantidad <= 0 || !unidad || !vencimiento) {
+    showToast('Completa producto, cantidad, unidad y fecha de vencimiento.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-guardar-ingreso');
+  btn.disabled = true;
+  const payload = {
+    action: 'guardar_ingreso_bodega',
+    idEnvio: 'bodega_in_' + Date.now(),
+    fecha: fechaHoyISO(),
+    items: [{ nombre: nombre, total: cantidad, unit: unidad, vencimiento: vencimiento, proveedor: proveedor }]
+  };
+  postToGoogleSheets(payload, () => {
+    btn.disabled = false;
+    showToast('✅ Ingreso a bodega registrado.');
+    document.getElementById('ing-producto').value = '';
+    document.getElementById('ing-cantidad').value = '';
+    document.getElementById('ing-unidad').value = '';
+    document.getElementById('ing-vencimiento').value = '';
+    document.getElementById('ing-proveedor').value = '';
+    cargarBodega();
+  }, () => {
+    btn.disabled = false;
+    showToast('No se pudo confirmar el ingreso. Intenta de nuevo.', 'error');
+  });
+}
+
+function guardarSalidaBodega() {
+  const nombre = document.getElementById('sal-producto').value.trim();
+  const cantidad = parseFloat(document.getElementById('sal-cantidad').value);
+  const unidad = document.getElementById('sal-unidad').value.trim();
+
+  if (!nombre || !cantidad || cantidad <= 0 || !unidad) {
+    showToast('Completa producto, cantidad y unidad.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-guardar-salida');
+  btn.disabled = true;
+  const payload = {
+    action: 'guardar_salida_bodega',
+    idEnvio: 'bodega_out_' + Date.now(),
+    fecha: fechaHoyISO(),
+    items: [{ nombre: nombre, total: cantidad, unit: unidad }]
+  };
+  postToGoogleSheets(payload, () => {
+    btn.disabled = false;
+    showToast('✅ Salida registrada -- ya quedó como ingreso al local también.');
+    document.getElementById('sal-producto').value = '';
+    document.getElementById('sal-cantidad').value = '';
+    document.getElementById('sal-unidad').value = '';
+    cargarBodega();
+  }, () => {
+    btn.disabled = false;
+    showToast('No se pudo confirmar la salida. Intenta de nuevo.', 'error');
+  });
+}
+
+cargarProductosBodega();
+cargarBodega();
+</script>
+</body>
+</html>

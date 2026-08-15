@@ -102,6 +102,8 @@ function listarPedidosCaja() {
 function marcarPedidoPagado(e) {
   const idPedido = e.parameter.id_pedido || '';
   const metodoPago = e.parameter.metodo_pago || '';
+  const efectivoRecibido = e.parameter.efectivo_recibido || '';
+  const efectivoDevuelta = e.parameter.efectivo_devuelta || '';
 
   if (!idPedido || ['Efectivo', 'Nequi', 'Tarjeta'].indexOf(metodoPago) === -1) {
     return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'Falta id_pedido o metodo_pago inválido' }))
@@ -114,12 +116,22 @@ function marcarPedidoPagado(e) {
   const idxIdPedido = encabezados.indexOf('ID_Pedido');
   const idxEstado = encabezados.indexOf('Estado');
   const idxMetodoPago = encabezados.indexOf('Metodo_Pago');
+  const idxEfectivoRecibido = encabezados.indexOf('Efectivo_Recibido');
+  const idxEfectivoDevuelta = encabezados.indexOf('Efectivo_Devuelta');
 
   let encontrado = false;
   for (let i = 1; i < datos.length; i++) {
     if (datos[i][idxIdPedido] === idPedido) {
       hoja.getRange(i + 1, idxEstado + 1).setValue('Pagado');
       hoja.getRange(i + 1, idxMetodoPago + 1).setValue(metodoPago);
+      // Columnas nuevas -- si el Sheet todavía no las tiene (indexOf da -1), se
+      // omite la escritura puntual sin romper el resto del cobro.
+      if (metodoPago === 'Efectivo' && efectivoRecibido && idxEfectivoRecibido !== -1) {
+        hoja.getRange(i + 1, idxEfectivoRecibido + 1).setValue(Number(efectivoRecibido));
+      }
+      if (metodoPago === 'Efectivo' && efectivoDevuelta && idxEfectivoDevuelta !== -1) {
+        hoja.getRange(i + 1, idxEfectivoDevuelta + 1).setValue(Number(efectivoDevuelta));
+      }
       encontrado = true;
     }
   }

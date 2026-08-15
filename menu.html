@@ -25,6 +25,10 @@ header{position:sticky;top:0;z-index:20;background:#170d06;border-bottom:1px sol
 
 .mesa-badge{display:inline-block;padding:4px 12px;border-radius:20px;background:rgba(202,161,83,0.15);border:1px solid rgba(202,161,83,0.4);color:#e0a53f;font-size:0.78rem;font-weight:700;margin-bottom:10px;}
 .mesa-nota{font-size:0.78rem;color:rgba(201,184,154,0.7);margin-top:6px;line-height:1.4;}
+.resumen-mesa{background:rgba(202,161,83,0.08);border:1px solid rgba(202,161,83,0.3);border-radius:14px;padding:14px;margin-bottom:16px;}
+.resumen-mesa-titulo{font-family:'Poppins',sans-serif;font-size:0.92rem;font-weight:700;color:#caa153;margin-bottom:8px;}
+.resumen-mesa-item{display:flex;justify-content:space-between;font-size:0.85rem;color:rgba(243,230,208,0.85);padding:3px 0;}
+.resumen-mesa-total{display:flex;justify-content:space-between;font-weight:700;font-size:0.92rem;color:#f3e6d0;border-top:1px solid rgba(202,161,83,0.25);margin-top:6px;padding-top:6px;}
 
 main{padding:16px;max-width:640px;margin:0 auto;}
 
@@ -136,6 +140,7 @@ main{padding:16px;max-width:640px;margin:0 auto;}
     </header>
 
     <main>
+      <div id="resumen-mesa-actual" style="display:none;"></div>
       <div id="seccion-recomendados">
         <div class="seccion-titulo">⭐ Recomendados</div>
         <div id="lista-recomendados"></div>
@@ -557,7 +562,12 @@ let categoriaActiva = null;
 let adminActivo = false;
 let adminClave = '';
 let tipoPedidoSeleccionado = null;
-let puntos = parseInt(localStorage.getItem('zfood_puntos') || '0', 10);
+// Puntos reales viven en el backend (Clientes.Puntos), sumados por teléfono -- ya
+// no en localStorage (ese contador era por dispositivo/navegador, no por cliente: en
+// un dispositivo compartido de mesero varios clientes distintos terminaban compartiendo
+// el mismo contador). Ver registrarPuntoSiAplica.
+let puntos = 0;
+let celularParaPuntoActual = ''; // teléfono capturado en el panel de fidelización de esta ronda, si lo hubo
 let mesaQR = new URLSearchParams(window.location.search).get('mesa');
 let meseroQR = new URLSearchParams(window.location.search).get('mesero');
 
@@ -568,6 +578,36 @@ function renderMesaBadge() {
     badge.style.display = 'inline-block';
   } else {
     badge.style.display = 'none';
+  }
+}
+
+function renderResumenMesaActual(items, total) {
+  const cont = document.getElementById('resumen-mesa-actual');
+  if (!items || items.length === 0) {
+    cont.style.display = 'none';
+    cont.className = '';
+    cont.innerHTML = '';
+    return;
+  }
+  cont.className = 'resumen-mesa';
+  cont.innerHTML = `
+    <div class="resumen-mesa-titulo">🍽️ Ya llevas pedido en esta mesa</div>
+    ${items.map(it => `<div class="resumen-mesa-item"><span>${it.cantidad}x ${it.producto}</span><span>${formatoCOP(it.total)}</span></div>`).join('')}
+    <div class="resumen-mesa-total"><span>Total</span><span>${formatoCOP(total)}</span></div>
+  `;
+  cont.style.display = 'block';
+}
+
+async function cargarResumenMesaActual() {
+  if (mesaQR === null) return;
+  try {
+    const res = await fetch(SCRIPT_URL + '?accion=estado_mesa&mesa=' + encodeURIComponent(mesaQR));
+    const data = await res.json();
+    if (data.ok && data.abierta) {
+      renderResumenMesaActual(data.items || [], data.total || 0);
+    }
+  } catch (e) {
+    // Sin conexión -- el banner simplemente no aparece, no bloquea el pedido.
   }
 }
 
@@ -819,11 +859,22 @@ function renderAvisoPuntos() {
   });
 }
 
-function sumarPuntoSiAplica(total) {
-  if (total >= 50000) {
-    puntos = puntos >= 12 ? 1 : puntos + 1;
-    localStorage.setItem('zfood_puntos', String(puntos));
-    renderTarjetaPuntos();
+/**
+ * Único punto de entrada que otorga puntos de fidelidad -- llama a la acción de
+ * backend registrar_punto (hoja Clientes, columna Puntos), que le suma 1 al cliente
+ * identificado por teléfono si el total supera $50.000 (o lo crea con 1 punto si es
+ * la primera vez). Sin teléfono no hay a quién acreditarle el punto -- se omite en
+ * silencio, no bloquea el pedido.
+ */
+async function registrarPuntoSiAplica(telefono, nombre, total) {
+  if (!telefono || total < 50000) return;
+  try {
+    const params = new URLSearchParams({ accion: 'registrar_punto', telefono: telefono, nombre: nombre || '', total: String(total) });
+    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const data = await res.json();
+    if (data.ok) { puntos = data.puntos; renderTarjetaPuntos(); }
+  } catch (e) {
+    // Sin conexión -- el punto no queda registrado esta vez, no bloquea el pedido.
   }
 }
 
@@ -949,6 +1000,7 @@ async function verificarMesa() {
   meseroInput.disabled = false;
   label.textContent = panelMesaEsQR ? 'Nombre del mesero (opcional)' : 'Nombre del mesero';
   nota.style.display = 'none';
+  renderResumenMesaActual([], 0);
   if (!mesa) return;
 
   try {
@@ -956,6 +1008,7 @@ async function verificarMesa() {
     const data = await res.json();
     if (!data.ok) return;
     mesaAbiertaInfo = { abierta: data.abierta, mesero: data.mesero || '' };
+    if (data.abierta) renderResumenMesaActual(data.items || [], data.total || 0);
 
     if (data.abierta && data.mesero) {
       // Setting .value on a <select> with no matching <option> is a silent no-op — if the
@@ -1042,6 +1095,9 @@ async function abrirFlujoLocalAsesor() {
       // Se espera a que termine (a diferencia de las otras llamadas a esta función,
       // que son "fire and forget") para mantener flujoAsesorEnCurso activo durante
       // todo el crear_pedido y así cerrar también la ventana de doble toque ahí.
+      // Ronda siguiente de una mesa ya abierta -- no se volvió a pedir el teléfono,
+      // así que no hay a quién acreditar un punto en esta ronda puntual.
+      celularParaPuntoActual = '';
       await confirmarPedidoLocal(mesaQR, meseroQR);
     } else {
       // El overlay de "Verificando..." no debe quedar atascado detrás del panel
@@ -1082,6 +1138,7 @@ function confirmarFidelizacionYPedido(guardar) {
   const mesNac = document.getElementById('fid-mes-nac').value;
   const anioNac = document.getElementById('fid-anio-nac').value.trim();
   cerrarFidelizacion();
+  celularParaPuntoActual = (guardar && celular) ? celular : '';
   if (guardar && celular) {
     const cumpleISO = (diaNac && mesNac && anioNac)
       ? `${anioNac}-${String(mesNac).padStart(2, '0')}-${String(diaNac).padStart(2, '0')}`
@@ -1156,7 +1213,7 @@ async function enviarDomicilio() {
   const url = `https://wa.me/${WHATSAPP_NEGOCIO}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
   cerrarDomicilio();
-  sumarPuntoSiAplica(total);
+  registrarPuntoSiAplica(celular, nombre, total);
   const cumpleISO = (diaNac && mesNac && anioNac)
     ? `${anioNac}-${String(mesNac).padStart(2, '0')}-${String(diaNac).padStart(2, '0')}`
     : '';
@@ -1255,7 +1312,7 @@ async function confirmarPedidoLocal(mesa, mesero) {
     if (data.ok) {
       const mesaTxt = mesa ? ` (Mesa ${mesa})` : '';
       cont.innerHTML = `<div class="confirmacion-icono">✅</div><h3>¡Pedido enviado!${mesaTxt}</h3><p>Tu pedido ya está en cocina y quedó pendiente de pago en caja. ¡Gracias por tu compra!</p>`;
-      sumarPuntoSiAplica(total);
+      if (celularParaPuntoActual) { registrarPuntoSiAplica(celularParaPuntoActual, '', total); celularParaPuntoActual = ''; }
       carrito = [];
       guardarCarrito();
       actualizarCarritoFlotante();
@@ -1355,6 +1412,7 @@ async function editarPrecio(idx) {
     }
   }
   renderMesaBadge();
+  cargarResumenMesaActual(); // no se espera (await) -- es informativo, no debe retrasar el catálogo
   await cargarProductos();
   await cargarEmpleados();
   renderCategorias();
@@ -1363,7 +1421,29 @@ async function editarPrecio(idx) {
   actualizarCarritoFlotante();
   renderCarrito();
   renderTarjetaPuntos();
+  cargarPuntosClienteConocido(); // no se espera -- solo pinta si ya conocíamos su teléfono
 })();
+
+/**
+ * Si este dispositivo ya guardó el teléfono del cliente antes (Domicilio o
+ * fidelización de mesa, ver 'degCliente'), consulta sus puntos reales en el backend
+ * para mostrarlos desde que entra, sin esperar a que haga un pedido nuevo.
+ */
+async function cargarPuntosClienteConocido() {
+  let datos;
+  try { datos = JSON.parse(localStorage.getItem('degCliente') || 'null'); } catch (e) { datos = null; }
+  if (!datos || !datos.tel) return;
+  try {
+    const res = await fetch(SCRIPT_URL + '?accion=buscar_cliente&telefono=' + encodeURIComponent(datos.tel));
+    const data = await res.json();
+    if (data.ok && data.existe && data.cliente) {
+      puntos = data.cliente.puntos || 0;
+      renderTarjetaPuntos();
+    }
+  } catch (e) {
+    // Sin conexión -- se queda en 0 hasta el próximo pedido exitoso.
+  }
+}
 </script>
 </body>
 </html>

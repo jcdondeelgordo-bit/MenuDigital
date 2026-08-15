@@ -42,6 +42,8 @@ function registrarPagoParcial(e) {
   const monto = Number(e.parameter.monto);
   const metodoPago = e.parameter.metodo_pago || '';
   const detalle = e.parameter.detalle || '';
+  const efectivoRecibido = e.parameter.efectivo_recibido || '';
+  const efectivoDevuelta = e.parameter.efectivo_devuelta || '';
 
   if (!idPedido || !persona || !monto || monto <= 0 || ['Efectivo', 'Nequi', 'Tarjeta'].indexOf(metodoPago) === -1) {
     return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'Datos inválidos para registrar el pago parcial' }))
@@ -89,7 +91,7 @@ function registrarPagoParcial(e) {
   }
 
   const ahora = new Date();
-  hojaPagos.appendRow([idPedido, ahora, ahora, persona, monto, metodoPago, detalle]);
+  hojaPagos.appendRow([idPedido, ahora, ahora, persona, monto, metodoPago, detalle, efectivoRecibido, efectivoDevuelta]);
 
   const nuevoTotalPagado = totalYaPagado + monto;
   const completado = nuevoTotalPagado >= totalPedido - 0.01;

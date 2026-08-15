@@ -98,6 +98,7 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
   .recibo-negrita{font-weight:700;}
   .recibo-separador{border-top:1px dashed #000;margin:6px 0;}
   .recibo-item{display:flex;justify-content:space-between;}
+  .recibo-qr{display:block;width:26mm;height:26mm;margin:6px auto 0;}
   @page{size:80mm auto;margin:0;}
 }
 
@@ -107,6 +108,16 @@ main{padding:18px;max-width:900px;margin:0 auto;display:grid;grid-template-colum
 .modal-cobrar h3{font-family:'Poppins',sans-serif;color:#e0a53f;font-size:1.1rem;}
 .btn-metodo{padding:14px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(202,161,83,0.35);color:#f3e6d0;font-size:0.95rem;font-weight:700;cursor:pointer;}
 .btn-cancelar{padding:12px;border-radius:10px;background:transparent;border:none;color:rgba(201,184,154,0.6);font-size:0.85rem;cursor:pointer;}
+.efectivo-total-row,.efectivo-devuelta-row{display:flex;justify-content:space-between;align-items:center;font-size:1rem;}
+.efectivo-total-row span:last-child{font-size:1.3rem;font-weight:800;color:#f3e6d0;}
+.efectivo-label{font-size:0.8rem;color:rgba(201,184,154,0.8);margin-top:4px;}
+.efectivo-input{width:100%;padding:12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(202,161,83,0.35);color:#fff;font-size:1.4rem;text-align:center;font-weight:700;}
+.efectivo-billetes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.efectivo-billetes button{padding:10px 4px;border-radius:8px;border:1px solid rgba(202,161,83,0.35);background:rgba(255,255,255,0.05);color:#f3e6d0;font-size:0.8rem;font-weight:700;cursor:pointer;}
+.efectivo-devuelta-row span:last-child{font-size:1.6rem;font-weight:800;}
+.efectivo-devuelta-valor.negativo{color:#e05050;}
+.efectivo-devuelta-valor.positivo{color:#4caf50;}
+#btn-confirmar-efectivo:disabled{opacity:0.4;cursor:not-allowed;}
 
 /* Pantalla de grid (mesas + domicilios) -- rediseño 2026-07-30 */
 .header-marca{display:flex;align-items:center;gap:10px;flex:none;min-width:max-content;}
@@ -175,6 +186,7 @@ body:not(.deg-rol-cajero) #btn-venta-rapida { display: none !important; }
     <button class="btn-tab activa" onclick="cambiarVistaPrincipal('grid')">Mesas</button>
     <a class="btn-tab" href="cocina.html" style="text-decoration:none;display:inline-flex;align-items:center;">Cocina</a>
     <a class="btn-tab" href="inventario.html" style="text-decoration:none;display:inline-flex;align-items:center;">Inventario</a>
+    <a class="btn-tab" href="bodega.html" style="text-decoration:none;display:inline-flex;align-items:center;">Bodega</a>
     <a class="btn-tab" href="empleados.html" style="text-decoration:none;display:inline-flex;align-items:center;">Empleados</a>
   </div>
   <div class="header-tabs">
@@ -188,10 +200,31 @@ body:not(.deg-rol-cajero) #btn-venta-rapida { display: none !important; }
 <div class="overlay oculto" id="overlay-cobrar">
   <div class="modal-cobrar">
     <h3>¿Cómo pagó el cliente?</h3>
-    <button class="btn-metodo" onclick="confirmarCobro('Efectivo')">💵 Efectivo</button>
+    <button class="btn-metodo" onclick="abrirCalculadoraEfectivoCobro()">💵 Efectivo</button>
     <button class="btn-metodo" onclick="confirmarCobro('Nequi')">📱 Nequi</button>
     <button class="btn-metodo" onclick="confirmarCobro('Tarjeta')">💳 Tarjeta</button>
     <button class="btn-cancelar" onclick="cerrarModalCobrar()">Cancelar</button>
+  </div>
+</div>
+
+<div class="overlay oculto" id="overlay-efectivo">
+  <div class="modal-cobrar">
+    <h3>💵 Pago en efectivo</h3>
+    <div class="efectivo-total-row"><span>Total a pagar</span><span id="efectivo-total">$0</span></div>
+    <label class="efectivo-label">Paga con</label>
+    <input type="number" id="efectivo-input" class="efectivo-input" placeholder="0" oninput="actualizarValorEfectivoDesdeInput()">
+    <div class="efectivo-billetes">
+      <button type="button" onclick="agregarBilleteEfectivo(2000)">$2mil</button>
+      <button type="button" onclick="agregarBilleteEfectivo(5000)">$5mil</button>
+      <button type="button" onclick="agregarBilleteEfectivo(10000)">$10mil</button>
+      <button type="button" onclick="agregarBilleteEfectivo(20000)">$20mil</button>
+      <button type="button" onclick="agregarBilleteEfectivo(50000)">$50mil</button>
+      <button type="button" onclick="agregarBilleteEfectivo(100000)">$100mil</button>
+    </div>
+    <button type="button" class="btn-cancelar" onclick="borrarEfectivo()">Borrar</button>
+    <div class="efectivo-devuelta-row"><span>Devuelta</span><span id="efectivo-devuelta" class="efectivo-devuelta-valor negativo">Falta $0</span></div>
+    <button class="btn-cobrar" id="btn-confirmar-efectivo" onclick="confirmarCalculadoraEfectivo()" disabled>Confirmar</button>
+    <button class="btn-cancelar" onclick="cerrarCalculadoraEfectivo()">Cancelar</button>
   </div>
 </div>
 
@@ -241,7 +274,7 @@ body:not(.deg-rol-cajero) #btn-venta-rapida { display: none !important; }
 <div class="overlay oculto" id="overlay-cobrar-parcial">
   <div class="modal-cobrar">
     <h3>¿Cómo pagó esta parte?</h3>
-    <button class="btn-metodo" onclick="confirmarCobroParcial('Efectivo')">💵 Efectivo</button>
+    <button class="btn-metodo" onclick="abrirCalculadoraEfectivoParcial()">💵 Efectivo</button>
     <button class="btn-metodo" onclick="confirmarCobroParcial('Nequi')">📱 Nequi</button>
     <button class="btn-metodo" onclick="confirmarCobroParcial('Tarjeta')">💳 Tarjeta</button>
     <button class="btn-cancelar" onclick="cerrarModalCobrarParcial()">Cancelar</button>
@@ -283,7 +316,7 @@ body:not(.deg-rol-cajero) #btn-venta-rapida { display: none !important; }
 <div class="overlay oculto" id="overlay-cobrar-vr">
   <div class="modal-cobrar">
     <h3>¿Cómo pagó el cliente?</h3>
-    <button class="btn-metodo" onclick="confirmarCobroVentaRapida('Efectivo')">💵 Efectivo</button>
+    <button class="btn-metodo" onclick="abrirCalculadoraEfectivoVR()">💵 Efectivo</button>
     <button class="btn-metodo" onclick="confirmarCobroVentaRapida('Nequi')">📱 Nequi</button>
     <button class="btn-metodo" onclick="confirmarCobroVentaRapida('Tarjeta')">💳 Tarjeta</button>
     <button class="btn-cancelar" onclick="cerrarModalCobrarVR()">Cancelar</button>
@@ -524,7 +557,7 @@ function cerrarModalCobrarParcial() {
   document.getElementById('overlay-cobrar-parcial').classList.add('oculto');
 }
 
-async function confirmarCobroParcial(metodo) {
+async function confirmarCobroParcial(metodo, recibido, devuelta) {
   cerrarModalCobrarParcial();
   const idPedido = idPedidoParaCobrarParcial;
   const persona = personaParaCobrarParcial;
@@ -541,15 +574,16 @@ async function confirmarCobroParcial(metodo) {
 
   cobroParcialEnCurso = true;
   try {
-    const params = new URLSearchParams({
+    const paramsObj = {
       accion: 'registrar_pago_parcial',
       id_pedido: idPedido,
       persona: persona,
       monto: monto,
       metodo_pago: metodo,
       detalle: detalle
-    });
-    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    };
+    if (recibido !== undefined) { paramsObj.efectivo_recibido = String(recibido); paramsObj.efectivo_devuelta = String(devuelta); }
+    const res = await fetch(SCRIPT_URL + '?' + new URLSearchParams(paramsObj).toString());
     const data = await res.json();
     if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Respuesta inválida del servidor');
 
@@ -566,7 +600,9 @@ async function confirmarCobroParcial(metodo) {
       mesa: pedidoMesa,
       items: itemsRecibo,
       total: monto,
-      metodo_pago: metodo + ' — ' + persona + (data.completado ? '' : ' · PAGO PARCIAL, falta ' + formatoCOP(data.restante))
+      metodo_pago: metodo + ' — ' + persona + (data.completado ? '' : ' · PAGO PARCIAL, falta ' + formatoCOP(data.restante)),
+      efectivoRecibido: recibido,
+      efectivoDevuelta: devuelta
     });
 
     if (division && division.idPedido === idPedido) {
@@ -685,6 +721,102 @@ function cobrarParteIgual(numeroParte, monto) {
 }
 
 function formatoCOP(v) { return '$' + Math.round(v).toLocaleString('es-CO'); }
+
+// Calculadora de devuelta en Efectivo (panel único reutilizado en los 4 puntos de
+// cobro en efectivo: individual, mesa, dividido, Venta Rápida). Ver spec
+// docs/superpowers/specs/2026-08-15-calculadora-devuelta-efectivo-design.md.
+let efectivoTotal = 0;
+let efectivoValor = 0;
+let efectivoCallback = null;
+
+function abrirCalculadoraEfectivo(total, callback) {
+  efectivoTotal = total;
+  efectivoValor = 0;
+  efectivoCallback = callback;
+  document.getElementById('efectivo-input').value = '';
+  actualizarPantallaEfectivo();
+  document.getElementById('overlay-efectivo').classList.remove('oculto');
+}
+
+function agregarBilleteEfectivo(valor) {
+  efectivoValor += valor;
+  document.getElementById('efectivo-input').value = efectivoValor;
+  actualizarPantallaEfectivo();
+}
+
+function actualizarValorEfectivoDesdeInput() {
+  const v = parseInt(document.getElementById('efectivo-input').value, 10);
+  efectivoValor = isNaN(v) ? 0 : v;
+  actualizarPantallaEfectivo();
+}
+
+function borrarEfectivo() {
+  efectivoValor = 0;
+  document.getElementById('efectivo-input').value = '';
+  actualizarPantallaEfectivo();
+}
+
+function actualizarPantallaEfectivo() {
+  document.getElementById('efectivo-total').textContent = formatoCOP(efectivoTotal);
+  const devuelta = efectivoValor - efectivoTotal;
+  const elDevuelta = document.getElementById('efectivo-devuelta');
+  const btnConfirmar = document.getElementById('btn-confirmar-efectivo');
+  if (devuelta < 0) {
+    elDevuelta.textContent = 'Falta ' + formatoCOP(-devuelta);
+    elDevuelta.className = 'efectivo-devuelta-valor negativo';
+    btnConfirmar.disabled = true;
+  } else {
+    elDevuelta.textContent = formatoCOP(devuelta);
+    elDevuelta.className = 'efectivo-devuelta-valor positivo';
+    btnConfirmar.disabled = false;
+  }
+}
+
+function cerrarCalculadoraEfectivo() {
+  document.getElementById('overlay-efectivo').classList.add('oculto');
+  efectivoCallback = null;
+}
+
+function confirmarCalculadoraEfectivo() {
+  if (efectivoValor < efectivoTotal) return; // guard extra -- el botón ya queda disabled
+  const recibido = efectivoValor;
+  const devuelta = efectivoValor - efectivoTotal;
+  const cb = efectivoCallback;
+  cerrarCalculadoraEfectivo();
+  if (cb) cb(recibido, devuelta);
+}
+
+function abrirCalculadoraEfectivoCobro() {
+  let total = 0;
+  if (cobroModo === 'mesa') {
+    total = idsParaCobrarMesa.reduce((s, id) => {
+      const p = pedidos.find(x => x.id_pedido === id);
+      return s + (p ? p.total : 0);
+    }, 0);
+  } else {
+    const p = pedidos.find(x => x.id_pedido === pedidoIdParaCobrar);
+    total = p ? p.total : 0;
+  }
+  document.getElementById('overlay-cobrar').classList.add('oculto');
+  abrirCalculadoraEfectivo(total, function (recibido, devuelta) {
+    confirmarCobro('Efectivo', recibido, devuelta);
+  });
+}
+
+function abrirCalculadoraEfectivoParcial() {
+  document.getElementById('overlay-cobrar-parcial').classList.add('oculto');
+  abrirCalculadoraEfectivo(montoParaCobrarParcial, function (recibido, devuelta) {
+    confirmarCobroParcial('Efectivo', recibido, devuelta);
+  });
+}
+
+function abrirCalculadoraEfectivoVR() {
+  const total = itemsVentaRapidaSnapshot.reduce((s, i) => s + i.precio * i.cantidad, 0);
+  document.getElementById('overlay-cobrar-vr').classList.add('oculto');
+  abrirCalculadoraEfectivo(total, function (recibido, devuelta) {
+    confirmarCobroVentaRapida('Efectivo', recibido, devuelta);
+  });
+}
 
 // Venta Rápida: cliente de mostrador sin mesa ni mesero. El carrito vive solo en
 // memoria (a diferencia de menu.html, que lo guarda en localStorage) porque este
@@ -898,7 +1030,7 @@ function cerrarModalCobrarVR() {
   itemsVentaRapidaSnapshot = [];
 }
 
-async function confirmarCobroVentaRapida(metodo) {
+async function confirmarCobroVentaRapida(metodo, recibido, devuelta) {
   const idPedido = idPedidoVentaRapida;
   const entregar = entregaInmediataVR;
   const nombre = nombreVentaRapida;
@@ -920,8 +1052,9 @@ async function confirmarCobroVentaRapida(metodo) {
   if (entregar) pedidosLiberacionPendiente.add(idPedido);
 
   try {
-    const params = new URLSearchParams({ accion: 'marcar_pedido_pagado', id_pedido: idPedido, metodo_pago: metodo });
-    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const params = { accion: 'marcar_pedido_pagado', id_pedido: idPedido, metodo_pago: metodo };
+    if (recibido !== undefined) { params.efectivo_recibido = String(recibido); params.efectivo_devuelta = String(devuelta); }
+    const res = await fetch(SCRIPT_URL + '?' + new URLSearchParams(params).toString());
     const data = await res.json();
     if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Respuesta inválida del servidor');
 
@@ -933,7 +1066,7 @@ async function confirmarCobroVentaRapida(metodo) {
       await fetch(SCRIPT_URL + '?' + paramsLib.toString());
     }
 
-    imprimirRecibo({ tipo: 'mostrador', mesa: nombre, items: itemsRecibo, total: total, metodo_pago: metodo });
+    imprimirRecibo({ tipo: 'mostrador', mesa: nombre, items: itemsRecibo, total: total, metodo_pago: metodo, efectivoRecibido: recibido, efectivoDevuelta: devuelta });
     carritoVentaRapida = [];
     cerrarVentaRapida();
     await cargarPedidos();
@@ -962,9 +1095,16 @@ function imprimirRecibo(pedido) {
     ${pedido.items.map(it => `<div class="recibo-item"><span>${it.cantidad}x ${it.producto}</span><span>${formatoCOP(it.total)}</span></div>`).join('')}
     <div class="recibo-separador"></div>
     <div class="recibo-item recibo-negrita"><span>TOTAL</span><span>${formatoCOP(pedido.total)}</span></div>
-    <div class="recibo-linea">Pago: ${pedido.metodo_pago}</div>
+    <div class="recibo-linea">Forma de pago: ${pedido.metodo_pago}</div>
+    ${pedido.efectivoRecibido !== undefined ? `
+    <div class="recibo-linea">Pagó con: ${formatoCOP(pedido.efectivoRecibido)}</div>
+    <div class="recibo-linea">Devuelta: ${formatoCOP(pedido.efectivoDevuelta)}</div>` : ''}
     <div class="recibo-separador"></div>
+    ${pedido.total >= 50000 ? '<div class="recibo-linea recibo-centro">🎁 ¡Este pedido suma 1 punto en tu tarjeta de fidelidad!</div><div class="recibo-separador"></div>' : ''}
+    <div class="recibo-linea recibo-centro recibo-negrita">¡Gracias por su compra!</div>
     <div class="recibo-linea recibo-centro">${DATOS_LOCAL.mensajePie}</div>
+    <div class="recibo-linea recibo-centro">¿Pides a domicilio? Escanea:</div>
+    <img class="recibo-qr" src="QR-Mesas-Domicilio/00-domicilio.png" alt="QR domicilio">
   `;
   window.print();
 }
@@ -1257,7 +1397,7 @@ function cerrarModalCobrar() {
   document.getElementById('overlay-cobrar').classList.add('oculto');
 }
 
-async function confirmarCobro(metodo) {
+async function confirmarCobro(metodo, recibido, devuelta) {
   // Capturamos todo lo que hace falta ANTES de cerrarModalCobrar(): esa función
   // ahora resetea cobroModo/mesaParaCobrar/idsParaCobrarMesa (hallazgo 3 de la
   // revisión final), así que si los leyéramos después ya estarían en blanco.
@@ -1266,7 +1406,7 @@ async function confirmarCobro(metodo) {
   const numMesaCobrar = mesaParaCobrar;
   const idsCobrar = idsParaCobrarMesa.slice();
   cerrarModalCobrar();
-  if (modo === 'mesa') { await confirmarCobroMesa(numMesaCobrar, idsCobrar, metodo); return; }
+  if (modo === 'mesa') { await confirmarCobroMesa(numMesaCobrar, idsCobrar, metodo, recibido, devuelta); return; }
 
   if (!idPedido) return;
 
@@ -1278,11 +1418,15 @@ async function confirmarCobro(metodo) {
   renderPrincipal();
 
   try {
-    const params = new URLSearchParams({ accion: 'marcar_pedido_pagado', id_pedido: idPedido, metodo_pago: metodo });
-    const res = await fetch(SCRIPT_URL + '?' + params.toString());
+    const params = { accion: 'marcar_pedido_pagado', id_pedido: idPedido, metodo_pago: metodo };
+    if (recibido !== undefined) { params.efectivo_recibido = String(recibido); params.efectivo_devuelta = String(devuelta); }
+    const res = await fetch(SCRIPT_URL + '?' + new URLSearchParams(params).toString());
     const data = await res.json();
     if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Respuesta inválida del servidor');
-    if (pedido && pedido.tipo === 'local') imprimirRecibo(pedido);
+    if (pedido && pedido.tipo === 'local') {
+      if (recibido !== undefined) { pedido.efectivoRecibido = recibido; pedido.efectivoDevuelta = devuelta; }
+      imprimirRecibo(pedido);
+    }
   } catch (e) {
     // El backend rechazó el cobro, no respondió con el formato esperado
     // (p. ej. página HTML de login de Google) o falló la red: revertimos el
@@ -1296,7 +1440,7 @@ async function confirmarCobro(metodo) {
   }
 }
 
-async function confirmarCobroMesa(numMesa, idsCobrar, metodo) {
+async function confirmarCobroMesa(numMesa, idsCobrar, metodo, recibido, devuelta) {
   if (!numMesa) return;
   // Cobrar exactamente los ids verificados y mostrados al abrir el modal
   // (capturados por confirmarCobro en idsCobrar, a partir de idsParaCobrarMesa),
@@ -1320,15 +1464,16 @@ async function confirmarCobroMesa(numMesa, idsCobrar, metodo) {
 
   try {
     const resultados = await Promise.all(idsAfectados.map(id => {
-      const params = new URLSearchParams({ accion: 'marcar_pedido_pagado', id_pedido: id, metodo_pago: metodo });
-      return fetch(SCRIPT_URL + '?' + params.toString()).then(r => r.json());
+      const params = { accion: 'marcar_pedido_pagado', id_pedido: id, metodo_pago: metodo };
+      if (recibido !== undefined) { params.efectivo_recibido = String(recibido); params.efectivo_devuelta = String(devuelta); }
+      return fetch(SCRIPT_URL + '?' + new URLSearchParams(params).toString()).then(r => r.json());
     }));
     if (resultados.some(d => !d || d.ok !== true)) throw new Error('El servidor rechazó al menos uno de los cobros de esta mesa');
 
     const itemsCombinados = [];
     pendientes.forEach(p => p.items.forEach(it => itemsCombinados.push(it)));
     const totalCombinado = pendientes.reduce((s, p) => s + p.total, 0);
-    imprimirRecibo({ tipo: 'local', mesa: numMesa, items: itemsCombinados, total: totalCombinado, metodo_pago: metodo });
+    imprimirRecibo({ tipo: 'local', mesa: numMesa, items: itemsCombinados, total: totalCombinado, metodo_pago: metodo, efectivoRecibido: recibido, efectivoDevuelta: devuelta });
   } catch (e) {
     estadosAnteriores.forEach(prev => {
       const p = pedidos.find(x => x.id_pedido === prev.id);

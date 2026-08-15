@@ -1,0 +1,171 @@
+// ============================================================================
+// MÓDULO 12 — BODEGA: nuevas acciones para el backend real de Inventario
+// ============================================================================
+// Instrucciones:
+// 1. Este archivo es una COPIA DE REFERENCIA, igual que modulo-5-inventario-code.gs.txt
+//    (que documenta que el archivo real y editable es E:\Descargas\MENU\DONDE EL
+//    GORDO\Code.gs). Pega las funciones de abajo en ESE MISMO proyecto de Apps
+//    Script real -- reutilizan el mismo SHEET_ID y el mismo getOrCreateSheet/respond
+//    que ya existen ahí.
+// 2. Agrega 2 ramas nuevas a tu doGet(e), junto a las que ya tiene
+//    (get_productos/reporte_insumos/get_data/verificar_envio):
+//        else if (action === 'listar_bodega') {
+//          try { result = { ok: true, data: listarBodega_() }; }
+//          catch (err) { result = { ok: false, error: err.toString() }; }
+//        }
+// 3. Agrega 2 ramas nuevas a tu doPost(e), junto a las que ya tiene
+//    (guardar_inventario_completo/guardar_ingreso/guardar_ventas), ANTES del
+//    "else { return respond({ ok: false, error: 'Acción no reconocida' }); }" final:
+//        else if (data.action === 'guardar_ingreso_bodega') {
+//          return guardarIngresoBodega_(ss, data, timestamp);
+//        } else if (data.action === 'guardar_salida_bodega') {
+//          return guardarSalidaBodega_(ss, data, timestamp);
+//        }
+// 4. IMPORTANTE: antes de publicar, busca con Ctrl+F "function listarBodega_",
+//    "function guardarIngresoBodega_" y "function guardarSalidaBodega_" y confirma
+//    que cada una aparece una sola vez en el editor real.
+// 5. No hace falta crear la hoja "Bodega" a mano -- getOrCreateSheet() (ya existe en
+//    el archivo real) la crea sola la primera vez que se usa, con los encabezados
+//    correctos.
+//
+// Modelo de datos: cada "ingreso a bodega" (compra/recepción de proveedor) es una
+// FILA/LOTE propio en la hoja "Bodega", con su propia fecha de vencimiento -- así un
+// mismo producto puede tener varios lotes con vencimientos distintos al mismo tiempo.
+// Cada "salida de bodega" (lo que hoy ya existe como "ingreso al local" -- ver
+// modulo-5-inventario.md) descuenta la columna "Disponible" de esos lotes, EMPEZANDO
+// por el que vence más pronto (FIFO por vencimiento, para no dejar vencer un lote
+// mientras se gasta uno más nuevo), y además reutiliza el guardar_ingreso ya
+// existente (hoja "Ingresos") para que el local siga alimentando el cruce de
+// insumos (generarReporteInsumos) exactamente igual que hoy -- sin tocar ni renombrar
+// esa función, que sigue siendo la fuente real del "ingreso al local".
+// ============================================================================
+
+/**
+ * action=listar_bodega
+ * Devuelve todos los lotes con Disponible > 0, con los días que faltan para vencer
+ * ya calculados (negativo = ya vencido), para que bodega.html pinte la alerta sin
+ * tener que hacer cuentas de fecha en el navegador de cada usuario.
+ */
+function listarBodega_() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const sheet = getOrCreateSheet(ss, 'Bodega',
+    ['Fecha_Ingreso', 'Producto', 'Cantidad', 'Unidad', 'Fecha_Vencimiento', 'Proveedor', 'Disponible', 'Registrado']);
+  const datos = sheet.getDataRange().getValues();
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const lotes = [];
+
+  for (let i = 1; i < datos.length; i++) {
+    const fila = datos[i];
+    const disponible = Number(fila[6]) || 0;
+    if (disponible <= 0) continue;
+    const fechaVenc = fila[4] ? new Date(fila[4]) : null;
+    let diasParaVencer = null;
+    if (fechaVenc) {
+      fechaVenc.setHours(0, 0, 0, 0);
+      diasParaVencer = Math.round((fechaVenc - hoy) / 86400000);
+    }
+    lotes.push({
+      fila: i + 1, // 1-based, útil solo para depuración manual en el Sheet
+      fechaIngreso: fila[0] ? Utilities.formatDate(new Date(fila[0]), Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+      producto: fila[1],
+      cantidad: Number(fila[2]) || 0,
+      unidad: fila[3] || '',
+      fechaVencimiento: fechaVenc ? Utilities.formatDate(fechaVenc, Session.getScriptTimeZone(), 'yyyy-MM-dd') : '',
+      proveedor: fila[5] || '',
+      disponible: disponible,
+      diasParaVencer: diasParaVencer
+    });
+  }
+
+  lotes.sort(function (a, b) {
+    if (a.diasParaVencer === null) return 1;
+    if (b.diasParaVencer === null) return -1;
+    return a.diasParaVencer - b.diasParaVencer;
+  });
+
+  return lotes;
+}
+
+/**
+ * data = { fecha, items: [{ nombre, total, unit, vencimiento, proveedor }], idEnvio }
+ * "Ingreso a bodega": una fila nueva por ítem, cada una es su propio lote con su
+ * propia fecha de vencimiento. Disponible arranca igual a la cantidad recibida.
+ */
+function guardarIngresoBodega_(ss, data, timestamp) {
+  try {
+    const sheet = getOrCreateSheet(ss, 'Bodega',
+      ['Fecha_Ingreso', 'Producto', 'Cantidad', 'Unidad', 'Fecha_Vencimiento', 'Proveedor', 'Disponible', 'Registrado']);
+
+    data.items.forEach(function (it) {
+      sheet.appendRow([data.fecha, it.nombre, it.total, it.unit, it.vencimiento || '', it.proveedor || '', it.total, timestamp]);
+    });
+
+    registrarEnvio(ss, data.idEnvio, 'ingreso_bodega', timestamp);
+    return respond({ ok: true });
+  } catch (err) {
+    return respond({ ok: false, error: err.toString() });
+  }
+}
+
+/**
+ * data = { fecha, items: [{ nombre, total, unit }], idEnvio }
+ * "Salida de bodega hacia el local" -- por cada ítem, descuenta `total` unidades de
+ * los lotes de ese producto en "Bodega" (el que vence más pronto primero), y además
+ * llama al mismo guardar_ingreso de siempre para que quede como "ingreso al local"
+ * exactamente igual que hoy (no se duplica lógica, se reutiliza la función real).
+ * Si Bodega no tiene suficiente disponible para cubrir el pedido completo, descuenta
+ * lo que haya y avisa en la respuesta (`faltantes`) -- no bloquea el registro del
+ * ingreso al local, porque ese ya es el flujo que el negocio usa todos los días.
+ */
+function guardarSalidaBodega_(ss, data, timestamp) {
+  try {
+    const sheet = getOrCreateSheet(ss, 'Bodega',
+      ['Fecha_Ingreso', 'Producto', 'Cantidad', 'Unidad', 'Fecha_Vencimiento', 'Proveedor', 'Disponible', 'Registrado']);
+    const datos = sheet.getDataRange().getValues();
+    const faltantes = [];
+
+    data.items.forEach(function (it) {
+      let porDescontar = Number(it.total) || 0;
+      if (porDescontar <= 0) return;
+
+      // Filas de este producto con saldo, ordenadas por vencimiento ascendente (FIFO).
+      const candidatos = [];
+      for (let i = 1; i < datos.length; i++) {
+        if (normalizeName(datos[i][1]) !== normalizeName(it.nombre)) continue;
+        const disponible = Number(datos[i][6]) || 0;
+        if (disponible <= 0) continue;
+        candidatos.push({ filaIdx: i, disponible: disponible, vencimiento: datos[i][4] ? new Date(datos[i][4]) : null });
+      }
+      candidatos.sort(function (a, b) {
+        if (!a.vencimiento) return 1;
+        if (!b.vencimiento) return -1;
+        return a.vencimiento - b.vencimiento;
+      });
+
+      candidatos.forEach(function (c) {
+        if (porDescontar <= 0) return;
+        const usar = Math.min(c.disponible, porDescontar);
+        const nuevoDisponible = c.disponible - usar;
+        sheet.getRange(c.filaIdx + 1, 7).setValue(nuevoDisponible); // columna 7 = Disponible
+        datos[c.filaIdx][6] = nuevoDisponible;
+        porDescontar -= usar;
+      });
+
+      if (porDescontar > 0) faltantes.push({ producto: it.nombre, faltante: porDescontar });
+    });
+
+    // Reutiliza el guardar_ingreso real (ya existente en este mismo archivo) para que
+    // el local siga registrándose exactamente como hoy -- Salida de Bodega ES el
+    // ingreso al local, no un flujo paralelo.
+    const hojaIngresos = getOrCreateSheet(ss, 'Ingresos', ['Fecha', 'Producto', 'Cantidad', 'Unidad', 'Registrado']);
+    data.items.forEach(function (it) {
+      hojaIngresos.appendRow([data.fecha, it.nombre, it.total, it.unit, timestamp]);
+    });
+
+    registrarEnvio(ss, data.idEnvio, 'salida_bodega', timestamp);
+    return respond({ ok: true, faltantes: faltantes });
+  } catch (err) {
+    return respond({ ok: false, error: err.toString() });
+  }
+}

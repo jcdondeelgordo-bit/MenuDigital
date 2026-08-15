@@ -123,11 +123,58 @@ function estadoMesa(e) {
   const mesa = e.parameter.mesa || '';
   const hoja = SpreadsheetApp.getActive().getSheetByName('Ventas');
   const meseroExistente = mesa ? buscarMeseroMesaAbierta(hoja, mesa) : null;
+  const abierta = meseroExistente !== null;
+  const resumen = abierta ? obtenerResumenMesaAbierta_(hoja, mesa) : { items: [], total: 0 };
   return ContentService.createTextOutput(JSON.stringify({
     ok: true,
-    abierta: meseroExistente !== null,
-    mesero: meseroExistente || ''
+    abierta: abierta,
+    mesero: meseroExistente || '',
+    items: resumen.items,
+    total: resumen.total
   })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Agrega, por nombre de producto, todas las filas activas de "Ventas" de HOY
+ * para una mesa (mismo filtro que buscarMeseroMesaAbierta: excluye
+ * Estado='Liberado', solo fecha de hoy) -- junta todas las rondas en una
+ * sola lista para que se vea "2x Hamburguesa" en vez de repetido por ronda.
+ */
+function obtenerResumenMesaAbierta_(hoja, mesa) {
+  const datos = hoja.getDataRange().getValues();
+  const encabezados = datos[0];
+  const idxFecha = encabezados.indexOf('Fecha');
+  const idxEstado = encabezados.indexOf('Estado');
+  const idxMesa = encabezados.indexOf('Mesa');
+  const idxProducto = encabezados.indexOf('Producto');
+  const idxCantidad = encabezados.indexOf('Cantidad');
+  const idxTotal = encabezados.indexOf('Total');
+  const tz = Session.getScriptTimeZone();
+  const hoy = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+
+  const itemsPorProducto = {};
+  let total = 0;
+
+  for (let i = 1; i < datos.length; i++) {
+    const fila = datos[i];
+    if (String(fila[idxMesa]) !== String(mesa)) continue;
+    if (fila[idxEstado] === 'Liberado') continue;
+    const fecha = Utilities.formatDate(new Date(fila[idxFecha]), tz, 'yyyy-MM-dd');
+    if (fecha !== hoy) continue;
+
+    const producto = fila[idxProducto];
+    if (!itemsPorProducto[producto]) {
+      itemsPorProducto[producto] = { producto: producto, cantidad: 0, total: 0 };
+    }
+    itemsPorProducto[producto].cantidad += Number(fila[idxCantidad]);
+    itemsPorProducto[producto].total += Number(fila[idxTotal]);
+    total += Number(fila[idxTotal]);
+  }
+
+  return {
+    items: Object.keys(itemsPorProducto).map(function (k) { return itemsPorProducto[k]; }),
+    total: total
+  };
 }
 
 /**
