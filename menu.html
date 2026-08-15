@@ -186,11 +186,11 @@ main{padding:16px;max-width:640px;margin:0 auto;}
 <div class="overlay" id="overlay-mesa" onclick="cerrarMesaMesero()"></div>
 <div class="panel" id="panel-mesa">
   <div class="panel-header">
-    <h3>🍽️ ¿Qué mesa atiendes?</h3>
+    <h3 id="panel-mesa-titulo">🍽️ ¿Qué mesa atiendes?</h3>
     <button class="panel-cerrar" onclick="cerrarMesaMesero()">×</button>
   </div>
   <div class="panel-body">
-    <div class="campo-grupo">
+    <div class="campo-grupo" id="campo-mesa-numero">
       <label>Número de mesa</label>
       <input type="number" id="mesa-numero" placeholder="Ej: 5" min="1" onblur="verificarMesa()">
     </div>
@@ -882,9 +882,11 @@ function elegirTipo(tipo) {
     // si es la primera ronda de la mesa para ofrecer la captura de fidelización.
     abrirFlujoLocalAsesor();
   } else if (mesaQR !== null) {
-    // Mesa ya identificada por QR: autoservicio. Si un mesero ya la había
-    // reclamado en una vuelta anterior, el backend le acredita el pedido igual.
-    confirmarPedidoLocal(mesaQR, '');
+    // Mesa ya identificada por QR: autoservicio, pero se ofrece agregar
+    // opcionalmente el nombre del mesero que la está atendiendo. Si un mesero
+    // ya la había reclamado en una vuelta anterior, el backend le acredita el
+    // pedido igual (mismo mecanismo que el panel manual, ver verificarMesa()).
+    abrirMesaMeseroQR();
   } else {
     mesaAbiertaInfo = null;
     ultimaMesaVerificada = null;
@@ -901,10 +903,35 @@ function elegirTipo(tipo) {
 function cerrarMesaMesero() {
   document.getElementById('overlay-mesa').classList.remove('visible');
   document.getElementById('panel-mesa').classList.remove('visible');
+  panelMesaEsQR = false;
+  document.getElementById('campo-mesa-numero').style.display = '';
+  document.getElementById('panel-mesa-titulo').textContent = '🍽️ ¿Qué mesa atiendes?';
 }
 
 let mesaAbiertaInfo = null;
 let ultimaMesaVerificada = null;
+let panelMesaEsQR = false;
+
+/**
+ * Mesa identificada por QR: el número ya se conoce, así que se oculta ese
+ * campo y se deja solo el de mesero, siempre opcional (a diferencia del panel
+ * manual, donde el mesero lo requiere salvo que la mesa ya esté abierta).
+ */
+function abrirMesaMeseroQR() {
+  panelMesaEsQR = true;
+  mesaAbiertaInfo = null;
+  ultimaMesaVerificada = null;
+  document.getElementById('campo-mesa-numero').style.display = 'none';
+  document.getElementById('panel-mesa-titulo').textContent = `🍽️ Mesa ${mesaQR}`;
+  document.getElementById('mesa-numero').value = mesaQR;
+  document.getElementById('mesa-mesero').value = '';
+  document.getElementById('mesa-mesero').disabled = false;
+  document.getElementById('mesa-mesero-label').textContent = 'Nombre del mesero (opcional)';
+  document.getElementById('mesa-nota').style.display = 'none';
+  document.getElementById('overlay-mesa').classList.add('visible');
+  document.getElementById('panel-mesa').classList.add('visible');
+  verificarMesa();
+}
 
 async function verificarMesa() {
   const mesa = document.getElementById('mesa-numero').value.trim();
@@ -920,7 +947,7 @@ async function verificarMesa() {
 
   mesaAbiertaInfo = null;
   meseroInput.disabled = false;
-  label.textContent = 'Nombre del mesero';
+  label.textContent = panelMesaEsQR ? 'Nombre del mesero (opcional)' : 'Nombre del mesero';
   nota.style.display = 'none';
   if (!mesa) return;
 
@@ -958,7 +985,7 @@ async function verificarMesa() {
 function confirmarMesaMesero() {
   const mesa = document.getElementById('mesa-numero').value.trim();
   const mesero = document.getElementById('mesa-mesero').value.trim();
-  const meseroOpcional = mesaAbiertaInfo && mesaAbiertaInfo.abierta;
+  const meseroOpcional = panelMesaEsQR || (mesaAbiertaInfo && mesaAbiertaInfo.abierta);
   if (!mesa || (!mesero && !meseroOpcional)) {
     alert('Por favor completa el número de mesa y el nombre del mesero');
     return;
